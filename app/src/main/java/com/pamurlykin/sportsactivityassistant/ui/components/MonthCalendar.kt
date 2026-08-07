@@ -59,7 +59,7 @@ fun MonthCalendar(
             ) {
                 CalendarNavigationButton(onClick = onPreviousMonth, icon = Icons.Rounded.ChevronLeft)
                 Text(
-                    text = state.month.month.getDisplayName(TextStyle.FULL_STANDALONE, Locale("ru")).replaceFirstChar { it.uppercase() } + " " + state.month.year,
+                    text = state.month.month.getDisplayName(TextStyle.FULL_STANDALONE, Locale.forLanguageTag("ru")).replaceFirstChar { it.uppercase() } + " " + state.month.year,
                     style = MaterialTheme.typography.headlineSmall,
                     color = Pine,
                     fontWeight = FontWeight.SemiBold,

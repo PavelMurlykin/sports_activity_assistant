@@ -4,6 +4,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.CalendarMonth
 import androidx.compose.material.icons.rounded.QueryStats
+import androidx.compose.material.icons.rounded.LocationOn
+import androidx.compose.material.icons.rounded.Storage
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -22,7 +24,9 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.pamurlykin.sportsactivityassistant.ui.navigation.Destination
 import com.pamurlykin.sportsactivityassistant.ui.screen.MainViewModel
+import com.pamurlykin.sportsactivityassistant.ui.screen.DataManagementScreen
 import com.pamurlykin.sportsactivityassistant.ui.screen.ScheduleScreen
+import com.pamurlykin.sportsactivityassistant.ui.screen.SportsCentersScreen
 import com.pamurlykin.sportsactivityassistant.ui.screen.StatisticsDetailScreen
 import com.pamurlykin.sportsactivityassistant.ui.screen.StatisticsScreen
 
@@ -44,6 +48,8 @@ fun SportsActivityApp(
                     val items = listOf(
                         Triple(Destination.Schedule.route, "Расписание", Icons.Rounded.CalendarMonth),
                         Triple(Destination.Statistics.route, "Статистика", Icons.Rounded.QueryStats),
+                        Triple(Destination.SportsCenters.route, "Центры", Icons.Rounded.LocationOn),
+                        Triple(Destination.DataManagement.route, "Данные", Icons.Rounded.Storage),
                     )
                     items.forEach { (route, label, icon) ->
                         val selected = currentDestination?.hierarchy?.any { it.route == route } == true
@@ -81,6 +87,12 @@ fun SportsActivityApp(
                         navController.navigate(Destination.StatisticsDetails.createRoute(sportId))
                     },
                 )
+            }
+            composable(Destination.SportsCenters.route) {
+                SportsCentersScreen(viewModel = viewModel)
+            }
+            composable(Destination.DataManagement.route) {
+                DataManagementScreen(viewModel = viewModel)
             }
             composable(
                 route = Destination.StatisticsDetails.route,

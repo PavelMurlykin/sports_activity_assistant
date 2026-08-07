@@ -5,6 +5,7 @@ import androidx.room.Embedded
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
+import androidx.room.Junction
 import androidx.room.PrimaryKey
 import androidx.room.Relation
 import com.pamurlykin.sportsactivityassistant.data.model.ClimbingWorkoutType
@@ -27,7 +28,10 @@ data class UserEntity(
     @ColumnInfo(name = "created_at") val createdAt: Instant = Instant.now(),
 )
 
-@Entity(tableName = "sports")
+@Entity(
+    tableName = "sports",
+    indices = [Index(value = ["slug"], unique = true)],
+)
 data class SportEntity(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
     val slug: String,
@@ -161,6 +165,8 @@ data class FootballTrainingEntity(
     @ColumnInfo(name = "user_goals_scored") val userGoalsScored: Int,
     @ColumnInfo(name = "user_assists") val userAssists: Int,
     @ColumnInfo(name = "distance_km") val distanceKm: BigDecimal?,
+    @ColumnInfo(name = "players_per_team") val playersPerTeam: Int?,
+    @ColumnInfo(name = "duration_minutes") val durationMinutes: Int?,
 )
 
 @Entity(
@@ -198,7 +204,8 @@ data class ClimbingRouteEntity(
     @ColumnInfo(name = "climbing_training_id") val climbingTrainingId: Long,
     @ColumnInfo(name = "workout_type") val workoutType: ClimbingWorkoutType,
     @ColumnInfo(name = "route_difficulty") val routeDifficulty: String,
-    @ColumnInfo(name = "routes_completed") val routesCompleted: Int,
+    @ColumnInfo(name = "is_completed") val isCompleted: Boolean,
+    @ColumnInfo(name = "repeat_count") val repeatCount: Int = 1,
 )
 
 @Entity(
@@ -295,6 +302,20 @@ data class ClimbingTrainingWithRoutes(
         entityColumn = "climbing_training_id",
     )
     val routes: List<ClimbingRouteEntity>,
+)
+
+data class SportsComplexWithSports(
+    @Embedded val complex: SportsComplexEntity,
+    @Relation(
+        parentColumn = "id",
+        entityColumn = "id",
+        associateBy = Junction(
+            value = SportsComplexSportEntity::class,
+            parentColumn = "sports_complex_id",
+            entityColumn = "sport_id",
+        ),
+    )
+    val sports: List<SportEntity>,
 )
 
 data class TrainingBundle(

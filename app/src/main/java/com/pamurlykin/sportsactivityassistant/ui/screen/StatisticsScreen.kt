@@ -12,7 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.ArrowBack
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.ExpandLess
 import androidx.compose.material.icons.rounded.ExpandMore
 import androidx.compose.material3.Card
@@ -21,6 +21,7 @@ import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -34,6 +35,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import java.time.format.TextStyle
+import java.util.Locale
 import com.pamurlykin.sportsactivityassistant.data.model.TrainingSessionUiModel
 import com.pamurlykin.sportsactivityassistant.ui.components.SportBadge
 
@@ -99,8 +102,38 @@ fun StatisticsScreen(
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
+                            sport.highlights.forEach { highlight ->
+                                Text(
+                                    text = highlight,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
                         }
                         Text(text = "Открыть", color = MaterialTheme.colorScheme.primary)
+                    }
+                }
+            }
+
+            if (statisticsState.months.isNotEmpty()) {
+                item {
+                    Text("По месяцам", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
+                }
+                items(statisticsState.months, key = { it.month.toString() }) { month ->
+                    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+                        Column(
+                            modifier = Modifier.fillMaxWidth().padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(6.dp),
+                        ) {
+                            Text(
+                                text = month.month.month.getDisplayName(TextStyle.FULL_STANDALONE, Locale.forLanguageTag("ru"))
+                                    .replaceFirstChar { it.uppercase() } + " ${month.month.year}",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.SemiBold,
+                            )
+                            Text("Всего: ${month.totalTrainings}")
+                            Text(month.countsBySport.joinToString(" · "), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
                     }
                 }
             }
@@ -116,6 +149,7 @@ fun StatisticsDetailScreen(
     onBack: () -> Unit,
 ) {
     val trainings by viewModel.trainingsForSport(sportId).collectAsState(initial = emptyList())
+    val sportStatistics by viewModel.statisticsForSport(sportId).collectAsState(initial = null)
     val title = viewModel.sportTitle(sportId)
 
     Scaffold(
@@ -123,7 +157,7 @@ fun StatisticsDetailScreen(
             CenterAlignedTopAppBar(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(imageVector = Icons.Rounded.ArrowBack, contentDescription = null)
+                        Icon(imageVector = Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = null)
                     }
                 },
                 title = {
@@ -144,6 +178,28 @@ fun StatisticsDetailScreen(
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = innerPadding.calculateTopPadding() + 12.dp, bottom = innerPadding.calculateBottomPadding() + 24.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
+            sportStatistics?.let { statistics ->
+                item {
+                    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+                        Column(
+                            modifier = Modifier.fillMaxWidth().padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp),
+                        ) {
+                            Text("Итоги", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                            statistics.metrics.forEachIndexed { index, metric ->
+                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                    Text(metric.label, modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Text(metric.value, fontWeight = FontWeight.SemiBold)
+                                }
+                                if (index < statistics.metrics.lastIndex) HorizontalDivider()
+                            }
+                        }
+                    }
+                }
+                item {
+                    Text("Тренировки", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
+                }
+            }
             if (trainings.isEmpty()) {
                 item {
                     Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {

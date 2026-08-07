@@ -43,6 +43,17 @@ interface TrainingDao {
     @Query("SELECT * FROM trainings ORDER BY training_date DESC, id DESC")
     fun observeAllTrainingBundles(): Flow<List<TrainingBundle>>
 
+    @Transaction
+    @Query("SELECT * FROM trainings ORDER BY training_date, id")
+    suspend fun getAllTrainingBundles(): List<TrainingBundle>
+
+    @Transaction
+    @Query("SELECT * FROM trainings WHERE id = :trainingId LIMIT 1")
+    suspend fun getTrainingBundle(trainingId: Long): TrainingBundle?
+
+    @Insert
+    suspend fun insertTraining(item: TrainingEntity): Long
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertTrainings(items: List<TrainingEntity>)
 
@@ -50,8 +61,17 @@ interface TrainingDao {
     suspend fun insertFootballTrainings(items: List<FootballTrainingEntity>)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertFootballTraining(item: FootballTrainingEntity)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertClimbingTrainings(items: List<ClimbingTrainingEntity>)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertClimbingTraining(item: ClimbingTrainingEntity)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertClimbingRoutes(items: List<ClimbingRouteEntity>)
+
+    @Query("DELETE FROM trainings")
+    suspend fun deleteAllTrainings()
 }

@@ -35,7 +35,7 @@ import java.time.LocalDate
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AddTrainingDialog(
+fun AddPlannedTrainingDialog(
     sports: List<SportSummaryUiModel>,
     onLoadComplexes: suspend (Int) -> List<ComplexOptionUiModel>,
     onDismiss: () -> Unit,
@@ -122,7 +122,7 @@ fun AddTrainingDialog(
             }
         },
         title = {
-            Text("Новая тренировка")
+            Text("План тренировки")
         },
         text = {
             Column(
@@ -198,7 +198,7 @@ fun AddTrainingDialog(
 }
 
 @Composable
-private fun <T> DropdownSelector(
+fun <T> DropdownSelector(
     label: String,
     selectedText: String,
     options: List<T>,

@@ -5,6 +5,8 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import com.pamurlykin.sportsactivityassistant.data.dao.PlanningDao
 import com.pamurlykin.sportsactivityassistant.data.dao.ReferenceDao
 import com.pamurlykin.sportsactivityassistant.data.dao.TrainingDao
@@ -34,7 +36,7 @@ import com.pamurlykin.sportsactivityassistant.data.entity.UserFavoriteComplexEnt
         RecurrenceRuleEntity::class,
         PlannedTrainingEntity::class,
     ],
-    version = 1,
+    version = 2,
     exportSchema = false,
 )
 @TypeConverters(Converters::class)
@@ -54,9 +56,49 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "sports_activity_assistant.db",
                 )
-                    .fallbackToDestructiveMigration()
+                    .addMigrations(MIGRATION_1_2)
                     .build()
                     .also { instance = it }
+            }
+        }
+
+        val MIGRATION_1_2 = object : Migration(1, 2) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE football_trainings ADD COLUMN players_per_team INTEGER")
+                db.execSQL("ALTER TABLE football_trainings ADD COLUMN duration_minutes INTEGER")
+                db.execSQL(
+                    """
+                    CREATE TABLE climbing_routes_v2 (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        climbing_training_id INTEGER NOT NULL,
+                        workout_type TEXT NOT NULL,
+                        route_difficulty TEXT NOT NULL,
+                        is_completed INTEGER NOT NULL,
+                        repeat_count INTEGER NOT NULL,
+                        FOREIGN KEY(climbing_training_id)
+                            REFERENCES climbing_trainings(training_id)
+                            ON UPDATE NO ACTION ON DELETE CASCADE
+                    )
+                    """.trimIndent(),
+                )
+                db.execSQL(
+                    """
+                    INSERT INTO climbing_routes_v2 (
+                        id, climbing_training_id, workout_type,
+                        route_difficulty, is_completed, repeat_count
+                    )
+                    SELECT id, climbing_training_id, workout_type,
+                           route_difficulty, 1, routes_completed
+                    FROM climbing_routes
+                    """.trimIndent(),
+                )
+                db.execSQL("DROP TABLE climbing_routes")
+                db.execSQL("ALTER TABLE climbing_routes_v2 RENAME TO climbing_routes")
+                db.execSQL(
+                    "CREATE INDEX index_climbing_routes_climbing_training_id " +
+                        "ON climbing_routes(climbing_training_id)",
+                )
+                db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_sports_slug ON sports(slug)")
             }
         }
     }

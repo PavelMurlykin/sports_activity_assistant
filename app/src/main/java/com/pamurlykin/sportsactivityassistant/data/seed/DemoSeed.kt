@@ -20,7 +20,10 @@ import java.time.Instant
 import java.time.LocalDate
 
 object DemoSeed {
-    suspend fun seed(database: AppDatabase) {
+    suspend fun seed(
+        database: AppDatabase,
+        includeSampleTrainings: Boolean = true,
+    ) {
         if (database.referenceDao().getSports().isNotEmpty()) return
 
         val createdAt = Instant.parse("2026-03-01T08:00:00Z")
@@ -83,6 +86,8 @@ object DemoSeed {
             ),
         )
 
+        if (!includeSampleTrainings) return
+
         database.trainingDao().insertTrainings(
             listOf(
                 TrainingEntity(
@@ -121,6 +126,8 @@ object DemoSeed {
                     userGoalsScored = 2,
                     userAssists = 1,
                     distanceKm = BigDecimal("7.30"),
+                    playersPerTeam = 6,
+                    durationMinutes = 60,
                 ),
                 FootballTrainingEntity(
                     trainingId = 3,
@@ -129,6 +136,8 @@ object DemoSeed {
                     userGoalsScored = 1,
                     userAssists = 2,
                     distanceKm = BigDecimal("6.10"),
+                    playersPerTeam = null,
+                    durationMinutes = 70,
                 ),
             ),
         )
@@ -146,14 +155,16 @@ object DemoSeed {
                     climbingTrainingId = 2,
                     workoutType = ClimbingWorkoutType.DIFFICULTY,
                     routeDifficulty = "6A+",
-                    routesCompleted = 4,
+                    isCompleted = true,
+                    repeatCount = 4,
                 ),
                 ClimbingRouteEntity(
                     id = 2,
                     climbingTrainingId = 2,
                     workoutType = ClimbingWorkoutType.BOULDERING,
                     routeDifficulty = "6B",
-                    routesCompleted = 3,
+                    isCompleted = true,
+                    repeatCount = 3,
                 ),
             ),
         )

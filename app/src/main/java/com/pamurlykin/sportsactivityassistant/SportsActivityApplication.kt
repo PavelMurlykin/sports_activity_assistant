@@ -15,7 +15,7 @@ class SportsActivityApplication : Application() {
     val database: AppDatabase by lazy {
         AppDatabase.getInstance(this).also { db ->
             applicationScope.launch {
-                DemoSeed.seed(db)
+                DemoSeed.seed(db, includeSampleTrainings = false)
             }
         }
     }

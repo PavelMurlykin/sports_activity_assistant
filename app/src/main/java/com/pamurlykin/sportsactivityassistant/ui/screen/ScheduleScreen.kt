@@ -10,13 +10,18 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -25,7 +30,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.collectAsState
-import com.pamurlykin.sportsactivityassistant.ui.components.AddTrainingDialog
+import com.pamurlykin.sportsactivityassistant.ui.components.AddCompletedTrainingDialog
+import com.pamurlykin.sportsactivityassistant.ui.components.AddPlannedTrainingDialog
 import com.pamurlykin.sportsactivityassistant.ui.components.MonthCalendar
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -35,21 +41,53 @@ fun ScheduleScreen(
 ) {
     val scheduleState by viewModel.scheduleState.collectAsState()
     val statisticsState by viewModel.statisticsState.collectAsState()
-    var showDialog by remember { mutableStateOf(false) }
+    val operationState by viewModel.dataOperationState.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
+    var dialog by remember { mutableStateOf<TrainingDialog?>(null) }
 
-    if (showDialog) {
-        AddTrainingDialog(
+    LaunchedEffect(operationState.message, operationState.inProgress) {
+        val message = operationState.message
+        if (message != null && !operationState.inProgress) {
+            snackbarHostState.showSnackbar(message)
+            viewModel.clearDataMessage()
+        }
+    }
+
+    if (dialog == TrainingDialog.CHOICE) {
+        AlertDialog(
+            onDismissRequest = { dialog = null },
+            title = { Text("Добавить тренировку") },
+            text = { Text("Запишите результат состоявшейся тренировки или добавьте будущую в план.") },
+            confirmButton = { TextButton(onClick = { dialog = TrainingDialog.COMPLETED }) { Text("Записать результат") } },
+            dismissButton = { TextButton(onClick = { dialog = TrainingDialog.PLANNED }) { Text("Запланировать") } },
+        )
+    }
+    if (dialog == TrainingDialog.PLANNED) {
+        AddPlannedTrainingDialog(
             sports = statisticsState.sports,
             onLoadComplexes = viewModel::loadComplexesForSport,
-            onDismiss = { showDialog = false },
+            onDismiss = { dialog = null },
             onSave = {
                 viewModel.addPlannedTraining(it)
-                showDialog = false
+                dialog = null
+            },
+        )
+    }
+    if (dialog == TrainingDialog.COMPLETED) {
+        AddCompletedTrainingDialog(
+            sports = statisticsState.sports,
+            initialDate = scheduleState?.selectedDate ?: java.time.LocalDate.now(),
+            onLoadComplexes = viewModel::loadComplexesForSport,
+            onDismiss = { dialog = null },
+            onSave = {
+                viewModel.addCompletedTraining(it)
+                dialog = null
             },
         )
     }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = {
@@ -65,7 +103,7 @@ fun ScheduleScreen(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = { showDialog = true }) {
+            FloatingActionButton(onClick = { dialog = TrainingDialog.CHOICE }) {
                 Text("+")
             }
         },
@@ -123,6 +161,13 @@ fun ScheduleScreen(
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.SemiBold,
                                 )
+                                event.details.forEach { detail ->
+                                    Text(
+                                        text = detail,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
                                 Text(
                                     text = event.complexName,
                                     style = MaterialTheme.typography.bodyMedium,
@@ -145,6 +190,12 @@ fun ScheduleScreen(
             }
         }
     }
+}
+
+private enum class TrainingDialog {
+    CHOICE,
+    PLANNED,
+    COMPLETED,
 }
 
 @Composable
