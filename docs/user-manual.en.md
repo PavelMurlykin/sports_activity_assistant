@@ -52,3 +52,13 @@ Import merges records with existing data without clearing the database. Content-
 ## Known limitations
 
 Safe identifier exchange, complete restoration, separate climbing scales, result editing, linking plans to results and advanced filters are planned, not available features. Compatibility with your multi-year history can only be verified after anonymized examples of its format are supplied. No external connection is required to transfer files.
+
+## Build and verification for developers
+
+Install a JDK and Android SDK as described in README, then configure `JAVA_HOME` and the local SDK path. Library versions are pinned in `gradle/libs.versions.toml`; the Wrapper uses Gradle 9.8.0 with a checksum.
+
+```powershell
+.\gradlew.bat verifyOfflinePolicy testDebugUnitTest lintDebug assembleDebug
+```
+
+The first build may download tools and libraries. Once the cache is populated, repeat the command with `--offline`; the app itself needs no network. `verifyOfflinePolicy` rejects network permissions in merged debug/release manifests and enabled automatic backup. `connectedDebugAndroidTest` requires a running emulator or test device. The release APK is not yet signed with a distribution key; use the debug APK for installation.

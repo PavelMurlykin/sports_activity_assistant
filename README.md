@@ -52,22 +52,23 @@ user_id;training_date;sports_complex_id;team_goals_scored;team_goals_conceded;us
 - `docs/user-manual.en.md` — эквивалентная инструкция на английском.
 - `DEVELOPMENT_PLAN.md` — этапы и критерии приёмки.
 - `docs/stage-01-baseline.md` — исходные проверки, правила данных и ограничения.
+- `docs/stage-02-toolchain.md` — источники версий, совместимость и результаты обновления.
 
 ## Сборка
 
-Версии, закреплённые в проекте (их актуальность проверяется отдельно на этапе 2):
+Стабильные версии, проверенные по первичным источникам 7 октября 2026 года (подробности в отчёте этапа 2):
 
-- Android Gradle Plugin `9.3.1`;
-- Gradle `9.7.0`;
-- встроенный в AGP Kotlin + Compose plugin `2.4.10`;
-- Compose BOM `2026.06.01`;
-- Room `2.8.4`;
+- Android Gradle Plugin `9.4.1`;
+- Gradle `9.8.0`;
+- встроенный в AGP Kotlin + Compose/Serialization plugins `2.4.20`, KSP `2.3.12`;
+- Compose BOM `2026.09.00`;
+- Room `2.8.5`;
 - compile SDK `37.1`, target SDK `37`, min SDK `26`;
 - Java source/target `17`; фактический JDK локального прогона указан в отчёте этапа.
 
 ```powershell
 $env:JAVA_HOME='C:\Program Files\Android\Android Studio\jbr'
-.\gradlew.bat testDebugUnitTest assembleDebug
+.\gradlew.bat verifyOfflinePolicy testDebugUnitTest lintDebug assembleDebug
 .\gradlew.bat connectedDebugAndroidTest
 ```
 
@@ -80,3 +81,5 @@ Unit-тесты покрывают парсинг CSV, обе кодировки
 На этапе 1 добавлены инструментальные проверки офлайн-политики установленного APK и контрольного набора статистики/календаря. Свежий прогон: 10 модульных и 7 Android-тестов, Lint без замечаний; запуск на эмуляторе с отключённой сетью успешен. Подробности и ограничения — в отчёте этапа.
 
 Сборка из пустого кэша требует загрузки инструментов и библиотек. После загрузки повторные сборки можно выполнять с `--offline`. Работа установленного приложения не требует сети.
+
+`verifyOfflinePolicy` проверяет объединённые манифесты обеих сборок на отсутствие сетевых разрешений и отключение системного бэкапа. `.github/workflows/android.yml` запускает эту проверку, модульные тесты, Lint и сборки debug/release; действия закреплены полными SHA. `assembleRelease` пока создаёт неподписанный APK, без публикации. Все версии библиотек находятся в `gradle/libs.versions.toml`.
