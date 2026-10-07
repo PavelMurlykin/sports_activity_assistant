@@ -16,7 +16,7 @@ object FootballModule : SportModule {
     override val slug = "football"
     override val title = "Футбол"
 
-    override fun validate(input: AddCompletedTrainingInput) {
+    override fun validate(input: AddCompletedTrainingInput, allowHistorical: Boolean) {
         val details = requireNotNull(input.football) { "Заполните футбольную статистику" }
         require(input.climbingRoutes.isEmpty()) { "Футбольная тренировка не может содержать трассы" }
         require(listOf(details.teamGoalsScored, details.teamGoalsConceded, details.userGoalsScored, details.userAssists).all { it >= 0 }) {

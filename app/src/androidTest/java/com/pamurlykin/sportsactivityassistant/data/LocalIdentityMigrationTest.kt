@@ -45,7 +45,7 @@ class LocalIdentityMigrationTest {
         }).close()
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val database = Room.databaseBuilder(context, AppDatabase::class.java, name)
-            .addMigrations(AppDatabase.MIGRATION_1_2, AppDatabase.MIGRATION_2_3).build()
+            .addMigrations(AppDatabase.MIGRATION_1_2, AppDatabase.MIGRATION_2_3, AppDatabase.MIGRATION_3_4).build()
         try {
             val users = database.referenceDao().getUsers()
             assertEquals(listOf(7L, 8L), users.map { it.id })
@@ -89,14 +89,14 @@ class LocalIdentityMigrationTest {
         }
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val database = Room.databaseBuilder(context, AppDatabase::class.java, name)
-            .addMigrations(AppDatabase.MIGRATION_1_2, AppDatabase.MIGRATION_2_3).build()
+            .addMigrations(AppDatabase.MIGRATION_1_2, AppDatabase.MIGRATION_2_3, AppDatabase.MIGRATION_3_4).build()
         try {
             assertEquals(1L, database.referenceDao().getUsers().single().id)
             database.openHelper.writableDatabase.query("PRAGMA foreign_keys").use {
                 assertTrue(it.moveToFirst()); assertEquals(1, it.getInt(0))
             }
         } finally { database.close() }
-        helper.runMigrationsAndValidate(name, 3, true, AppDatabase.MIGRATION_2_3).close()
+        helper.runMigrationsAndValidate(name, 4, true, AppDatabase.MIGRATION_2_3, AppDatabase.MIGRATION_3_4).close()
         context.deleteDatabase(name)
     }
 
@@ -128,7 +128,7 @@ class LocalIdentityMigrationTest {
     }
 
     @Test
-    fun completeVersion1To3ChainPreservesHistoricalRouteCounts() = runBlocking<Unit> {
+    fun completeVersion1To4ChainPreservesHistoricalRouteCounts() = runBlocking<Unit> {
         val name = "complete-v1-upgrade.db"
         helper.createDatabase(name, 2).apply {
             // Reconstruct only the two v1 differences from the saved v2 schema and original migration.
@@ -147,11 +147,14 @@ class LocalIdentityMigrationTest {
             version = 1
             close()
         }
-        helper.runMigrationsAndValidate(name, 3, true, AppDatabase.MIGRATION_1_2, AppDatabase.MIGRATION_2_3).use { db ->
+        helper.runMigrationsAndValidate(name, 4, true, AppDatabase.MIGRATION_1_2, AppDatabase.MIGRATION_2_3, AppDatabase.MIGRATION_3_4).use { db ->
             db.query("SELECT repeat_count, is_completed FROM climbing_routes").use {
                 assertTrue(it.moveToFirst()); assertEquals(4, it.getInt(0)); assertEquals(1, it.getInt(1))
             }
             db.query("PRAGMA foreign_key_check").use { assertFalse(it.moveToFirst()) }
+            db.query("SELECT route_difficulty, grading_system, grade_code FROM climbing_routes").use {
+                assertTrue(it.moveToFirst()); assertEquals("6B", it.getString(0)); assertEquals("french", it.getString(1)); assertEquals("6b", it.getString(2))
+            }
         }
         InstrumentationRegistry.getInstrumentation().targetContext.deleteDatabase(name)
     }

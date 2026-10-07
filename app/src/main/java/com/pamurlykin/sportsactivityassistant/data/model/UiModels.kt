@@ -7,12 +7,14 @@ import java.time.YearMonth
 enum class ClimbingWorkoutType(val storageValue: String, val title: String) {
     DIFFICULTY("difficulty", "Трудность"),
     SPEED("speed", "Скорость"),
-    BOULDERING("bouldering", "Боулдеринг");
+    BOULDERING("bouldering", "Болдер"),
+    UNKNOWN("unknown", "Историческая дисциплина");
 
     companion object {
         fun fromStorage(value: String): ClimbingWorkoutType {
-            return entries.firstOrNull { it.storageValue == value } ?: DIFFICULTY
+            return entries.firstOrNull { it.storageValue == value } ?: UNKNOWN
         }
+        val supported = listOf(DIFFICULTY, SPEED, BOULDERING)
     }
 }
 
@@ -151,6 +153,10 @@ data class ClimbingRouteInput(
     val routeDifficulty: String,
     val isCompleted: Boolean,
     val repeatCount: Int = 1,
+    val gradingSystem: String = ClimbingDifficultyCatalog.systemFor(workoutType),
+    val gradeCode: String? = ClimbingDifficultyCatalog.find(gradingSystem, routeDifficulty)?.code,
+    val speedCourse: String? = null,
+    val legacyWorkoutType: String? = null,
 )
 
 data class AddCompletedTrainingInput(

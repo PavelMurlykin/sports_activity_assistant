@@ -40,7 +40,7 @@ class StatisticsMapperTest {
         val sport = SportEntity(2, "climbing", "Скалолазание")
         val training = TrainingEntity(1, 1, 2, 1, LocalDate.parse("2026-03-01"))
         val routes = listOf(
-            ClimbingRouteEntity(1, 1, ClimbingWorkoutType.DIFFICULTY, "6B", true, 3),
+            ClimbingRouteEntity(1, 1, ClimbingWorkoutType.DIFFICULTY, "6B", true, 3, gradingSystem = "french", gradeCode = "6b"),
             ClimbingRouteEntity(2, 1, ClimbingWorkoutType.BOULDERING, "7A", false, 1),
         )
         val bundle = TrainingBundle(
@@ -52,7 +52,7 @@ class StatisticsMapperTest {
 
         assertEquals("4", values["Трассы"])
         assertEquals("3 (75%)", values["Успешно пройдено"])
-        assertEquals("6B", values["Максимальная сложность"])
+        assertEquals("6b", values["Максимум · Трудность (Французская)"])
     }
 
     @Test

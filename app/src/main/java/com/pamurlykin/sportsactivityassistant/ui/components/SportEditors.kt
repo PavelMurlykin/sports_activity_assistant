@@ -24,11 +24,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.pamurlykin.sportsactivityassistant.data.model.AddCompletedTrainingInput
 import com.pamurlykin.sportsactivityassistant.data.model.ClimbingDifficultyCatalog
 import com.pamurlykin.sportsactivityassistant.data.model.ClimbingRouteInput
 import com.pamurlykin.sportsactivityassistant.data.model.ClimbingWorkoutType
+import com.pamurlykin.sportsactivityassistant.data.model.SpeedCourse
 import com.pamurlykin.sportsactivityassistant.data.model.FootballTrainingInput
 import java.time.LocalDate
 
@@ -93,8 +95,9 @@ private object FootballEditor : SportEditor {
 
 private data class RouteDraft(
     val workoutType: ClimbingWorkoutType = ClimbingWorkoutType.DIFFICULTY,
-    val difficulty: String = "6A",
+    val difficulty: String = "6a",
     val completed: Boolean = true,
+    val speedCourse: String? = null,
 )
 
 private object ClimbingEditor : SportEditor {
@@ -105,7 +108,7 @@ private object ClimbingEditor : SportEditor {
             @Composable override fun Content() = ClimbingFields(routes)
             override fun input(sportId: Int, complexId: Long, date: LocalDate): AddCompletedTrainingInput =
                 AddCompletedTrainingInput(sportId, complexId, date, climbingRoutes = routes.map {
-                    ClimbingRouteInput(it.workoutType, it.difficulty, it.completed)
+                    ClimbingRouteInput(it.workoutType, it.difficulty, it.completed, speedCourse = it.speedCourse)
                 }).also { SportModules.require("climbing").validate(it) }
         }
     }
@@ -150,17 +153,37 @@ private fun ClimbingFields(routes: MutableList<RouteDraft>) {
                     DropdownSelector(
                         label = "Тип",
                         selectedText = route.workoutType.title,
-                        options = ClimbingWorkoutType.entries,
+                        options = ClimbingWorkoutType.supported,
                         optionLabel = { it.title },
-                        onSelected = { routes[index] = route.copy(workoutType = it) },
+                        onSelected = { routes[index] = route.copy(workoutType = it,
+                            difficulty = when (it) {
+                                ClimbingWorkoutType.DIFFICULTY -> "6a"
+                                ClimbingWorkoutType.BOULDERING -> "6A"
+                                else -> ""
+                            }, speedCourse = null) },
+                        modifier = Modifier.testTag("route-$index-type"),
                     )
-                    DropdownSelector(
-                        label = "Сложность (французская шкала)",
-                        selectedText = route.difficulty,
-                        options = ClimbingDifficultyCatalog.values,
-                        optionLabel = { it },
-                        onSelected = { routes[index] = route.copy(difficulty = it) },
-                    )
+                    if (route.workoutType == ClimbingWorkoutType.SPEED) {
+                        DropdownSelector(
+                            label = "Трасса скорости",
+                            selectedText = SpeedCourse.entries.firstOrNull { it.code == route.speedCourse }?.title ?: "Выберите трассу",
+                            options = SpeedCourse.entries,
+                            optionLabel = { it.title },
+                            onSelected = { routes[index] = route.copy(speedCourse = it.code) },
+                            modifier = Modifier.testTag("route-$index-course"),
+                        )
+                        Text("Категория сложности не применяется. Выберите эталонную трассу только при её соответствии стандарту 15 м.", style = MaterialTheme.typography.bodySmall)
+                    } else {
+                        val system = ClimbingDifficultyCatalog.systemFor(route.workoutType)
+                        DropdownSelector(
+                            label = "Сложность (${ClimbingDifficultyCatalog.title(system)})",
+                            selectedText = route.difficulty,
+                            options = ClimbingDifficultyCatalog.grades(system),
+                            optionLabel = { it.label },
+                            onSelected = { routes[index] = route.copy(difficulty = it.label) },
+                            modifier = Modifier.testTag("route-$index-grade"),
+                        )
+                    }
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         FilterChip(
                             selected = route.completed,

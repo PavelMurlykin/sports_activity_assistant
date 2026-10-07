@@ -5,6 +5,47 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class BackupCodecTest {
+    private fun climbingDocument(version: Int, routes: List<ClimbingRouteBackup>) = BackupDocument(
+        schemaVersion = version, exportedAt = "2026-10-07T00:00:00Z", sports = emptyList(), centers = emptyList(),
+        trainings = listOf(TrainingBackup(date = "2026-10-07", sportSlug = "climbing", centerName = "Центр", climbingRoutes = routes)),
+    )
+
+    @Test fun version3KeepsScaleCourseAndRawHistoricalLabels() {
+        val source = climbingDocument(3, listOf(
+            ClimbingRouteBackup("difficulty", "6a+", true, gradingSystem = "french", gradeCode = "6a+"),
+            ClimbingRouteBackup("bouldering", "6A+", false, gradingSystem = "fontainebleau", gradeCode = "6a+"),
+            ClimbingRouteBackup("speed", "", true, gradingSystem = "none", speedCourse = "other"),
+            ClimbingRouteBackup("old type", "  raw label  ", false, 3, "legacy", legacyWorkoutType = "old type"),
+        ))
+        assertEquals(source, BackupCodec.decode(BackupCodec.encode(source)))
+    }
+
+    @Test fun oldVersionsAreExplicitlyAdaptedWithoutRewritingOriginalGrade() {
+        (1..2).forEach { version ->
+            val source = climbingDocument(version, listOf(
+                ClimbingRouteBackup("difficulty", " 6A+ ", true, 4),
+                ClimbingRouteBackup("bouldering", "6A", false, 2),
+                ClimbingRouteBackup("speed", "6A", true),
+                ClimbingRouteBackup("difficulty", "not known", false),
+            ))
+            val restored = BackupCodec.decode(BackupCodec.encode(source))
+            assertEquals(3, restored.schemaVersion)
+            val routes = restored.trainings.single().climbingRoutes
+            assertEquals(listOf("french", "legacy", "legacy", "legacy"), routes.map { it.gradingSystem })
+            assertEquals("6a+", routes.first().gradeCode)
+            assertEquals(" 6A+ ", routes.first().routeDifficulty)
+            assertEquals(4, routes.first().repeatCount)
+            assertEquals(restored, BackupCodec.decode(BackupCodec.encode(restored)))
+        }
+    }
+
+    @Test fun refusesMissingMetadataAndSpoofedVersions() {
+        val old = ClimbingRouteBackup("difficulty", "6A", true)
+        assertTrue(runCatching { BackupCodec.decode(BackupCodec.encode(climbingDocument(3, listOf(old)))) }.isFailure)
+        assertTrue(runCatching { BackupCodec.decode(BackupCodec.encode(climbingDocument(2, listOf(old.copy(gradingSystem = "french", gradeCode = "6a"))))) }.isFailure)
+        assertTrue(runCatching { BackupCodec.decode(BackupCodec.encode(climbingDocument(999, emptyList()))) }.isFailure)
+    }
+
     @Test
     fun backupRoundTripKeepsSportSpecificData() {
         val source = BackupDocument(

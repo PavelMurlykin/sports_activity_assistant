@@ -59,7 +59,7 @@ class BaselineControlDataTest {
             val climbing = metrics("climbing")
             assertEquals("3", climbing["Трассы"])
             assertEquals("2 (66%)", climbing["Успешно пройдено"])
-            assertEquals("6A+", climbing["Максимальная сложность"])
+            assertEquals("6a+", climbing["Максимум · Трудность (Французская)"])
 
             val date = LocalDate.parse("2026-10-07")
             val schedule = repository.getScheduleMonth(1, YearMonth.from(date), date, date)

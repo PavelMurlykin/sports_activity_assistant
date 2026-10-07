@@ -5,7 +5,6 @@ import com.pamurlykin.sportsactivityassistant.data.AppDatabase
 import com.pamurlykin.sportsactivityassistant.data.backup.BackupCodec
 import com.pamurlykin.sportsactivityassistant.data.backup.BackupDocument
 import com.pamurlykin.sportsactivityassistant.data.backup.CenterBackup
-import com.pamurlykin.sportsactivityassistant.data.backup.ClimbingRouteBackup
 import com.pamurlykin.sportsactivityassistant.data.backup.FootballBackup
 import com.pamurlykin.sportsactivityassistant.data.backup.FootballCsvParser
 import com.pamurlykin.sportsactivityassistant.data.backup.ImportResult
@@ -23,6 +22,7 @@ import com.pamurlykin.sportsactivityassistant.data.entity.TrainingEntity
 import com.pamurlykin.sportsactivityassistant.data.model.AddCompletedTrainingInput
 import com.pamurlykin.sportsactivityassistant.data.model.AddPlannedTrainingInput
 import com.pamurlykin.sportsactivityassistant.data.model.ComplexOptionUiModel
+import com.pamurlykin.sportsactivityassistant.data.model.HistoricalClimbingGrades
 import com.pamurlykin.sportsactivityassistant.data.model.PlannedTrainingStatus
 import com.pamurlykin.sportsactivityassistant.data.model.RecurrenceFrequency
 import com.pamurlykin.sportsactivityassistant.data.model.SaveSportsCenterInput
@@ -49,6 +49,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import com.pamurlykin.sportsactivityassistant.data.seed.LocalSeed
 import com.pamurlykin.sportsactivityassistant.data.sport.SportModules
+import com.pamurlykin.sportsactivityassistant.data.sport.ClimbingModule
 
 class AppRepository(private val database: AppDatabase) {
     private val initializationLock = Mutex()
@@ -316,20 +317,21 @@ class AppRepository(private val database: AppDatabase) {
             val center = centers[centerKey(backup.centerName, backup.centerCity)]
                 ?: error("Спортивный центр «${backup.centerName}» отсутствует в копии")
             val module = SportModules.require(sport.slug)
-            module.validate(module.decodeDetails(backup, sport.id, center.id))
+            module.validate(module.decodeDetails(backup, sport.id, center.id), allowHistorical = true)
             if (!existing.add(fingerprint(backup))) skipped++ else {
                 insertBackupTraining(backup, userId, sport, center)
                 imported++
             }
         }
         importPlans(document, userId, sports, centers)
-        ImportResult(imported, skipped, importedCenters, "резервная копия JSON")
+        ImportResult(imported, skipped, importedCenters, "резервная копия JSON",
+            document.trainings.flatMap { it.climbingRoutes }.filter { it.gradingSystem == "legacy" }.sumOf { it.repeatCount.toLong() })
     }
 
     private suspend fun insertBackupTraining(backup: TrainingBackup, userId: Long, sport: SportEntity, center: SportsComplexEntity) {
         val module = SportModules.require(sport.slug)
         val input = module.decodeDetails(backup, sport.id, center.id)
-        module.validate(input)
+        module.validate(input, allowHistorical = true)
         require(database.referenceDao().getComplexesForSport(sport.id).any { it.id == center.id }) { "Выбранный спорт недоступен в этом центре" }
         val id = database.trainingDao().insertTraining(
             TrainingEntity(userId = userId, sportId = sport.id, sportsComplexId = center.id, trainingDate = input.date),
@@ -395,7 +397,7 @@ class AppRepository(private val database: AppDatabase) {
                 )
             },
             climbingRoutes = bundle.climbing?.routes.orEmpty().map {
-                ClimbingRouteBackup(it.workoutType.storageValue, it.routeDifficulty, it.isCompleted, it.repeatCount)
+                ClimbingModule.encodeRoute(it)
             },
         ),
     )
@@ -405,9 +407,13 @@ class AppRepository(private val database: AppDatabase) {
         item.football?.let {
             listOf(it.teamGoalsScored, it.teamGoalsConceded, it.userGoalsScored, it.userAssists, it.distanceKm?.toBigDecimalOrNull()?.stripTrailingZeros(), it.playersPerTeam, it.durationMinutes).joinToString(":")
         }.orEmpty(),
-        item.climbingRoutes.sortedWith(compareBy({ it.workoutType }, { it.routeDifficulty }, { it.completed }, { it.repeatCount })).joinToString(";") {
-            "${it.workoutType}:${it.routeDifficulty}:${it.completed}:${it.repeatCount}"
-        },
+        item.climbingRoutes.map {
+            // Compare canonical metadata too: identical labels in different scales are not identical data.
+            val historical = HistoricalClimbingGrades.classify(it.workoutType, it.routeDifficulty)
+            val system = it.gradingSystem ?: historical.system
+            val code = if (it.gradingSystem == null) historical.code else it.gradeCode
+            "${it.workoutType}:${it.routeDifficulty}:${it.completed}:${it.repeatCount}:$system:$code:${it.speedCourse}:${it.legacyWorkoutType}"
+        }.sorted().joinToString(";"),
     ).joinToString("|")
 
     private fun centerKey(name: String, city: String?): String = "${name.trim().lowercase()}|${city.orEmpty().trim().lowercase()}"

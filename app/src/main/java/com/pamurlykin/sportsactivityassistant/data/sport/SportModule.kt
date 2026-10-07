@@ -10,7 +10,7 @@ import com.pamurlykin.sportsactivityassistant.data.model.MetricUiModel
 interface SportModule {
     val slug: String
     val title: String
-    fun validate(input: AddCompletedTrainingInput)
+    fun validate(input: AddCompletedTrainingInput, allowHistorical: Boolean = false)
     suspend fun insertDetails(dao: TrainingDao, trainingId: Long, input: AddCompletedTrainingInput)
     fun decodeDetails(backup: TrainingBackup, sportId: Int, complexId: Long): AddCompletedTrainingInput
     fun encodeDetails(bundle: TrainingBundle, common: TrainingBackup): TrainingBackup

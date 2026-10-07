@@ -13,7 +13,7 @@ data class BackupDocument(
     val recurrenceRules: List<RecurrenceRuleBackup> = emptyList(),
 ) {
     companion object {
-        const val CURRENT_SCHEMA_VERSION = 2
+        const val CURRENT_SCHEMA_VERSION = 3
     }
 }
 
@@ -60,6 +60,10 @@ data class ClimbingRouteBackup(
     val routeDifficulty: String,
     val completed: Boolean,
     val repeatCount: Int = 1,
+    val gradingSystem: String? = null,
+    val gradeCode: String? = null,
+    val speedCourse: String? = null,
+    val legacyWorkoutType: String? = null,
 )
 
 @Serializable
@@ -86,4 +90,5 @@ data class ImportResult(
     val skippedTrainings: Int,
     val importedCenters: Int,
     val source: String,
+    val historicalRouteAttempts: Long = 0,
 )

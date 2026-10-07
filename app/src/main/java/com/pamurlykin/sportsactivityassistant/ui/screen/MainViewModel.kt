@@ -120,7 +120,8 @@ class MainViewModel(
             runCatching { repository.importData(bytes, repository.localProfileId()) }
                 .onSuccess { result ->
                     _dataOperationState.value = DataOperationUiState(
-                        message = "Импорт завершён: ${result.importedTrainings} добавлено, ${result.skippedTrainings} пропущено (${result.source})",
+                        message = "Импорт завершён: ${result.importedTrainings} добавлено, ${result.skippedTrainings} пропущено (${result.source})" +
+                            if (result.historicalRouteAttempts > 0) "\nВ файле ${result.historicalRouteAttempts} исторических попыток: шкала/трасса не подтверждена, категории не участвуют в максимумах." else "",
                     )
                     refreshSchedule()
                 }

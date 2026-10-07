@@ -204,6 +204,7 @@ fun <T> DropdownSelector(
     options: List<T>,
     optionLabel: (T) -> String,
     onSelected: (T) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     var expanded by remember { mutableStateOf(false) }
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -214,7 +215,7 @@ fun <T> DropdownSelector(
         )
         OutlinedButton(
             onClick = { expanded = true },
-            modifier = Modifier.fillMaxWidth(),
+            modifier = modifier.fillMaxWidth(),
         ) {
             Text(
                 text = selectedText,

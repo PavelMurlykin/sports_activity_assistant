@@ -207,6 +207,10 @@ data class ClimbingRouteEntity(
     @ColumnInfo(name = "is_completed") val isCompleted: Boolean,
     @ColumnInfo(name = "repeat_count") val repeatCount: Int = 1,
     @ColumnInfo(name = "public_id", defaultValue = "''") val publicId: String = UUID.randomUUID().toString(),
+    @ColumnInfo(name = "grading_system", defaultValue = "'legacy'") val gradingSystem: String = "legacy",
+    @ColumnInfo(name = "grade_code") val gradeCode: String? = null,
+    @ColumnInfo(name = "speed_course") val speedCourse: String? = null,
+    @ColumnInfo(name = "legacy_workout_type") val legacyWorkoutType: String? = null,
 )
 
 @Entity(

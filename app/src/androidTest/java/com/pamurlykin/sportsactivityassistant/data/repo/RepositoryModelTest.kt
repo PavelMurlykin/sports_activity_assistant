@@ -130,7 +130,7 @@ class RepositoryModelTest {
     fun malformedImportedDetailsRollBackNewCentersAndDoNotCoerceDiscipline() = runBlocking {
         withDatabase { database, repository ->
             val user = repository.localProfileId()
-            val backup = BackupDocument(exportedAt = Instant.now().toString(),
+            val backup = BackupDocument(schemaVersion = 2, exportedAt = Instant.now().toString(),
                 sports = listOf(SportBackup("climbing", "Скалолазание")),
                 centers = listOf(CenterBackup(name = "Импортируемый центр", city = null, sportSlugs = listOf("climbing"))),
                 trainings = listOf(TrainingBackup(date = "2026-10-01", sportSlug = "climbing", centerName = "Импортируемый центр", centerCity = null,
