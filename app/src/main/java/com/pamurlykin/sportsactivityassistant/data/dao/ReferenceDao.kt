@@ -54,16 +54,16 @@ interface ReferenceDao {
     )
     suspend fun getComplexesForSport(sportId: Int): List<SportsComplexEntity>
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertUsers(items: List<UserEntity>)
 
     @Query("SELECT * FROM users ORDER BY id")
     suspend fun getUsers(): List<UserEntity>
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertSports(items: List<SportEntity>)
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertComplexes(items: List<SportsComplexEntity>)
 
     @Insert

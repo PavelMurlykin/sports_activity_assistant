@@ -32,10 +32,7 @@ object DemoSeed {
             listOf(
                 UserEntity(
                     id = 1,
-                    legacyExternalId = 1,
-                    username = null,
-                    firstName = null,
-                    lastName = null,
+                    displayName = null,
                     createdAt = createdAt,
                 ),
             ),

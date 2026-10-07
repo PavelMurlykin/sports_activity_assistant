@@ -36,8 +36,8 @@ import com.pamurlykin.sportsactivityassistant.data.entity.UserFavoriteComplexEnt
         RecurrenceRuleEntity::class,
         PlannedTrainingEntity::class,
     ],
-    version = 2,
-    exportSchema = false,
+    version = 3,
+    exportSchema = true,
 )
 @TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
@@ -56,11 +56,13 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "sports_activity_assistant.db",
                 )
-                    .addMigrations(MIGRATION_1_2)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
                     .build()
                     .also { instance = it }
             }
         }
+
+        val MIGRATION_2_3: Migration = LocalIdentityMigration()
 
         val MIGRATION_1_2 = object : Migration(1, 2) {
             override fun migrate(db: SupportSQLiteDatabase) {

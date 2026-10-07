@@ -54,7 +54,7 @@ interface TrainingDao {
     @Insert
     suspend fun insertTraining(item: TrainingEntity): Long
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertTrainings(items: List<TrainingEntity>)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -63,10 +63,10 @@ interface TrainingDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertFootballTraining(item: FootballTrainingEntity)
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertClimbingTrainings(items: List<ClimbingTrainingEntity>)
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertClimbingTraining(item: ClimbingTrainingEntity)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)

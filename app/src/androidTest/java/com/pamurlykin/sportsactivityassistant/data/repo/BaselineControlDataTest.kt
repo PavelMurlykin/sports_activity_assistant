@@ -4,7 +4,7 @@ import androidx.room.Room
 import androidx.test.platform.app.InstrumentationRegistry
 import com.pamurlykin.sportsactivityassistant.data.AppDatabase
 import com.pamurlykin.sportsactivityassistant.data.model.ScheduleEventState
-import com.pamurlykin.sportsactivityassistant.data.seed.DemoSeed
+import com.pamurlykin.sportsactivityassistant.data.seed.LocalSeed
 import java.time.LocalDate
 import java.time.YearMonth
 import kotlinx.coroutines.runBlocking
@@ -18,7 +18,7 @@ class BaselineControlDataTest {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val database = Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java).build()
         try {
-            DemoSeed.seed(database, includeSampleTrainings = false)
+            LocalSeed.initialize(database)
             assertEquals(1, database.referenceDao().getUsers().size)
             assertEquals(2, database.referenceDao().getSports().size)
             assertTrue(database.trainingDao().getAllTrainingBundles().isEmpty())
@@ -34,7 +34,7 @@ class BaselineControlDataTest {
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         val database = Room.inMemoryDatabaseBuilder(instrumentation.targetContext, AppDatabase::class.java).build()
         try {
-            DemoSeed.seed(database, includeSampleTrainings = false)
+            LocalSeed.initialize(database)
             val bytes = instrumentation.context.assets.open("control-backup-v2.json").use { it.readBytes() }
             val repository = AppRepository(database)
             val result = repository.importData(bytes, 1)

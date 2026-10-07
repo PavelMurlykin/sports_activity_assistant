@@ -67,8 +67,8 @@ android {
         applicationId = "com.pamurlykin.sportsactivityassistant"
         minSdk = 26
         targetSdk = 37
-        versionCode = 2
-        versionName = "1.1.0"
+        versionCode = 3
+        versionName = "1.2.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
@@ -99,6 +99,12 @@ android {
         }
     }
 }
+
+ksp {
+    arg("room.schemaLocation", layout.projectDirectory.dir("schemas").asFile.path)
+}
+
+android.sourceSets.getByName("androidTest").assets.directories.add(layout.projectDirectory.dir("schemas").asFile.path)
 
 dependencies {
     val composeBom = platform(libs.compose.bom)

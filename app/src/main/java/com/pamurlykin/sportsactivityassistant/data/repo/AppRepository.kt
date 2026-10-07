@@ -13,9 +13,6 @@ import com.pamurlykin.sportsactivityassistant.data.backup.PlannedTrainingBackup
 import com.pamurlykin.sportsactivityassistant.data.backup.RecurrenceRuleBackup
 import com.pamurlykin.sportsactivityassistant.data.backup.SportBackup
 import com.pamurlykin.sportsactivityassistant.data.backup.TrainingBackup
-import com.pamurlykin.sportsactivityassistant.data.entity.ClimbingRouteEntity
-import com.pamurlykin.sportsactivityassistant.data.entity.ClimbingTrainingEntity
-import com.pamurlykin.sportsactivityassistant.data.entity.FootballTrainingEntity
 import com.pamurlykin.sportsactivityassistant.data.entity.PlannedTrainingEntity
 import com.pamurlykin.sportsactivityassistant.data.entity.RecurrenceRuleEntity
 import com.pamurlykin.sportsactivityassistant.data.entity.SportEntity
@@ -25,8 +22,6 @@ import com.pamurlykin.sportsactivityassistant.data.entity.TrainingBundle
 import com.pamurlykin.sportsactivityassistant.data.entity.TrainingEntity
 import com.pamurlykin.sportsactivityassistant.data.model.AddCompletedTrainingInput
 import com.pamurlykin.sportsactivityassistant.data.model.AddPlannedTrainingInput
-import com.pamurlykin.sportsactivityassistant.data.model.ClimbingDifficultyCatalog
-import com.pamurlykin.sportsactivityassistant.data.model.ClimbingWorkoutType
 import com.pamurlykin.sportsactivityassistant.data.model.ComplexOptionUiModel
 import com.pamurlykin.sportsactivityassistant.data.model.PlannedTrainingStatus
 import com.pamurlykin.sportsactivityassistant.data.model.RecurrenceFrequency
@@ -40,7 +35,6 @@ import com.pamurlykin.sportsactivityassistant.data.model.SportSummaryUiModel
 import com.pamurlykin.sportsactivityassistant.data.model.SportsCenterUiModel
 import com.pamurlykin.sportsactivityassistant.data.model.StatisticsOverviewUiModel
 import com.pamurlykin.sportsactivityassistant.data.model.TrainingSessionUiModel
-import java.math.BigDecimal
 import java.time.DayOfWeek
 import java.time.Instant
 import java.time.LocalDate
@@ -49,24 +43,47 @@ import java.time.temporal.TemporalAdjusters
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import com.pamurlykin.sportsactivityassistant.data.seed.LocalSeed
+import com.pamurlykin.sportsactivityassistant.data.sport.SportModules
 
 class AppRepository(private val database: AppDatabase) {
-    fun observeStatisticsOverview(): Flow<StatisticsOverviewUiModel> = combine(
+    private val initializationLock = Mutex()
+    private var profileId: Long? = null
+
+    suspend fun localProfileId(): Long = initializationLock.withLock {
+        profileId ?: LocalSeed.initialize(database).also { profileId = it }
+    }
+
+    private fun <T> readyFlow(source: () -> Flow<T>): Flow<T> = flow {
+        localProfileId()
+        emitAll(source())
+    }
+
+    private suspend fun <T> readyTransaction(block: suspend () -> T): T {
+        localProfileId()
+        return database.withTransaction(block)
+    }
+
+    fun observeStatisticsOverview(): Flow<StatisticsOverviewUiModel> = readyFlow { combine(
         database.referenceDao().observeSports(),
         database.trainingDao().observeAllTrainingBundles(),
         StatisticsMapper::overview,
-    )
+    ) }
 
     fun observeTrainingsForSport(sportId: Int): Flow<List<TrainingSessionUiModel>> =
-        database.trainingDao().observeTrainingBundlesBySport(sportId).map { it.map(::mapTrainingBundle) }
+        readyFlow { database.trainingDao().observeTrainingBundlesBySport(sportId).map { it.map(::mapTrainingBundle) } }
 
-    fun observeSportStatistics(sportId: Int): Flow<SportStatisticsUiModel?> = combine(
+    fun observeSportStatistics(sportId: Int): Flow<SportStatisticsUiModel?> = readyFlow { combine(
         database.referenceDao().observeSports(),
         database.trainingDao().observeTrainingBundlesBySport(sportId),
-    ) { sports, bundles -> sports.firstOrNull { it.id == sportId }?.let { StatisticsMapper.sport(it, bundles) } }
+    ) { sports, bundles -> sports.firstOrNull { it.id == sportId }?.let { StatisticsMapper.sport(it, bundles) } } }
 
     fun observeSportsCenters(): Flow<List<SportsCenterUiModel>> =
-        database.referenceDao().observeComplexesWithSports().map { centers ->
+        readyFlow { database.referenceDao().observeComplexesWithSports().map { centers ->
             centers.map { item ->
                 SportsCenterUiModel(
                     id = item.complex.id,
@@ -77,18 +94,19 @@ class AppRepository(private val database: AppDatabase) {
                     },
                 )
             }
-        }
+        } }
 
-    suspend fun getComplexOptionsForSport(sportId: Int): List<ComplexOptionUiModel> =
+    suspend fun getComplexOptionsForSport(sportId: Int): List<ComplexOptionUiModel> = readyTransaction {
         database.referenceDao().getComplexesForSport(sportId).map { ComplexOptionUiModel(it.id, it.name, it.city) }
+    }
 
-    suspend fun saveSportsCenter(input: SaveSportsCenterInput) = database.withTransaction {
+    suspend fun saveSportsCenter(input: SaveSportsCenterInput) = readyTransaction {
         require(input.name.isNotBlank()) { "Введите название спортивного центра" }
         require(input.sportIds.isNotEmpty()) { "Выберите хотя бы один вид спорта" }
-        val entity = SportsComplexEntity(
-            id = input.id ?: 0,
-            name = input.name.trim(),
-            city = input.city?.trim()?.takeIf(String::isNotBlank),
+        input.sportIds.forEach { id -> SportModules.require(requireNotNull(database.referenceDao().getSport(id)) { "Вид спорта не найден" }.slug) }
+        val existing = input.id?.let { requireNotNull(database.referenceDao().getComplex(it)) { "Спортивный центр не найден" } }
+        val entity = (existing ?: SportsComplexEntity(name = input.name, city = input.city)).copy(
+            name = input.name.trim(), city = input.city?.trim()?.takeIf(String::isNotBlank),
         )
         val centerId = if (input.id == null) {
             database.referenceDao().insertComplex(entity)
@@ -103,48 +121,22 @@ class AppRepository(private val database: AppDatabase) {
         )
     }
 
-    suspend fun addCompletedTraining(userId: Long, input: AddCompletedTrainingInput): Long = database.withTransaction {
+    suspend fun addCompletedTraining(userId: Long, input: AddCompletedTrainingInput): Long = readyTransaction {
         val sport = requireNotNull(database.referenceDao().getSport(input.sportId)) { "Вид спорта не найден" }
         require(database.referenceDao().getComplexesForSport(sport.id).any { it.id == input.complexId }) {
             "Выбранный спорт недоступен в этом центре"
         }
+        require(database.referenceDao().getUsers().any { it.id == userId }) { "Локальный профиль не найден" }
+        val module = SportModules.require(sport.slug)
+        module.validate(input)
         val trainingId = database.trainingDao().insertTraining(
             TrainingEntity(userId = userId, sportId = sport.id, sportsComplexId = input.complexId, trainingDate = input.date),
         )
-        when (sport.slug) {
-            "football" -> {
-                val details = requireNotNull(input.football) { "Заполните футбольную статистику" }
-                require(listOf(details.teamGoalsScored, details.teamGoalsConceded, details.userGoalsScored, details.userAssists).all { it >= 0 })
-                require(details.distanceKm == null || details.distanceKm >= BigDecimal.ZERO)
-                require(details.playersPerTeam == null || details.playersPerTeam > 0)
-                require(details.durationMinutes == null || details.durationMinutes > 0)
-                database.trainingDao().insertFootballTraining(
-                    FootballTrainingEntity(
-                        trainingId, details.teamGoalsScored, details.teamGoalsConceded,
-                        details.userGoalsScored, details.userAssists, details.distanceKm,
-                        details.playersPerTeam, details.durationMinutes,
-                    ),
-                )
-            }
-            "climbing" -> {
-                require(input.climbingRoutes.isNotEmpty()) { "Добавьте хотя бы одну трассу" }
-                input.climbingRoutes.forEach { require(ClimbingDifficultyCatalog.isValid(it.routeDifficulty)) }
-                database.trainingDao().insertClimbingTraining(ClimbingTrainingEntity(trainingId))
-                database.trainingDao().insertClimbingRoutes(input.climbingRoutes.map {
-                    ClimbingRouteEntity(
-                        climbingTrainingId = trainingId,
-                        workoutType = it.workoutType,
-                        routeDifficulty = ClimbingDifficultyCatalog.normalize(it.routeDifficulty),
-                        isCompleted = it.isCompleted,
-                    )
-                })
-            }
-            else -> error("Для вида спорта «${sport.title}» пока не реализована форма статистики")
-        }
+        module.insertDetails(database.trainingDao(), trainingId, input)
         trainingId
     }
 
-    suspend fun getScheduleMonth(userId: Long, month: YearMonth, selectedDate: LocalDate, today: LocalDate): ScheduleMonthUiModel {
+    suspend fun getScheduleMonth(userId: Long, month: YearMonth, selectedDate: LocalDate, today: LocalDate): ScheduleMonthUiModel = readyTransaction {
         val gridStart = month.atDay(1).with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
         val gridEnd = month.atEndOfMonth().with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY))
         val sportsById = database.referenceDao().getSports().associateBy { it.id }
@@ -187,19 +179,24 @@ class AppRepository(private val database: AppDatabase) {
                 eventsByDate[date].orEmpty().sortedWith(comparator),
             )
         }.toList()
-        return ScheduleMonthUiModel(
+        ScheduleMonthUiModel(
             month, selectedDate, days,
             eventsByDate[selectedDate].orEmpty().sortedWith(comparator),
         )
     }
 
-    suspend fun addPlannedTraining(userId: Long, input: AddPlannedTrainingInput) {
+    suspend fun addPlannedTraining(userId: Long, input: AddPlannedTrainingInput) = readyTransaction {
+        val sport = requireNotNull(database.referenceDao().getSport(input.sportId)) { "Вид спорта не найден" }
+        SportModules.require(sport.slug)
+        require(database.referenceDao().getComplexesForSport(sport.id).any { it.id == input.complexId }) { "Выбранный спорт недоступен в этом центре" }
+        require(input.intervalWeeks > 0) { "Интервал должен быть положительным" }
+        require(input.endDate == null || input.endDate >= input.date) { "Дата окончания раньше начала серии" }
         if (input.repeatWeekly) {
             database.planningDao().insertRecurrenceRule(
                 RecurrenceRuleEntity(
                     userId = userId, sportId = input.sportId, sportsComplexId = input.complexId,
                     startDate = input.date, endDate = input.endDate, frequency = RecurrenceFrequency.WEEKLY,
-                    intervalWeeks = input.intervalWeeks.coerceAtLeast(1),
+                    intervalWeeks = input.intervalWeeks,
                 ),
             )
         } else {
@@ -212,7 +209,7 @@ class AppRepository(private val database: AppDatabase) {
         }
     }
 
-    suspend fun createBackup(): String = database.withTransaction {
+    suspend fun createBackup(): String = readyTransaction {
         val sports = database.referenceDao().getSports()
         val sportsById = sports.associateBy { it.id }
         val centers = database.referenceDao().getComplexesWithSports()
@@ -225,23 +222,14 @@ class AppRepository(private val database: AppDatabase) {
                 CenterBackup(item.complex.id, item.complex.name, item.complex.city, item.sports.map { it.slug })
             },
             trainings = trainings.map { bundle ->
-                TrainingBackup(
-                    legacyId = bundle.training.id,
-                    date = bundle.training.trainingDate.toString(),
-                    sportSlug = bundle.sport.slug,
-                    centerLegacyId = bundle.complex.id,
-                    centerName = bundle.complex.name,
-                    centerCity = bundle.complex.city,
-                    football = bundle.football?.let {
-                        FootballBackup(
-                            it.teamGoalsScored, it.teamGoalsConceded, it.userGoalsScored, it.userAssists,
-                            it.distanceKm?.toPlainString(), it.playersPerTeam, it.durationMinutes,
-                        )
-                    },
-                    climbingRoutes = bundle.climbing?.routes.orEmpty().map {
-                        ClimbingRouteBackup(it.workoutType.storageValue, it.routeDifficulty, it.isCompleted, it.repeatCount)
-                    },
+                val common = TrainingBackup(
+                    legacyId = bundle.training.id, date = bundle.training.trainingDate.toString(),
+                    sportSlug = bundle.sport.slug, centerLegacyId = bundle.complex.id,
+                    centerName = bundle.complex.name, centerCity = bundle.complex.city,
                 )
+                // Preserve all stored payloads, even inconsistent historical ones from old imports.
+                // Current writers cannot create mixed payloads, but export must never silently lose one.
+                SportModules.all.fold(common) { backup, module -> module.encodeDetails(bundle, backup) }
             },
             plannedTrainings = database.planningDao().getAllPlannedTrainings().mapNotNull { item ->
                 val sport = sportsById[item.sportId] ?: return@mapNotNull null
@@ -261,12 +249,13 @@ class AppRepository(private val database: AppDatabase) {
     }
 
     suspend fun importData(bytes: ByteArray, userId: Long): ImportResult {
+        localProfileId()
         val raw = BackupCodec.decodeText(bytes).trim()
         require(raw.isNotEmpty()) { "Файл пуст" }
         return if (raw.startsWith("{")) importBackup(BackupCodec.decode(raw), userId) else importFootballCsv(raw, userId)
     }
 
-    private suspend fun importFootballCsv(raw: String, userId: Long): ImportResult = database.withTransaction {
+    private suspend fun importFootballCsv(raw: String, userId: Long): ImportResult = readyTransaction {
         val rows = FootballCsvParser.parse(raw)
         val sport = requireNotNull(database.referenceDao().getSportBySlug("football")) { "Справочник футбола не найден" }
         val centers = database.referenceDao().getAllComplexes().associateBy { it.id }
@@ -294,7 +283,11 @@ class AppRepository(private val database: AppDatabase) {
         ImportResult(imported, skipped, 0, "футбольный CSV")
     }
 
-    private suspend fun importBackup(document: BackupDocument, userId: Long): ImportResult = database.withTransaction {
+    private suspend fun importBackup(document: BackupDocument, userId: Long): ImportResult = readyTransaction {
+        // Reject every unsupported reference before creating centers or writing any history.
+        (document.sports.map { it.slug } + document.centers.flatMap { it.sportSlugs } +
+            document.trainings.map { it.sportSlug } + document.plannedTrainings.map { it.sportSlug } +
+            document.recurrenceRules.map { it.sportSlug }).distinct().forEach { SportModules.require(it) }
         val referenceDao = database.referenceDao()
         val sports = referenceDao.getSports().associateBy { it.slug }.toMutableMap()
         document.sports.forEach { backup ->
@@ -322,6 +315,8 @@ class AppRepository(private val database: AppDatabase) {
             val sport = requireNotNull(sports[backup.sportSlug]) { "Неизвестный вид спорта: ${backup.sportSlug}" }
             val center = centers[centerKey(backup.centerName, backup.centerCity)]
                 ?: error("Спортивный центр «${backup.centerName}» отсутствует в копии")
+            val module = SportModules.require(sport.slug)
+            module.validate(module.decodeDetails(backup, sport.id, center.id))
             if (!existing.add(fingerprint(backup))) skipped++ else {
                 insertBackupTraining(backup, userId, sport, center)
                 imported++
@@ -332,29 +327,14 @@ class AppRepository(private val database: AppDatabase) {
     }
 
     private suspend fun insertBackupTraining(backup: TrainingBackup, userId: Long, sport: SportEntity, center: SportsComplexEntity) {
+        val module = SportModules.require(sport.slug)
+        val input = module.decodeDetails(backup, sport.id, center.id)
+        module.validate(input)
+        require(database.referenceDao().getComplexesForSport(sport.id).any { it.id == center.id }) { "Выбранный спорт недоступен в этом центре" }
         val id = database.trainingDao().insertTraining(
-            TrainingEntity(userId = userId, sportId = sport.id, sportsComplexId = center.id, trainingDate = LocalDate.parse(backup.date)),
+            TrainingEntity(userId = userId, sportId = sport.id, sportsComplexId = center.id, trainingDate = input.date),
         )
-        backup.football?.let {
-            database.trainingDao().insertFootballTraining(
-                FootballTrainingEntity(
-                    id, it.teamGoalsScored, it.teamGoalsConceded, it.userGoalsScored,
-                    it.userAssists, it.distanceKm?.toBigDecimal(), it.playersPerTeam, it.durationMinutes,
-                ),
-            )
-        }
-        if (backup.climbingRoutes.isNotEmpty()) {
-            database.trainingDao().insertClimbingTraining(ClimbingTrainingEntity(id))
-            database.trainingDao().insertClimbingRoutes(backup.climbingRoutes.map {
-                ClimbingRouteEntity(
-                    climbingTrainingId = id,
-                    workoutType = ClimbingWorkoutType.fromStorage(it.workoutType),
-                    routeDifficulty = ClimbingDifficultyCatalog.normalize(it.routeDifficulty),
-                    isCompleted = it.completed,
-                    repeatCount = it.repeatCount.coerceAtLeast(1),
-                )
-            })
-        }
+        module.insertDetails(database.trainingDao(), id, input)
     }
 
     private suspend fun importPlans(
@@ -400,20 +380,9 @@ class AppRepository(private val database: AppDatabase) {
         details = trainingDetails(bundle),
     )
 
-    private fun trainingDetails(bundle: TrainingBundle): List<String> = buildList {
-        bundle.football?.let {
-            add("Счёт: ${it.teamGoalsScored}:${it.teamGoalsConceded}")
-            add("Личные голы: ${it.userGoalsScored}")
-            add("Голевые передачи: ${it.userAssists}")
-            it.distanceKm?.let { value -> add("Дистанция: ${value.stripTrailingZeros().toPlainString()} км") }
-            it.playersPerTeam?.let { value -> add("Игроков в команде: $value") }
-            it.durationMinutes?.let { value -> add("Время игры: $value мин") }
-        }
-        bundle.climbing?.routes?.forEach {
-            val count = if (it.repeatCount > 1) " × ${it.repeatCount}" else ""
-            add("${it.workoutType.title} · ${it.routeDifficulty}$count · ${if (it.isCompleted) "пройдена" else "не пройдена"}")
-        }
-    }
+    private fun trainingDetails(bundle: TrainingBundle): List<String> =
+        SportModules.find(bundle.sport.slug)?.details(bundle)
+            ?: listOf("Историческая запись: этот вид спорта не поддерживается текущей версией")
 
     private fun fingerprint(bundle: TrainingBundle): String = fingerprint(
         TrainingBackup(

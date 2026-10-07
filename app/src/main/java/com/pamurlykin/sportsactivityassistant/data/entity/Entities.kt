@@ -14,18 +14,14 @@ import com.pamurlykin.sportsactivityassistant.data.model.RecurrenceFrequency
 import java.math.BigDecimal
 import java.time.Instant
 import java.time.LocalDate
+import java.util.UUID
 
 @Entity(
     tableName = "users",
-    indices = [Index(value = ["telegram_user_id"], unique = true)],
 )
 data class UserEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
-    // Kept only for the existing database schema; removed by a later migration.
-    @ColumnInfo(name = "telegram_user_id") val legacyExternalId: Long,
-    val username: String?,
-    @ColumnInfo(name = "first_name") val firstName: String?,
-    @ColumnInfo(name = "last_name") val lastName: String?,
+    @ColumnInfo(name = "display_name") val displayName: String? = null,
     @ColumnInfo(name = "created_at") val createdAt: Instant = Instant.now(),
 )
 
@@ -41,13 +37,14 @@ data class SportEntity(
 
 @Entity(
     tableName = "sports_complexes",
-    indices = [Index(value = ["name", "city"], unique = true)],
+    indices = [Index(value = ["name", "city"], unique = true), Index(value = ["public_id"], unique = true)],
 )
 data class SportsComplexEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val name: String,
     val city: String?,
     @ColumnInfo(name = "created_at") val createdAt: Instant = Instant.now(),
+    @ColumnInfo(name = "public_id", defaultValue = "''") val publicId: String = UUID.randomUUID().toString(),
 )
 
 @Entity(
@@ -134,6 +131,7 @@ data class UserFavoriteComplexEntity(
         Index(value = ["sport_id"]),
         Index(value = ["sports_complex_id"]),
         Index(value = ["user_id", "training_date"]),
+        Index(value = ["public_id"], unique = true),
     ],
 )
 data class TrainingEntity(
@@ -143,6 +141,7 @@ data class TrainingEntity(
     @ColumnInfo(name = "sports_complex_id") val sportsComplexId: Long,
     @ColumnInfo(name = "training_date") val trainingDate: LocalDate,
     @ColumnInfo(name = "created_at") val createdAt: Instant = Instant.now(),
+    @ColumnInfo(name = "public_id", defaultValue = "''") val publicId: String = UUID.randomUUID().toString(),
 )
 
 @Entity(
@@ -198,7 +197,7 @@ data class ClimbingTrainingEntity(
             onDelete = ForeignKey.CASCADE,
         ),
     ],
-    indices = [Index(value = ["climbing_training_id"])],
+    indices = [Index(value = ["climbing_training_id"]), Index(value = ["public_id"], unique = true)],
 )
 data class ClimbingRouteEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -207,6 +206,7 @@ data class ClimbingRouteEntity(
     @ColumnInfo(name = "route_difficulty") val routeDifficulty: String,
     @ColumnInfo(name = "is_completed") val isCompleted: Boolean,
     @ColumnInfo(name = "repeat_count") val repeatCount: Int = 1,
+    @ColumnInfo(name = "public_id", defaultValue = "''") val publicId: String = UUID.randomUUID().toString(),
 )
 
 @Entity(
@@ -235,6 +235,7 @@ data class ClimbingRouteEntity(
         Index(value = ["user_id"]),
         Index(value = ["sport_id"]),
         Index(value = ["sports_complex_id"]),
+        Index(value = ["public_id"], unique = true),
     ],
 )
 data class RecurrenceRuleEntity(
@@ -247,6 +248,7 @@ data class RecurrenceRuleEntity(
     val frequency: RecurrenceFrequency,
     @ColumnInfo(name = "interval_weeks") val intervalWeeks: Int,
     @ColumnInfo(name = "created_at") val createdAt: Instant = Instant.now(),
+    @ColumnInfo(name = "public_id", defaultValue = "''") val publicId: String = UUID.randomUUID().toString(),
 )
 
 @Entity(
@@ -283,6 +285,7 @@ data class RecurrenceRuleEntity(
         Index(value = ["sports_complex_id"]),
         Index(value = ["planned_date"]),
         Index(value = ["recurrence_rule_id"]),
+        Index(value = ["public_id"], unique = true),
     ],
 )
 data class PlannedTrainingEntity(
@@ -294,6 +297,7 @@ data class PlannedTrainingEntity(
     @ColumnInfo(name = "recurrence_rule_id") val recurrenceRuleId: Long? = null,
     val status: PlannedTrainingStatus = PlannedTrainingStatus.PLANNED,
     @ColumnInfo(name = "created_at") val createdAt: Instant = Instant.now(),
+    @ColumnInfo(name = "public_id", defaultValue = "''") val publicId: String = UUID.randomUUID().toString(),
 )
 
 data class ClimbingTrainingWithRoutes(

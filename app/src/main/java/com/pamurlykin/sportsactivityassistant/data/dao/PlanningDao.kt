@@ -43,13 +43,13 @@ interface PlanningDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertPlannedTraining(item: PlannedTrainingEntity): Long
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertRecurrenceRule(item: RecurrenceRuleEntity): Long
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertPlannedTrainings(items: List<PlannedTrainingEntity>)
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertRecurrenceRules(items: List<RecurrenceRuleEntity>)
 
     @Query("SELECT * FROM planned_trainings ORDER BY planned_date, id")

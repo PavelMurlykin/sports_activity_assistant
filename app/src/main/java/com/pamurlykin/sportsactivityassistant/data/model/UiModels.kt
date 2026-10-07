@@ -150,6 +150,7 @@ data class ClimbingRouteInput(
     val workoutType: ClimbingWorkoutType,
     val routeDifficulty: String,
     val isCompleted: Boolean,
+    val repeatCount: Int = 1,
 )
 
 data class AddCompletedTrainingInput(

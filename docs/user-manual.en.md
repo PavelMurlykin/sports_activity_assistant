@@ -8,11 +8,15 @@ Install the debug APK from `app/build/outputs/apk/debug/app-debug.apk`, built as
 
 Before uninstalling the app or clearing its data, save a backup: both actions remove the local database. Do not install test builds over your only copy of important history without first saving a file.
 
+Upgrading to the current database schema (version 3) preserves local keys, workouts, historical route repeat counts, centers, plans and their relationships. Inherited external profile identifiers are removed; an existing local name is retained. Reference initialization completes before data reads and writes without overwriting existing records. Broken references abort the migration; the database is not automatically recreated.
+
 ## Recording a workout
 
 On «Расписание» (Schedule), press the add button and select «Записать результат» (Record result). Choose a sport, date and sports center that offers that sport. The current date field uses `YYYY-MM-DD`.
 
 For football, enter team goals scored/conceded, personal goals and assists. Zero results are valid. Optionally enter distance in kilometers, players per team and game duration in minutes; optional fields may be left empty. Distance accepts a decimal point or comma. Negative values are invalid; players and duration must be positive when supplied.
+
+Personal goals and assists, each considered separately, cannot exceed the team's goals scored. A football record cannot contain climbing routes, and a climbing record cannot contain football metrics. The common record and all sport details are saved together: an error does not leave an incomplete workout. Two identical workouts on the same day can be recorded manually; each has its own stable identifier within the database.
 
 For climbing, add the required number of routes. Select a discipline, grade and completed/not-completed result for each route. All disciplines currently use one provisional `3`–`9C` catalog; it has not been verified as official and does not distinguish lead and bouldering scales. Save the workout. Its details appear in the calendar and statistics.
 
@@ -48,6 +52,8 @@ user_id;training_date;sports_complex_id;team_goals_scored;team_goals_conceded;us
 The center ID must already exist in the app. Initial centers: `1` — «Энергия Высоты» (climbing), `2` — «Фабрика Футбола» (football), `3` — «Арена на горе» (football). CSV does not yet import players per team, duration or climbing data. `user_id` is only a field in the older file format; data always goes into the local profile. Do not combine different people's histories in an imported file.
 
 Import merges records with existing data without clearing the database. Content-identical workouts are skipped, which may collapse two real identical workouts. There is no preview or unknown-center mapping yet. JSON does not preserve a planned occurrence's association with a series and does not guarantee full restoration of every state. Keep the source file and check workout counts, details and calendar after import. An import-success message does not replace verification of restored data.
+
+An unsupported sport, mixed sport details, an unknown discipline or an invalid attempt count in an imported workout causes an error without partially saving that file. Unsupported historical sports already in the database are not deleted: common information remains viewable, but new results cannot be added for them. Version 2 JSON does not yet transfer the new stable identifiers; content-based deduplication limitations still apply. The initial numeric center IDs in the example apply only to a fresh installation and may differ after migration.
 
 ## Known limitations
 
