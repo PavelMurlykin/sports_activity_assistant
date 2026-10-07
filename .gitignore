@@ -34,3 +34,4 @@ build/
 app/build/
 .idea/
 captures/
+.local-testing/

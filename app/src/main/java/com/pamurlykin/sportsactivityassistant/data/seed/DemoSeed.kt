@@ -32,9 +32,9 @@ object DemoSeed {
             listOf(
                 UserEntity(
                     id = 1,
-                    telegramUserId = 1000001,
-                    username = "pamurlykin",
-                    firstName = "Pavel",
+                    legacyExternalId = 1,
+                    username = null,
+                    firstName = null,
                     lastName = null,
                     createdAt = createdAt,
                 ),

@@ -50,7 +50,7 @@ class RepositoryDataRoundTripTest {
     }
 
     @Test
-    fun telegramCsvImportIsIdempotent() = runBlocking {
+    fun footballCsvImportIsIdempotent() = runBlocking {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val database = Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java).build()
         try {

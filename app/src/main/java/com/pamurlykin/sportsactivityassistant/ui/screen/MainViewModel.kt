@@ -70,7 +70,7 @@ class MainViewModel(
 
     fun addPlannedTraining(input: AddPlannedTrainingInput) {
         viewModelScope.launch {
-            runCatching { repository.addPlannedTraining(DEMO_USER_ID, input) }
+            runCatching { repository.addPlannedTraining(LOCAL_USER_ID, input) }
                 .onFailure { showError(it) }
                 .getOrNull() ?: return@launch
             val month = if (YearMonth.from(input.date) != visibleMonth.value) {
@@ -80,13 +80,13 @@ class MainViewModel(
                 visibleMonth.value
             }
             selectedDate.value = input.date
-            _scheduleState.value = repository.getScheduleMonth(DEMO_USER_ID, month, selectedDate.value, today)
+            _scheduleState.value = repository.getScheduleMonth(LOCAL_USER_ID, month, selectedDate.value, today)
         }
     }
 
     fun addCompletedTraining(input: AddCompletedTrainingInput) {
         viewModelScope.launch {
-            runCatching { repository.addCompletedTraining(DEMO_USER_ID, input) }
+            runCatching { repository.addCompletedTraining(LOCAL_USER_ID, input) }
                 .onFailure { showError(it) }
                 .getOrNull() ?: return@launch
             visibleMonth.value = YearMonth.from(input.date)
@@ -117,7 +117,7 @@ class MainViewModel(
     fun importData(bytes: ByteArray) {
         viewModelScope.launch {
             _dataOperationState.value = DataOperationUiState(inProgress = true, message = "Импорт данных…")
-            runCatching { repository.importData(bytes, DEMO_USER_ID) }
+            runCatching { repository.importData(bytes, LOCAL_USER_ID) }
                 .onSuccess { result ->
                     _dataOperationState.value = DataOperationUiState(
                         message = "Импорт завершён: ${result.importedTrainings} добавлено, ${result.skippedTrainings} пропущено (${result.source})",
@@ -145,7 +145,7 @@ class MainViewModel(
     private fun refreshSchedule() {
         viewModelScope.launch {
             _scheduleState.value = repository.getScheduleMonth(
-                userId = DEMO_USER_ID,
+                userId = LOCAL_USER_ID,
                 month = visibleMonth.value,
                 selectedDate = normalizeSelectedDate(selectedDate.value, visibleMonth.value),
                 today = today,
@@ -169,7 +169,7 @@ class MainViewModel(
     }
 
     companion object {
-        private const val DEMO_USER_ID = 1L
+        private const val LOCAL_USER_ID = 1L
 
         fun provideFactory(repository: AppRepository): ViewModelProvider.Factory {
             return object : ViewModelProvider.Factory {

@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 2,
+  "exportedAt": "2026-10-07T09:00:00Z",
+  "sports": [
+    { "slug": "football", "title": "Футбол" },
+    { "slug": "climbing", "title": "Скалолазание" }
+  ],
+  "centers": [
+    { "name": "Контрольное поле", "city": null, "sportSlugs": ["football"] },
+    { "name": "Контрольный скалодром", "city": null, "sportSlugs": ["climbing"] }
+  ],
+  "trainings": [
+    {
+      "date": "2026-10-01", "sportSlug": "football", "centerName": "Контрольное поле",
+      "football": {
+        "teamGoalsScored": 2, "teamGoalsConceded": 1, "userGoalsScored": 1, "userAssists": 1,
+        "distanceKm": "4.0", "playersPerTeam": 5, "durationMinutes": 40
+      }
+    },
+    {
+      "date": "2026-10-02", "sportSlug": "football", "centerName": "Контрольное поле",
+      "football": {
+        "teamGoalsScored": 0, "teamGoalsConceded": 0, "userGoalsScored": 0, "userAssists": 0
+      }
+    },
+    {
+      "date": "2026-10-03", "sportSlug": "climbing", "centerName": "Контрольный скалодром",
+      "climbingRoutes": [
+        { "workoutType": "difficulty", "routeDifficulty": "6A", "completed": true },
+        { "workoutType": "difficulty", "routeDifficulty": "6B", "completed": false },
+        { "workoutType": "difficulty", "routeDifficulty": "6A+", "completed": true }
+      ]
+    }
+  ],
+  "plannedTrainings": [
+    { "date": "2026-10-15", "sportSlug": "football", "centerName": "Контрольное поле", "status": "planned" }
+  ],
+  "recurrenceRules": [
+    {
+      "startDate": "2026-10-07", "endDate": "2026-10-21", "intervalWeeks": 1,
+      "sportSlug": "climbing", "centerName": "Контрольный скалодром"
+    }
+  ]
+}

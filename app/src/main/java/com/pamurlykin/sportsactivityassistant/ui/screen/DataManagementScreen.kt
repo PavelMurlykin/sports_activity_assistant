@@ -85,7 +85,8 @@ fun DataManagementScreen(viewModel: MainViewModel) {
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
                         Text("Резервная копия", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                        Text("JSON содержит центры, тренировки, спортивную статистику и планы календаря.")
+                        Text("Данные хранятся только на устройстве. JSON содержит центры, тренировки, спортивную статистику и планы календаря. Автоматический системный бэкап отключён.")
+                        Text("Файл не зашифрован. Для работы без интернета выбирайте хранилище устройства в системном диалоге.")
                         Button(
                             onClick = { exportLauncher.launch("sports-activity-${LocalDate.now()}.json") },
                             modifier = Modifier.fillMaxWidth(),
@@ -100,7 +101,7 @@ fun DataManagementScreen(viewModel: MainViewModel) {
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
                         Text("Импорт", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                        Text("Поддерживаются резервные копии JSON и исторический CSV Telegram-бота. Совпадающие тренировки пропускаются.")
+                        Text("Поддерживаются резервные копии JSON и футбольная история из CSV. Совпадающие по содержанию тренировки пропускаются. Интернет и внешний аккаунт не нужны.")
                         OutlinedButton(
                             onClick = { importLauncher.launch(arrayOf("application/json", "text/csv", "text/*", "application/octet-stream")) },
                             modifier = Modifier.fillMaxWidth(),

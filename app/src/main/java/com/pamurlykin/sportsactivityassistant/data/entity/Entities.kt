@@ -21,7 +21,8 @@ import java.time.LocalDate
 )
 data class UserEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
-    @ColumnInfo(name = "telegram_user_id") val telegramUserId: Long,
+    // Kept only for the existing database schema; removed by a later migration.
+    @ColumnInfo(name = "telegram_user_id") val legacyExternalId: Long,
     val username: String?,
     @ColumnInfo(name = "first_name") val firstName: String?,
     @ColumnInfo(name = "last_name") val lastName: String?,

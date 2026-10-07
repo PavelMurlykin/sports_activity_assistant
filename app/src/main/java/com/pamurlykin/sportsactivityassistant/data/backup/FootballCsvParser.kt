@@ -4,7 +4,7 @@ import java.math.BigDecimal
 import java.time.LocalDate
 
 data class LegacyFootballCsvRow(
-    val telegramUserId: Long,
+    val sourceUserId: Long,
     val trainingDate: LocalDate,
     val sportsComplexId: Long,
     val teamGoalsScored: Int,
@@ -46,7 +46,7 @@ object FootballCsvParser {
             }
 
             LegacyFootballCsvRow(
-                telegramUserId = required("user_id").toLong().also { require(it > 0) },
+                sourceUserId = required("user_id").toLong().also { require(it > 0) },
                 trainingDate = LocalDate.parse(required("training_date")),
                 sportsComplexId = required("sports_complex_id").toLong().also { require(it > 0) },
                 teamGoalsScored = nonNegative("team_goals_scored"),

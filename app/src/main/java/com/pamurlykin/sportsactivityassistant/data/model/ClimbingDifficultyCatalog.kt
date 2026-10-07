@@ -1,8 +1,8 @@
 package com.pamurlykin.sportsactivityassistant.data.model
 
 /**
- * French grading scale used by the original bot and commonly used for sport
- * climbing routes. Values are ordered so aggregate statistics can determine
+ * Provisional French grading scale for locally recorded sport climbing routes.
+ * Values are ordered so aggregate statistics can determine
  * the hardest completed route without parsing display strings.
  */
 object ClimbingDifficultyCatalog {

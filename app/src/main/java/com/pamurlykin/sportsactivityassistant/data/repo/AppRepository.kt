@@ -291,7 +291,7 @@ class AppRepository(private val database: AppDatabase) {
                 imported++
             }
         }
-        ImportResult(imported, skipped, 0, "CSV Telegram-бота")
+        ImportResult(imported, skipped, 0, "футбольный CSV")
     }
 
     private suspend fun importBackup(document: BackupDocument, userId: Long): ImportResult = database.withTransaction {

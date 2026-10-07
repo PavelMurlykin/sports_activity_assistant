@@ -7,7 +7,7 @@ import org.junit.Test
 
 class ClimbingDifficultyCatalogTest {
     @Test
-    fun catalogContainsOriginalBotGradesAndExtendedScale() {
+    fun catalogContainsProvisionalGradesAndExtendedScale() {
         assertTrue(ClimbingDifficultyCatalog.isValid("6a+"))
         assertTrue(ClimbingDifficultyCatalog.isValid("9C"))
         assertFalse(ClimbingDifficultyCatalog.isValid("9C+"))

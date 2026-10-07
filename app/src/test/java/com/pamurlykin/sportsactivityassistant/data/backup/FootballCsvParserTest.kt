@@ -8,7 +8,7 @@ import org.junit.Test
 
 class FootballCsvParserTest {
     @Test
-    fun parsesTelegramBotSemicolonCsv() {
+    fun parsesFootballHistorySemicolonCsv() {
         val csv = """
             user_id;training_date;sports_complex_id;team_goals_scored;team_goals_conceded;user_goals_scored;user_assists;distance_km
             1000001;2025-12-14;2;5;3;2;1;7,35
