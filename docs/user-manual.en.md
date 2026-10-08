@@ -8,7 +8,7 @@ Install the debug APK from `app/build/outputs/apk/debug/app-debug.apk`, built as
 
 Before uninstalling the app or clearing its data, save a backup: both actions remove the local database. Do not install test builds over your only copy of important history without first saving a file.
 
-Upgrading to the current database schema (version 5) preserves local keys, UUIDs, workouts, historical route repeat counts, centers, plans and their relationships. Inherited external profile identifiers are removed; an existing local name is retained. Reference initialization completes before data reads and writes without overwriting existing records. Broken references abort the migration; the database is not automatically recreated.
+Upgrading to the current database schema (version 6) preserves local keys, UUIDs, workouts, historical route repeat counts, centers, plans and their relationships. Inherited external profile identifiers are removed; an existing local name is retained. Reference initialization completes before data reads and writes without overwriting existing records. Broken references abort the migration; the database is not automatically recreated.
 
 ## Recording a workout
 
@@ -38,15 +38,21 @@ Football: games, wins/draws/losses, total team score, personal goals and assists
 
 ## Sports centers
 
-On «Центры» (Centers), add a center with its name, optional city and available sports. Existing centers can be edited. The workout form filters centers by the selected sport. Center archiving and deletion are not available yet.
+On «Центры» (Centers), press «+» and enter a name, optional city and one or more available sports. Name and city are limited to 200 characters each. For new centers, whitespace including non-breaking spaces is collapsed to one space and trimmed; an empty city is stored as absent. Duplicate matching ignores case and uses Unicode normalization. You cannot create the same name/city again, even if the existing center is archived; the same name in different cities is allowed.
+
+Press «Изменить» (Edit) to change the name, city or sports. UUID and original creation time are retained. On failure the form remains open with your entries; repeated save taps are blocked. Long names wrap and the sports list/form scrolls. In the directory, center fields and selected sports survive rotation. Migration does not merge similar historical centers: their sports can be edited or they can be archived while retaining their original name/city; renaming to a conflicting name requires a different name or city.
+
+«В архив» (Archive) requires confirmation. The «Архив» tab shows closed centers; «Вернуть» (Restore) makes a center available again. Archiving or removing an offered sport prevents new workouts and plans for that combination without deleting history, favorites, plans or series. Archiving does not cancel existing events. Center deletion is not provided.
+
+Both training forms show only active centers offering the selected sport. Changing the sport or directory clears an incompatible selection, selecting the first available center or offering «Создать центр» (Create center). Creation from the form preselects the current sport without closing the training form. An empty list explains that you should add a center or restore one from the archive. The nested center-creation draft is not yet protected when rotating the training form; save the center before rotating.
 
 ## Import and backup
 
-On «Данные» (Data), press «Сохранить копию в файл» (Save backup to file) and choose a local folder in Android's system dialog. Version 4 JSON preserves UUIDs and creation times for profiles, centers, workouts, routes, plans and series; sport details, statuses and plan-to-series links; favorite centers and confirmed legacy-file mappings. The snapshot is consistent, and the written file is read back and checked. Only successful verification produces «Копия сохранена и проверена чтением файла» (Backup saved and verified by reading the file). Canceling the dialog is not success. A failed file may be incomplete: do not replace your previous verified copy with it.
+On «Данные» (Data), press «Сохранить копию в файл» (Save backup to file) and choose a local folder in Android's system dialog. Version 5 JSON preserves UUIDs and creation times for profiles, centers (including archive state), workouts, routes, plans and series; sport details, statuses and plan-to-series links; favorite centers and confirmed legacy-file mappings. The snapshot is consistent, and the written file is read back and checked. Only successful verification produces «Копия сохранена и проверена чтением файла» (Backup saved and verified by reading the file). Canceling the dialog is not success. A failed file may be incomplete: do not replace your previous verified copy with it.
 
 The file is not encrypted. The app does not upload it; cloud entries in the system dialog belong to third-party apps. Choose device storage for fully local operation. Broad storage permissions are not required. Import and export are limited to 16 MiB and 100000 objects in total, including routes and reference records.
 
-To import, press «Выбрать файл» (Choose file). Supported formats are JSON 1–4 with valid UTF-8 and football CSV with UTF-8/BOM or Windows-1251 encoding and `;` or `,` delimiters. CSV supports quoted fields, doubled quotes and embedded newlines. Example including optional fields:
+To import, press «Выбрать файл» (Choose file). Supported formats are JSON 1–5 with valid UTF-8 and football CSV with UTF-8/BOM or Windows-1251 encoding and `;` or `,` delimiters. CSV supports quoted fields, doubled quotes and embedded newlines. Example including optional fields:
 
 ```csv
 user_id;training_date;sports_complex_id;team_goals_scored;team_goals_conceded;user_goals_scored;user_assists;distance_km;players_per_team;duration_minutes
@@ -56,7 +62,7 @@ user_id;training_date;sports_complex_id;team_goals_scored;team_goals_conceded;us
 
 Distance, players-per-team and duration columns may be omitted; empty values remain absent. With a comma delimiter, quote a number containing a decimal comma. Climbing CSV is not supported yet; multiple routes in one workout are transferred through JSON.
 
-«Проверка импорта» (Import review) first shows format, counts, errors, warnings and center mappings. A CSV center number is only a hint, not a reliable ID on a new installation: confirm an existing center or creation of a historical center. Mapping to a user center preserves its name, creation time and current offerings. Historical workouts may refer to a sport no longer offered there; new workouts and plans still require the sport to be available.
+«Проверка импорта» (Import review) first shows format, counts, errors, warnings and center mappings. A CSV center number is only a hint, not a reliable ID on a new installation: confirm an existing center or creation of a historical center. Mapping to a user center preserves its name, creation time, archive state and current offerings. JSON 1–4 had no archive flag: newly imported centers are active, but a previously archived local center is not reopened. A different archive state for the same UUID in JSON 5 requires confirmation to keep the local record. Similar historical JSON 4/5 centers with different UUIDs may be restored separately with a warning; ambiguous names are not automatically matched. Historical workouts may refer to a sport no longer offered there; new workouts and plans still require the sport to be available.
 
 If the file contains several `user_id` values or local profiles, choose one for the current personal history or «Сохранить все отдельно» (Keep all separately). In the latter case, the primary profile corresponds to current personal statistics; other profiles are retained separately and included in the next backup. Their results are not mixed into the current calendar or statistics; profile switching is not available in the UI yet. `user_id` is only a file field, not an external account. Old JSON did not contain owners, so original user separation cannot be recovered from it.
 

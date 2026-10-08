@@ -22,14 +22,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.pamurlykin.sportsactivityassistant.data.model.AddPlannedTrainingInput
-import com.pamurlykin.sportsactivityassistant.data.model.ComplexOptionUiModel
+import com.pamurlykin.sportsactivityassistant.data.model.SportsCenterUiModel
+import com.pamurlykin.sportsactivityassistant.data.model.SaveSportsCenterInput
 import com.pamurlykin.sportsactivityassistant.data.model.SportSummaryUiModel
 import java.time.LocalDate
 
@@ -37,9 +37,10 @@ import java.time.LocalDate
 @Composable
 fun AddPlannedTrainingDialog(
     sports: List<SportSummaryUiModel>,
-    onLoadComplexes: suspend (Int) -> List<ComplexOptionUiModel>,
+    centers: List<SportsCenterUiModel>,
     onDismiss: () -> Unit,
     onSave: (AddPlannedTrainingInput) -> Unit,
+    onSaveCenter: (suspend (SaveSportsCenterInput) -> Long)? = null,
 ) {
     val initialSportId = sports.firstOrNull()?.id ?: 0
     var selectedSportId by rememberSaveable { mutableIntStateOf(initialSportId) }
@@ -56,15 +57,7 @@ fun AddPlannedTrainingDialog(
         }
     }
 
-    val complexes by produceState(initialValue = emptyList<ComplexOptionUiModel>(), selectedSportId) {
-        value = if (selectedSportId == 0) emptyList() else onLoadComplexes(selectedSportId)
-    }
-
-    LaunchedEffect(complexes) {
-        if (complexes.isNotEmpty() && complexes.none { it.id == selectedComplexId }) {
-            selectedComplexId = complexes.first().id
-        }
-    }
+    val complexes = centers.filter { !it.isArchived && it.sports.any { sport -> sport.id == selectedSportId } }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -79,7 +72,7 @@ fun AddPlannedTrainingDialog(
                         errorText = "Выберите вид спорта"
                         return@TextButton
                     }
-                    if (selectedComplexId == 0L) {
+                    if (complexes.none { it.id == selectedComplexId }) {
                         errorText = "Выберите спортивный комплекс"
                         return@TextButton
                     }
@@ -129,21 +122,8 @@ fun AddPlannedTrainingDialog(
                 modifier = Modifier.verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(14.dp),
             ) {
-                DropdownSelector(
-                    label = "Вид спорта",
-                    selectedText = sports.firstOrNull { it.id == selectedSportId }?.title ?: "Выберите спорт",
-                    options = sports,
-                    optionLabel = { it.title },
-                    onSelected = { selectedSportId = it.id },
-                )
-
-                DropdownSelector(
-                    label = "Спортивный комплекс",
-                    selectedText = complexes.firstOrNull { it.id == selectedComplexId }?.fullTitle ?: "Выберите комплекс",
-                    options = complexes,
-                    optionLabel = { it.fullTitle },
-                    onSelected = { selectedComplexId = it.id },
-                )
+                TrainingCenterSelector(sports, centers, selectedSportId, selectedComplexId,
+                    { selectedSportId = it }, { selectedComplexId = it }, onSaveCenter)
 
                 OutlinedTextField(
                     value = dateText,

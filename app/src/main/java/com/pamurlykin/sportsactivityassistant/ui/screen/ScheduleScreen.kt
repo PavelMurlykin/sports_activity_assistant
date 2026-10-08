@@ -41,6 +41,7 @@ fun ScheduleScreen(
 ) {
     val scheduleState by viewModel.scheduleState.collectAsState()
     val statisticsState by viewModel.statisticsState.collectAsState()
+    val centers by viewModel.sportsCenters.collectAsState()
     val operationState by viewModel.dataOperationState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     var dialog by remember { mutableStateOf<TrainingDialog?>(null) }
@@ -65,7 +66,8 @@ fun ScheduleScreen(
     if (dialog == TrainingDialog.PLANNED) {
         AddPlannedTrainingDialog(
             sports = statisticsState.sports,
-            onLoadComplexes = viewModel::loadComplexesForSport,
+            centers = centers,
+            onSaveCenter = viewModel::saveSportsCenter,
             onDismiss = { dialog = null },
             onSave = {
                 viewModel.addPlannedTraining(it)
@@ -77,7 +79,8 @@ fun ScheduleScreen(
         AddCompletedTrainingDialog(
             sports = statisticsState.sports,
             initialDate = scheduleState?.selectedDate ?: java.time.LocalDate.now(),
-            onLoadComplexes = viewModel::loadComplexesForSport,
+            centers = centers,
+            onSaveCenter = viewModel::saveSportsCenter,
             onDismiss = { dialog = null },
             onSave = {
                 viewModel.addCompletedTraining(it)

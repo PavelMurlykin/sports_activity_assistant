@@ -90,6 +90,7 @@ data class SportsCenterUiModel(
     val name: String,
     val city: String?,
     val sports: List<SportSummaryUiModel>,
+    val isArchived: Boolean = false,
 ) {
     val fullTitle: String = listOfNotNull(name, city?.takeIf(String::isNotBlank)).joinToString(", ")
 }

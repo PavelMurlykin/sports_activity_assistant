@@ -56,7 +56,7 @@ interface ReferenceDao {
         FROM sports_complexes
         INNER JOIN sports_complex_sports
             ON sports_complex_sports.sports_complex_id = sports_complexes.id
-        WHERE sports_complex_sports.sport_id = :sportId
+        WHERE sports_complex_sports.sport_id = :sportId AND sports_complexes.is_archived = 0
         ORDER BY sports_complexes.name, sports_complexes.city
         """,
     )

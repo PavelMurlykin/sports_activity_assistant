@@ -7,7 +7,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import com.pamurlykin.sportsactivityassistant.data.model.AddCompletedTrainingInput
-import com.pamurlykin.sportsactivityassistant.data.model.ComplexOptionUiModel
+import com.pamurlykin.sportsactivityassistant.data.model.SportsCenterUiModel
 import com.pamurlykin.sportsactivityassistant.data.model.SportSummaryUiModel
 import com.pamurlykin.sportsactivityassistant.data.sport.SportModules
 import com.pamurlykin.sportsactivityassistant.ui.components.AddCompletedTrainingDialog
@@ -29,7 +29,7 @@ class SportEditorsTest {
         var saved: AddCompletedTrainingInput? = null
         compose.setContent { MaterialTheme {
             AddCompletedTrainingDialog(listOf(SportSummaryUiModel(5, "football", "Футбол", 0)),
-                LocalDate.parse("2026-10-01"), { listOf(ComplexOptionUiModel(7, "Центр", null)) }, {}, { saved = it })
+                LocalDate.parse("2026-10-01"), listOf(SportsCenterUiModel(7, "Центр", null, listOf(SportSummaryUiModel(5, "football", "Футбол", 0)))), {}, { saved = it })
         } }
         compose.waitForIdle()
         compose.onNodeWithText("Сохранить").performClick()
@@ -47,7 +47,7 @@ class SportEditorsTest {
         var saved: AddCompletedTrainingInput? = null
         compose.setContent { MaterialTheme {
             AddCompletedTrainingDialog(listOf(SportSummaryUiModel(6, "climbing", "Скалолазание", 0)),
-                LocalDate.parse("2026-10-01"), { listOf(ComplexOptionUiModel(8, "Скалодром", null)) }, {}, { saved = it })
+                LocalDate.parse("2026-10-01"), listOf(SportsCenterUiModel(8, "Скалодром", null, listOf(SportSummaryUiModel(6, "climbing", "Скалолазание", 0)))), {}, { saved = it })
         } }
         compose.waitForIdle()
         compose.onNodeWithText("+ Добавить трассу").performScrollTo().performClick()
@@ -63,7 +63,7 @@ class SportEditorsTest {
         var saved: AddCompletedTrainingInput? = null
         compose.setContent { MaterialTheme {
             AddCompletedTrainingDialog(listOf(SportSummaryUiModel(6, "climbing", "Скалолазание", 0)),
-                LocalDate.parse("2026-10-07"), { listOf(ComplexOptionUiModel(8, "Скалодром", null)) }, {}, { saved = it })
+                LocalDate.parse("2026-10-07"), listOf(SportsCenterUiModel(8, "Скалодром", null, listOf(SportSummaryUiModel(6, "climbing", "Скалолазание", 0)))), {}, { saved = it })
         } }
         compose.waitForIdle()
         compose.onNodeWithTag("route-0-type").performScrollTo().performClick()
@@ -90,7 +90,7 @@ class SportEditorsTest {
         var saved: AddCompletedTrainingInput? = null
         compose.setContent { MaterialTheme {
             AddCompletedTrainingDialog(listOf(SportSummaryUiModel(6, "climbing", "Скалолазание", 0)),
-                LocalDate.parse("2026-10-07"), { listOf(ComplexOptionUiModel(8, "Скалодром", null)) }, {}, { saved = it })
+                LocalDate.parse("2026-10-07"), listOf(SportsCenterUiModel(8, "Скалодром", null, listOf(SportSummaryUiModel(6, "climbing", "Скалолазание", 0)))), {}, { saved = it })
         } }
         compose.waitForIdle()
         compose.onNodeWithTag("route-0-type").performScrollTo().performClick()

@@ -20,7 +20,7 @@ data class BackupDocument(
         trainings.sumOf { it.climbingRoutes.size.toLong() } + plannedTrainings.size + recurrenceRules.size + favorites.size + aliases.size
 
     companion object {
-        const val CURRENT_SCHEMA_VERSION = 4
+        const val CURRENT_SCHEMA_VERSION = 5
     }
 }
 
@@ -38,6 +38,7 @@ data class CenterBackup(
     val sportSlugs: List<String>,
     val publicId: String? = null,
     val createdAt: String? = null,
+    val isArchived: Boolean = false,
 )
 
 @Serializable

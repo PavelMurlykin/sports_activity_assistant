@@ -114,12 +114,11 @@ class MainViewModel(
         }
     }
 
-    fun saveSportsCenter(input: SaveSportsCenterInput) {
-        viewModelScope.launch {
-            runCatching { repository.saveSportsCenter(input) }
-                .onSuccess { _dataOperationState.value = DataOperationUiState(message = "Спортивный центр сохранён") }
-                .onFailure(::showError)
-        }
+    suspend fun saveSportsCenter(input: SaveSportsCenterInput): Long = repository.saveSportsCenter(input)
+
+    suspend fun setSportsCenterArchived(id: Long, archived: Boolean) {
+        repository.setSportsCenterArchived(id, archived)
+        refreshSchedule()
     }
 
     suspend fun loadComplexesForSport(sportId: Int): List<ComplexOptionUiModel> {

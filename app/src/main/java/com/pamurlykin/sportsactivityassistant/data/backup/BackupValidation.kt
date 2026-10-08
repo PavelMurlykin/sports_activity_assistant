@@ -14,7 +14,7 @@ object BackupValidation {
         }
         fun uuid(value: String?) { require(value != null && UUID.fromString(value).toString() == value) { "Требуется канонический UUID" } }
         fun timestamp(value: String?) {
-            if (source.sourceVersion == 4) require(value != null) { "createdAt обязательно" }
+            if (source.sourceVersion >= 4) require(value != null) { "createdAt обязательно" }
             value?.let {
                 val instant = Instant.parse(it)
                 instant.toEpochMilli()

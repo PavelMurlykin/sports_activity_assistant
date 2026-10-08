@@ -28,7 +28,7 @@ object ImportParser {
         }
         val version = BackupCodec.sourceVersion(raw)
         val decoded = BackupCodec.decode(raw)
-        if (version == 4) return ParsedImport(decoded, "JSON 4", 4,
+        if (version >= 4) return ParsedImport(decoded, "JSON $version", version,
             decoded.trainings.mapIndexedNotNull { index, item -> item.publicId?.let { it to "trainings[$index]" } }.toMap(),
             decoded.profiles.map { it.publicId to (it.displayName ?: "Локальный профиль ${it.publicId.take(8)}") }.toMap())
         require(decoded.profiles.isEmpty() && decoded.primaryProfilePublicId == null && decoded.aliases.isEmpty() && decoded.favorites.isEmpty()) {
@@ -66,7 +66,7 @@ object ImportParser {
             require(plan.publicId == null && plan.profilePublicId == null && plan.centerPublicId == null && plan.createdAt == null && plan.recurrenceRulePublicId == null) { "plannedTrainings[$index]: метаданные в старой версии" }
             plan.copy(publicId = id("plan:$index"), profilePublicId = profile.publicId, centerPublicId = center(null, plan.centerName, plan.centerCity))
         }
-        return ParsedImport(decoded.copy(schemaVersion = 4, centers = centers, trainings = trainings, recurrenceRules = rules,
+        return ParsedImport(decoded.copy(schemaVersion = BackupDocument.CURRENT_SCHEMA_VERSION, centers = centers, trainings = trainings, recurrenceRules = rules,
             plannedTrainings = plans, profiles = listOf(profile), primaryProfilePublicId = profile.publicId), "JSON $version (адаптер)", version,
             trainings.mapIndexed { index, item -> item.publicId!! to "trainings[$index]" }.toMap(), mapOf(profile.publicId to "История без сведений о профиле"))
     }

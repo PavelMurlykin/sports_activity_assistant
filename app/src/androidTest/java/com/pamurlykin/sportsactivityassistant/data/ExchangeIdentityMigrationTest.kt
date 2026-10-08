@@ -23,7 +23,7 @@ class ExchangeIdentityMigrationTest {
             close()
         }
         helper.runMigrationsAndValidate(name, 5, true, AppDatabase.MIGRATION_4_5).close()
-        val db = Room.databaseBuilder(context, AppDatabase::class.java, name).build()
+        val db = Room.databaseBuilder(context, AppDatabase::class.java, name).addMigrations(AppDatabase.MIGRATION_5_6).build()
         val ids: List<String>
         try {
             val users = db.referenceDao().getUsers()
@@ -35,7 +35,7 @@ class ExchangeIdentityMigrationTest {
             assertTrue(db.referenceDao().getImportAliases().isEmpty())
             db.openHelper.writableDatabase.query("PRAGMA foreign_key_check").use { assertFalse(it.moveToFirst()) }
         } finally { db.close() }
-        val reopened = Room.databaseBuilder(context, AppDatabase::class.java, name).build()
+        val reopened = Room.databaseBuilder(context, AppDatabase::class.java, name).addMigrations(AppDatabase.MIGRATION_5_6).build()
         try { assertEquals(ids, reopened.referenceDao().getUsers().map { it.publicId }) }
         finally { reopened.close(); context.deleteDatabase(name) }
     }

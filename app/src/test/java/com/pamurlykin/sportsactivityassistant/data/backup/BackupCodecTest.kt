@@ -1,5 +1,6 @@
 package com.pamurlykin.sportsactivityassistant.data.backup
 
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -68,6 +69,16 @@ class BackupCodecTest {
 
         assertTrue(json.contains("schemaVersion"))
         assertEquals(source, restored)
+    }
+
+    @Test fun archiveMetadataRequiresVersion5AndOldCopiesDefaultToActive() {
+        val center = CenterBackup(name = "Архив", sportSlugs = emptyList(), isArchived = true)
+        val current = climbingDocument(5, emptyList()).copy(centers = listOf(center))
+        assertEquals(current, BackupCodec.decode(BackupCodec.encode(current)))
+        assertTrue(runCatching { BackupCodec.encode(current.copy(schemaVersion = 4)) }.isFailure)
+        val old = current.copy(schemaVersion = 4, centers = listOf(center.copy(isArchived = false)))
+        assertFalse(BackupCodec.decode(BackupCodec.encode(old)).centers.single().isArchived)
+        assertTrue(runCatching { BackupCodec.decode(BackupCodec.encode(current).replace("\"schemaVersion\": 5", "\"schemaVersion\": 4")) }.isFailure)
     }
 
     @Test

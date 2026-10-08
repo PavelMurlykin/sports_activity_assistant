@@ -2,6 +2,7 @@ package com.pamurlykin.sportsactivityassistant.data.repo
 
 import androidx.room.withTransaction
 import com.pamurlykin.sportsactivityassistant.data.backup.*
+import com.pamurlykin.sportsactivityassistant.data.model.CenterNames
 import com.pamurlykin.sportsactivityassistant.data.model.TrainingValidation
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -80,6 +81,7 @@ class AppRepository(private val database: AppDatabase) {
                     id = item.complex.id,
                     name = item.complex.name,
                     city = item.complex.city,
+                    isArchived = item.complex.isArchived,
                     sports = item.sports.sortedBy { it.title }.map {
                         SportSummaryUiModel(it.id, it.slug, it.title, 0)
                     },
@@ -92,12 +94,21 @@ class AppRepository(private val database: AppDatabase) {
     }
 
     suspend fun saveSportsCenter(input: SaveSportsCenterInput) = readyTransaction {
-        require(input.name.isNotBlank()) { "Введите название спортивного центра" }
+        val name = CenterNames.clean(input.name)
+        val city = CenterNames.clean(input.city.orEmpty()).takeIf(String::isNotBlank)
+        CenterNames.validate(name, city)
         require(input.sportIds.isNotEmpty()) { "Выберите хотя бы один вид спорта" }
         input.sportIds.forEach { id -> SportModules.require(requireNotNull(database.referenceDao().getSport(id)) { "Вид спорта не найден" }.slug) }
         val existing = input.id?.let { requireNotNull(database.referenceDao().getComplex(it)) { "Спортивный центр не найден" } }
-        val entity = (existing ?: SportsComplexEntity(name = input.name, city = input.city)).copy(
-            name = input.name.trim(), city = input.city?.trim()?.takeIf(String::isNotBlank), isInitial = false,
+        val key = CenterNames.key(name, city)
+        // An unchanged historical duplicate can still be edited; do not force a merge.
+        val duplicates = database.referenceDao().getAllComplexes().filter { it.id != input.id && CenterNames.key(it.name, it.city) == key }
+        require(duplicates.isEmpty() || existing != null && CenterNames.key(existing.name, existing.city) == key) {
+            "Центр с таким названием и городом уже есть, в том числе в архиве. Измените существующий центр."
+        }
+        val entity = (existing ?: SportsComplexEntity(name = name, city = city)).copy(
+            name = if (existing != null && duplicates.isNotEmpty()) existing.name else name,
+            city = if (existing != null && duplicates.isNotEmpty()) existing.city else city, isInitial = false,
         )
         val centerId = if (input.id == null) {
             database.referenceDao().insertComplex(entity)
@@ -110,6 +121,12 @@ class AppRepository(private val database: AppDatabase) {
         database.referenceDao().insertComplexSports(
             input.sportIds.map { SportsComplexSportEntity(sportsComplexId = centerId, sportId = it) },
         )
+        centerId
+    }
+
+    suspend fun setSportsCenterArchived(id: Long, archived: Boolean) = readyTransaction {
+        val center = requireNotNull(database.referenceDao().getComplex(id)) { "Спортивный центр не найден" }
+        database.referenceDao().updateComplex(center.copy(isArchived = archived, isInitial = false))
     }
 
     suspend fun addCompletedTraining(userId: Long, input: AddCompletedTrainingInput): Long = readyTransaction {

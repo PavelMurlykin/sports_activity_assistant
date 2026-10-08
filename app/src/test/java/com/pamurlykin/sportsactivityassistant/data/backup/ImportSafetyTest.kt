@@ -60,7 +60,7 @@ class ImportSafetyTest {
         assertTrue(runCatching { ImportParser.parse(ByteArray(0)) }.isFailure)
     }
 
-    @Test fun validV4RetainsAllMetadata() {
+    @Test fun validCurrentVersionRetainsAllMetadata() {
         val d = document(); val parsed = parse(d)
         assertEquals(d, parsed.document); assertTrue(BackupValidation.errors(parsed).isEmpty())
     }
@@ -77,8 +77,8 @@ class ImportSafetyTest {
 
     @Test fun refusesUnknownFieldsMissingOrFutureVersionAndDuplicateIdentity() {
         val raw = BackupCodec.encode(document())
-        assertTrue(runCatching { ImportParser.parse(raw.replace("\"schemaVersion\": 4", "\"schemaVersion\": 999").toByteArray()) }.isFailure)
-        assertTrue(runCatching { ImportParser.parse(raw.replace("\"schemaVersion\": 4,", "").toByteArray()) }.isFailure)
+        assertTrue(runCatching { ImportParser.parse(raw.replace("\"schemaVersion\": 5", "\"schemaVersion\": 999").toByteArray()) }.isFailure)
+        assertTrue(runCatching { ImportParser.parse(raw.replace("\"schemaVersion\": 5,", "").toByteArray()) }.isFailure)
         assertTrue(runCatching { ImportParser.parse(raw.replace("\"schemaVersion\"", "\"unknown\"").toByteArray()) }.isFailure)
         assertTrue(BackupValidation.errors(parse(document().copy(trainings = document().trainings + document().trainings))).isNotEmpty())
     }

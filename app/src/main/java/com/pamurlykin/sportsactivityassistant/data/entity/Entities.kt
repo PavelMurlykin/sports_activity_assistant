@@ -48,6 +48,7 @@ data class SportsComplexEntity(
     @ColumnInfo(name = "created_at") val createdAt: Instant = Instant.now(),
     @ColumnInfo(name = "public_id", defaultValue = "''") val publicId: String = UUID.randomUUID().toString(),
     @ColumnInfo(name = "is_initial", defaultValue = "0") val isInitial: Boolean = false,
+    @ColumnInfo(name = "is_archived", defaultValue = "0") val isArchived: Boolean = false,
 )
 
 /** Remember explicitly confirmed center/profile mappings across subsequent files and restores. */

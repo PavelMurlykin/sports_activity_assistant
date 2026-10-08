@@ -67,7 +67,7 @@ class LocalFilesTest {
             instrumentation.runOnMainSync { vm.exportLaunched(); vm.exportSelected(context.contentResolver, Uri.fromFile(file)) }
             await { !vm.fileBusy.value }
             assertTrue(vm.dataOperationState.value.message!!.contains("проверена"))
-            assertTrue(file.readText().contains("\"schemaVersion\": 4"))
+            assertTrue(file.readText().contains("\"schemaVersion\": 5"))
             instrumentation.runOnMainSync { vm.prepareExport() }
             await { vm.exportReady.value }
             instrumentation.runOnMainSync { vm.exportLaunched(); vm.exportSelected(context.contentResolver, null) }

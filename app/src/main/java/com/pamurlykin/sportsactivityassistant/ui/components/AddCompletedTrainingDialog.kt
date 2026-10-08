@@ -18,13 +18,13 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.pamurlykin.sportsactivityassistant.data.model.AddCompletedTrainingInput
-import com.pamurlykin.sportsactivityassistant.data.model.ComplexOptionUiModel
+import com.pamurlykin.sportsactivityassistant.data.model.SportsCenterUiModel
+import com.pamurlykin.sportsactivityassistant.data.model.SaveSportsCenterInput
 import com.pamurlykin.sportsactivityassistant.data.model.SportSummaryUiModel
 import java.time.LocalDate
 
@@ -32,9 +32,10 @@ import java.time.LocalDate
 fun AddCompletedTrainingDialog(
     sports: List<SportSummaryUiModel>,
     initialDate: LocalDate,
-    onLoadComplexes: suspend (Int) -> List<ComplexOptionUiModel>,
+    centers: List<SportsCenterUiModel>,
     onDismiss: () -> Unit,
     onSave: (AddCompletedTrainingInput) -> Unit,
+    onSaveCenter: (suspend (SaveSportsCenterInput) -> Long)? = null,
 ) {
     var selectedSportId by rememberSaveable { mutableIntStateOf(sports.firstOrNull()?.id ?: 0) }
     var selectedComplexId by rememberSaveable { mutableLongStateOf(0L) }
@@ -43,13 +44,7 @@ fun AddCompletedTrainingDialog(
     LaunchedEffect(sports) {
         if (selectedSportId == 0 && sports.isNotEmpty()) selectedSportId = sports.first().id
     }
-    val complexes by produceState(initialValue = emptyList<ComplexOptionUiModel>(), selectedSportId) {
-        value = emptyList()
-        value = if (selectedSportId == 0) emptyList() else onLoadComplexes(selectedSportId)
-    }
-    LaunchedEffect(complexes) {
-        if (complexes.none { it.id == selectedComplexId }) selectedComplexId = complexes.firstOrNull()?.id ?: 0L
-    }
+    val complexes = centers.filter { !it.isArchived && it.sports.any { sport -> sport.id == selectedSportId } }
     val selectedSport = sports.firstOrNull { it.id == selectedSportId }
     val draft = key(selectedSportId) { SportEditors.find(selectedSport?.slug)?.rememberDraft() }
     AlertDialog(
@@ -71,10 +66,8 @@ fun AddCompletedTrainingDialog(
         title = { Text("Записать тренировку") },
         text = {
             Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                DropdownSelector("Вид спорта", selectedSport?.title ?: "Выберите спорт", sports, { it.title }, { selectedSportId = it.id })
-                DropdownSelector("Спортивный центр",
-                    complexes.firstOrNull { it.id == selectedComplexId }?.fullTitle ?: "Выберите центр",
-                    complexes, { it.fullTitle }, { selectedComplexId = it.id })
+                TrainingCenterSelector(sports, centers, selectedSportId, selectedComplexId,
+                    { selectedSportId = it }, { selectedComplexId = it }, onSaveCenter)
                 OutlinedTextField(dateText, { dateText = it }, Modifier.fillMaxWidth(),
                     label = { Text("Дата") }, supportingText = { Text("YYYY-MM-DD") }, singleLine = true)
                 HorizontalDivider()
