@@ -28,6 +28,8 @@ import com.pamurlykin.sportsactivityassistant.data.model.SportSummaryUiModel
 import com.pamurlykin.sportsactivityassistant.data.model.SportsCenterUiModel
 import com.pamurlykin.sportsactivityassistant.data.model.StatisticsOverviewUiModel
 import com.pamurlykin.sportsactivityassistant.data.model.TrainingSessionUiModel
+import com.pamurlykin.sportsactivityassistant.data.model.TrainingEditSnapshot
+import kotlinx.serialization.json.Json
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.YearMonth
@@ -129,8 +131,17 @@ class AppRepository(private val database: AppDatabase) {
         database.referenceDao().updateComplex(center.copy(isArchived = archived, isInitial = false))
     }
 
-    suspend fun addCompletedTraining(userId: Long, input: AddCompletedTrainingInput): Long = readyTransaction {
-        TrainingValidation.date(input.date)
+    suspend fun addCompletedTraining(userId: Long, input: AddCompletedTrainingInput, requestId: String? = null): Long = readyTransaction {
+        if (requestId != null) {
+            require(java.util.UUID.fromString(requestId).toString() == requestId) { "Некорректный идентификатор записи" }
+            database.trainingDao().getTrainingByPublicId(requestId)?.let { existing ->
+                require(existing.training.userId == userId && sameInput(editSnapshot(existing).input, input)) {
+                    "Идентификатор записи уже занят другой тренировкой"
+                }
+                return@readyTransaction existing.training.id
+            }
+        }
+        TrainingValidation.completedDate(input.date)
         val sport = requireNotNull(database.referenceDao().getSport(input.sportId)) { "Вид спорта не найден" }
         require(database.referenceDao().getComplexesForSport(sport.id).any { it.id == input.complexId }) {
             "Выбранный спорт недоступен в этом центре"
@@ -139,10 +150,61 @@ class AppRepository(private val database: AppDatabase) {
         val module = SportModules.require(sport.slug)
         module.validate(input)
         val trainingId = database.trainingDao().insertTraining(
-            TrainingEntity(userId = userId, sportId = sport.id, sportsComplexId = input.complexId, trainingDate = input.date),
+            TrainingEntity(userId = userId, sportId = sport.id, sportsComplexId = input.complexId, trainingDate = input.date, publicId = requestId ?: java.util.UUID.randomUUID().toString()),
         )
         module.insertDetails(database.trainingDao(), trainingId, input)
         trainingId
+    }
+
+    private fun sameInput(a: AddCompletedTrainingInput, b: AddCompletedTrainingInput): Boolean =
+        a.copy(climbingRoutes = a.climbingRoutes.sortedBy { it.publicId }) ==
+            b.copy(climbingRoutes = b.climbingRoutes.sortedBy { it.publicId })
+
+    private fun editSnapshot(bundle: TrainingBundle): TrainingEditSnapshot {
+        val module = SportModules.require(bundle.sport.slug)
+        // Reference names are deliberately excluded: renaming a center does not change a workout.
+        val common = TrainingBackup(
+            legacyId = bundle.training.id, date = bundle.training.trainingDate.toString(),
+            sportSlug = bundle.sport.slug, centerName = "", publicId = bundle.training.publicId,
+            centerPublicId = bundle.complex.publicId, createdAt = bundle.training.createdAt.toString(),
+        )
+        val backup = module.encodeDetails(bundle, common).let { it.copy(climbingRoutes = it.climbingRoutes.sortedBy { route -> route.publicId }) }
+        val revision = Json.encodeToString(TrainingBackup.serializer(), backup)
+        return TrainingEditSnapshot.restore(bundle.training.id, bundle.sport.id, bundle.complex.id, revision)
+    }
+
+    private suspend fun ownedTraining(id: Long): TrainingBundle {
+        val bundle = requireNotNull(database.trainingDao().getTrainingBundle(id)) { "Тренировка уже удалена" }
+        require(bundle.training.userId == localProfileId()) { "Тренировка принадлежит другому локальному профилю" }
+        return bundle
+    }
+
+    suspend fun loadTrainingForEdit(id: Long): TrainingEditSnapshot = readyTransaction { editSnapshot(ownedTraining(id)) }
+
+    suspend fun updateCompletedTraining(snapshot: TrainingEditSnapshot, input: AddCompletedTrainingInput) = readyTransaction {
+        val bundle = ownedTraining(snapshot.id)
+        // Retrying after process restoration must not overwrite a newer, different result.
+        if (sameInput(editSnapshot(bundle).input, input)) return@readyTransaction
+        require(editSnapshot(bundle).revision == snapshot.revision) { "Запись изменилась. Закройте форму и откройте тренировку заново; ваши изменения не записаны." }
+        require(input.sportId == bundle.sport.id) { "Вид спорта сохранённой тренировки менять нельзя" }
+        TrainingValidation.completedDate(input.date, bundle.training.trainingDate)
+        if (input.complexId != bundle.complex.id) {
+            require(database.referenceDao().getComplexesForSport(input.sportId).any { it.id == input.complexId }) {
+                "Выбранный спорт недоступен в этом центре"
+            }
+        }
+        val module = SportModules.require(bundle.sport.slug)
+        module.validateEdit(input, editSnapshot(bundle).input)
+        database.trainingDao().updateTraining(bundle.training.copy(sportsComplexId = input.complexId, trainingDate = input.date))
+        module.updateDetails(database.trainingDao(), bundle, input)
+    }
+
+    suspend fun deleteCompletedTraining(snapshot: TrainingEditSnapshot) = readyTransaction {
+        // A confirmed deletion resumed after process death is already successful if the row is gone.
+        if (database.trainingDao().getTrainingBundle(snapshot.id) == null) return@readyTransaction
+        val bundle = ownedTraining(snapshot.id)
+        require(editSnapshot(bundle).revision == snapshot.revision) { "Запись изменилась. Откройте подтверждение удаления заново." }
+        check(database.trainingDao().deleteTraining(snapshot.id) == 1) { "Тренировка уже удалена" }
     }
 
     suspend fun getScheduleMonth(userId: Long, month: YearMonth, selectedDate: LocalDate, today: LocalDate): ScheduleMonthUiModel = readyTransaction {

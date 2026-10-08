@@ -185,8 +185,11 @@ fun <T> DropdownSelector(
     optionLabel: (T) -> String,
     onSelected: (T) -> Unit,
     modifier: Modifier = Modifier,
+    enabled: Boolean = true,
 ) {
     var expanded by remember { mutableStateOf(false) }
+    val focusManager = androidx.compose.ui.platform.LocalFocusManager.current
+    val keyboard = androidx.compose.ui.platform.LocalSoftwareKeyboardController.current
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Text(
             text = label,
@@ -194,7 +197,8 @@ fun <T> DropdownSelector(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         OutlinedButton(
-            onClick = { expanded = true },
+            onClick = { focusManager.clearFocus(); keyboard?.hide(); expanded = true },
+            enabled = enabled,
             modifier = modifier.fillMaxWidth(),
         ) {
             Text(
@@ -203,7 +207,7 @@ fun <T> DropdownSelector(
             )
         }
         DropdownMenu(
-            expanded = expanded,
+            expanded = expanded && enabled,
             onDismissRequest = { expanded = false },
         ) {
             options.forEach { item ->

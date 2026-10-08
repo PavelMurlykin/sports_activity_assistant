@@ -5,6 +5,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
+import androidx.room.Update
 import com.pamurlykin.sportsactivityassistant.data.entity.ClimbingRouteEntity
 import com.pamurlykin.sportsactivityassistant.data.entity.ClimbingTrainingEntity
 import com.pamurlykin.sportsactivityassistant.data.entity.FootballTrainingEntity
@@ -51,6 +52,10 @@ interface TrainingDao {
     @Query("SELECT * FROM trainings WHERE id = :trainingId LIMIT 1")
     suspend fun getTrainingBundle(trainingId: Long): TrainingBundle?
 
+    @Transaction
+    @Query("SELECT * FROM trainings WHERE public_id = :publicId LIMIT 1")
+    suspend fun getTrainingByPublicId(publicId: String): TrainingBundle?
+
     @Insert
     suspend fun insertTraining(item: TrainingEntity): Long
 
@@ -71,6 +76,18 @@ interface TrainingDao {
 
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertClimbingRoutes(items: List<ClimbingRouteEntity>)
+
+    @Update
+    suspend fun updateTraining(item: TrainingEntity)
+
+    @Update
+    suspend fun updateClimbingRoutes(items: List<ClimbingRouteEntity>)
+
+    @Query("DELETE FROM climbing_routes WHERE id IN (:ids)")
+    suspend fun deleteClimbingRoutes(ids: List<Long>)
+
+    @Query("DELETE FROM trainings WHERE id = :id")
+    suspend fun deleteTraining(id: Long): Int
 
     @Query("DELETE FROM trainings")
     suspend fun deleteAllTrainings()

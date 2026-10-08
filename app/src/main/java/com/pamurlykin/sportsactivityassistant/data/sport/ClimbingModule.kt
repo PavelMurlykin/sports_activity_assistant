@@ -62,6 +62,37 @@ object ClimbingModule : SportModule {
         })
     }
 
+    override fun validateEdit(input: AddCompletedTrainingInput, original: AddCompletedTrainingInput) {
+        validate(input, allowHistorical = true)
+        val old = original.climbingRoutes.associateBy { it.publicId }
+        val ids = input.climbingRoutes.mapNotNull { it.publicId }
+        require(ids.distinct().size == ids.size && ids.all { runCatching { java.util.UUID.fromString(it).toString() == it }.getOrDefault(false) }) { "Идентификаторы трасс не соответствуют тренировке" }
+        input.climbingRoutes.filter { it.gradingSystem == Catalog.LEGACY }.forEach { route ->
+            val previous = old[route.publicId]
+            require(previous != null && previous.copy(isCompleted = route.isCompleted, repeatCount = route.repeatCount) == route) {
+                "Историческую категорию нельзя создать или изменить без подтверждённой шкалы"
+            }
+        }
+    }
+
+    override suspend fun updateDetails(dao: TrainingDao, bundle: TrainingBundle, input: AddCompletedTrainingInput) {
+        val existing = bundle.climbing?.routes.orEmpty().associateBy { it.publicId }
+        val retained = input.climbingRoutes.mapNotNull { it.publicId }.toSet()
+        dao.deleteClimbingRoutes(existing.values.filter { it.publicId !in retained }.map { it.id })
+        val items = input.climbingRoutes.map { route ->
+            ClimbingRouteEntity(
+                id = existing[route.publicId]?.id ?: 0L, climbingTrainingId = bundle.training.id,
+                workoutType = route.workoutType, routeDifficulty = route.routeDifficulty,
+                isCompleted = route.isCompleted, repeatCount = route.repeatCount,
+                gradingSystem = route.gradingSystem, gradeCode = route.gradeCode,
+                speedCourse = route.speedCourse, legacyWorkoutType = route.legacyWorkoutType,
+                publicId = route.publicId ?: java.util.UUID.randomUUID().toString(),
+            )
+        }
+        dao.updateClimbingRoutes(items.filter { it.id != 0L })
+        dao.insertClimbingRoutes(items.filter { it.id == 0L })
+    }
+
     override fun decodeDetails(backup: TrainingBackup, sportId: Int, complexId: Long): AddCompletedTrainingInput {
         require(backup.football == null) { "Запись скалолазания содержит футбольную статистику" }
         return AddCompletedTrainingInput(sportId, complexId, LocalDate.parse(backup.date), climbingRoutes = backup.climbingRoutes.map {

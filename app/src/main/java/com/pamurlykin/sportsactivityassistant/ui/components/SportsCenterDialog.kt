@@ -83,10 +83,17 @@ fun TrainingCenterSelector(
     onSportSelected: (Int) -> Unit,
     onCenterSelected: (Long) -> Unit,
     onSaveCenter: (suspend (SaveSportsCenterInput) -> Long)?,
+    enabled: Boolean = true,
+    sportLocked: Boolean = false,
+    retainedCenterId: Long? = null,
+    onCreateCenter: (() -> Unit)? = null,
 ) {
-    val available = centers.filter { !it.isArchived && it.sports.any { sport -> sport.id == sportId } }
+    val available = centers.filter { it.id == retainedCenterId || !it.isArchived && it.sports.any { sport -> sport.id == sportId } }
     var creating by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(available, sportId) {
+        // The application seeds centers before emitting its first directory snapshot.
+        // Do not destroy a restored selection while that initial snapshot is loading.
+        if (centers.isEmpty()) return@LaunchedEffect
         if (available.none { it.id == centerId }) onCenterSelected(available.firstOrNull()?.id ?: 0L)
     }
     DropdownSelector("Вид спорта", sports.firstOrNull { it.id == sportId }?.title ?: "Выберите спорт",
@@ -94,12 +101,12 @@ fun TrainingCenterSelector(
             if (centers.none { it.id == centerId && !it.isArchived && it.sports.any { sport -> sport.id == next.id } })
                 onCenterSelected(0L)
             onSportSelected(next.id)
-        }, Modifier.testTag("training-sport"))
+        }, Modifier.testTag("training-sport"), enabled = enabled && !sportLocked)
     DropdownSelector("Спортивный центр", available.firstOrNull { it.id == centerId }?.fullTitle ?: "Выберите центр",
-        available, { it.fullTitle }, { onCenterSelected(it.id) }, Modifier.testTag("training-center"))
+        available, { it.fullTitle }, { onCenterSelected(it.id) }, Modifier.testTag("training-center"), enabled = enabled)
     if (available.isEmpty()) {
         Text("Для этого вида спорта нет активных центров. Добавьте центр или верните подходящий из архива.")
-        if (onSaveCenter != null && sportId != 0) TextButton(onClick = { creating = true }) { Text("Создать центр") }
+        if (onSaveCenter != null && sportId != 0) TextButton(enabled = enabled, onClick = { if (onCreateCenter != null) onCreateCenter() else creating = true }) { Text("Создать центр") }
     }
     if (creating && onSaveCenter != null) SportsCenterDialog(null, sports, { creating = false },
         onSaveCenter, { creating = false }, initialSportId = sportId)

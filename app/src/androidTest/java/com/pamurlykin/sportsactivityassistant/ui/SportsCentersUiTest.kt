@@ -3,6 +3,7 @@ package com.pamurlykin.sportsactivityassistant.ui
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.test.*
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import com.pamurlykin.sportsactivityassistant.data.model.*
 import com.pamurlykin.sportsactivityassistant.ui.components.*
@@ -75,7 +76,7 @@ class SportsCentersUiTest {
         var saved: AddCompletedTrainingInput? = null
         compose.setContent { MaterialTheme {
             AddCompletedTrainingDialog(sports, LocalDate.parse("2026-10-08"), listOf(center(7, football), center(8, climbing, true)),
-                {}, { saved = it }, onSaveCenter = { 9 })
+                {}, { input, _ -> saved = input }, onSaveCenter = { 9 })
         } }
         compose.onNodeWithText("Центр Футбол").assertExists()
         compose.onNodeWithTag("training-sport").performClick()
@@ -104,7 +105,7 @@ class SportsCentersUiTest {
         var saved: AddCompletedTrainingInput? = null
         val centers = listOf(center(7, football), center(8, climbing), SportsCenterUiModel(9, "Общий центр", null, sports))
         compose.setContent { MaterialTheme {
-            AddCompletedTrainingDialog(sports, LocalDate.parse("2026-10-08"), centers, {}, { saved = it })
+            AddCompletedTrainingDialog(sports, LocalDate.parse("2026-10-08"), centers, {}, { input, _ -> saved = input })
         } }
         compose.onNodeWithTag("training-center").performClick()
         compose.onNodeWithText("Общий центр").performClick()
@@ -119,7 +120,7 @@ class SportsCentersUiTest {
         val live = mutableStateOf(emptyList<SportsCenterUiModel>())
         var saved: AddCompletedTrainingInput? = null
         compose.setContent { MaterialTheme {
-            AddCompletedTrainingDialog(listOf(football), LocalDate.parse("2026-10-08"), live.value, {}, { saved = it },
+            AddCompletedTrainingDialog(listOf(football), LocalDate.parse("2026-10-08"), live.value, {}, { input, _ -> saved = input },
                 onSaveCenter = { input ->
                     assertEquals(setOf(1), input.sportIds)
                     live.value = listOf(SportsCenterUiModel(9, input.name, input.city, listOf(football))); 9
@@ -130,7 +131,8 @@ class SportsCentersUiTest {
         // Only the top dialog participates in visible semantics.
         compose.onAllNodesWithText("Сохранить").onLast().performClick()
         compose.onNodeWithText("Новая площадка").assertExists()
-        compose.onNodeWithText("Сохранить").performClick()
+        // The nested window's keyboard can still be animating; test the button action, not a moving coordinate.
+        compose.onNodeWithText("Сохранить").performSemanticsAction(SemanticsActions.OnClick) { it() }
         compose.runOnIdle { assertEquals(9L, saved!!.complexId); assertEquals(LocalDate.parse("2026-10-08"), saved.date) }
     }
 }

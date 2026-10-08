@@ -24,7 +24,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableLongStateOf
+import com.pamurlykin.sportsactivityassistant.ui.components.TrainingActions
+import com.pamurlykin.sportsactivityassistant.ui.components.TrainingActionDialog
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -44,7 +48,10 @@ fun ScheduleScreen(
     val centers by viewModel.sportsCenters.collectAsState()
     val operationState by viewModel.dataOperationState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
-    var dialog by remember { mutableStateOf<TrainingDialog?>(null) }
+    var dialog by rememberSaveable { mutableStateOf<TrainingDialog?>(null) }
+    var actionId by rememberSaveable { mutableLongStateOf(0) }
+    var deleting by rememberSaveable { mutableStateOf(false) }
+    if (actionId != 0L) TrainingActionDialog(actionId, deleting, viewModel) { actionId = 0 }
 
     LaunchedEffect(operationState.message, operationState.inProgress) {
         val message = operationState.message
@@ -82,10 +89,8 @@ fun ScheduleScreen(
             centers = centers,
             onSaveCenter = viewModel::saveSportsCenter,
             onDismiss = { dialog = null },
-            onSave = {
-                viewModel.addCompletedTraining(it)
-                dialog = null
-            },
+            onSave = { input, requestId -> viewModel.saveCompletedTraining(input, requestId) },
+            onSaved = { dialog = null },
         )
     }
 
@@ -164,6 +169,11 @@ fun ScheduleScreen(
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.SemiBold,
                                 )
+                                if (event.state == com.pamurlykin.sportsactivityassistant.data.model.ScheduleEventState.COMPLETED) {
+                                    TrainingActions(event.sportSlug,
+                                        { deleting = false; actionId = event.id.removePrefix("completed-").toLong() },
+                                        { deleting = true; actionId = event.id.removePrefix("completed-").toLong() })
+                                }
                                 event.details.forEach { detail ->
                                     Text(
                                         text = detail,

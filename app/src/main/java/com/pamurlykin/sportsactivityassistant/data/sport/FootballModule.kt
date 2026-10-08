@@ -19,17 +19,22 @@ object FootballModule : SportModule {
     override fun validate(input: AddCompletedTrainingInput, allowHistorical: Boolean) {
         val details = requireNotNull(input.football) { "Заполните футбольную статистику" }
         require(input.climbingRoutes.isEmpty()) { "Футбольная тренировка не может содержать трассы" }
-        require(listOf(details.teamGoalsScored, details.teamGoalsConceded, details.userGoalsScored, details.userAssists).all { it >= 0 }) {
-            "Счёт, личные голы и передачи не могут быть отрицательными"
+        val errors = fieldErrors(details)
+        require(errors.isEmpty()) { errors.values.first() }
+    }
+
+    /** Shared business rules for repository/import validation and inline form errors. */
+    fun fieldErrors(details: FootballTrainingInput): Map<Int, String> = buildMap {
+        listOf(details.teamGoalsScored, details.teamGoalsConceded, details.userGoalsScored, details.userAssists)
+            .forEachIndexed { index, value -> if (value < 0) put(index, "Значение не может быть отрицательным") }
+        if (details.userGoalsScored > details.teamGoalsScored) put(2, "Личные голы не могут превышать счёт команды")
+        if (details.userAssists > details.teamGoalsScored) put(3, "Передачи не могут превышать число голов команды")
+        details.distanceKm?.let {
+            if (it < BigDecimal.ZERO) put(4, "Дистанция не может быть отрицательной")
+            else if (it.precision() > 16 || it.scale() !in -6..6) put(4, "Не более 16 значащих цифр и 6 десятичных знаков")
         }
-        require(details.userGoalsScored <= details.teamGoalsScored) { "Личные голы не могут превышать счёт команды" }
-        require(details.userAssists <= details.teamGoalsScored) { "Передачи не могут превышать число голов команды" }
-        require(details.distanceKm == null || details.distanceKm >= BigDecimal.ZERO) { "Дистанция не может быть отрицательной" }
-        require(details.distanceKm == null || (details.distanceKm.precision() <= 16 && details.distanceKm.scale() in -6..6)) {
-            "Дистанция: не более 16 значащих цифр и 6 десятичных знаков"
-        }
-        require(details.playersPerTeam == null || details.playersPerTeam > 0) { "Число игроков должно быть положительным" }
-        require(details.durationMinutes == null || details.durationMinutes > 0) { "Время игры должно быть положительным" }
+        if (details.playersPerTeam != null && details.playersPerTeam <= 0) put(5, "Число игроков должно быть положительным")
+        if (details.durationMinutes != null && details.durationMinutes <= 0) put(6, "Время игры должно быть положительным")
     }
 
     override suspend fun insertDetails(dao: TrainingDao, trainingId: Long, input: AddCompletedTrainingInput) {
@@ -39,6 +44,9 @@ object FootballModule : SportModule {
             it.userAssists, it.distanceKm, it.playersPerTeam, it.durationMinutes,
         ))
     }
+
+    override suspend fun updateDetails(dao: TrainingDao, bundle: TrainingBundle, input: AddCompletedTrainingInput) =
+        insertDetails(dao, bundle.training.id, input)
 
     override fun decodeDetails(backup: TrainingBackup, sportId: Int, complexId: Long): AddCompletedTrainingInput {
         require(backup.climbingRoutes.isEmpty()) { "Футбольная запись содержит трассы" }

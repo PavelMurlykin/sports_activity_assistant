@@ -12,17 +12,27 @@ Upgrading to the current database schema (version 6) preserves local keys, UUIDs
 
 ## Recording a workout
 
-On «Расписание» (Schedule), press the add button and select «Записать результат» (Record result). Choose a sport, date and sports center that offers that sport. The current date field uses `YYYY-MM-DD`, with years 0001–9999.
+On «Расписание» (Schedule), press the add button and select «Записать результат» (Record result). Choose a sport, date and sports center that offers that sport. Enter `YYYY-MM-DD` (years 0001–9999) or use «Выбрать дату» (Choose date). New results cannot use a future date: use a plan instead. Imported history may contain a future date; editing may retain that original date or correct it to today/the past, but cannot replace it with another future date.
 
 For football, enter team goals scored/conceded, personal goals and assists. Zero results are valid. Optionally enter distance in kilometers, players per team and game duration in minutes; optional fields may be left empty. Distance accepts a decimal point or comma, up to 16 significant digits and 6 decimal places. Negative values are invalid; players and duration must be positive when supplied.
 
 Personal goals and assists, each considered separately, cannot exceed the team's goals scored. A football record cannot contain climbing routes, and a climbing record cannot contain football metrics. The common record and all sport details are saved together: an error does not leave an incomplete workout. Two identical workouts on the same day can be recorded manually; each has its own stable identifier within the database.
 
-For climbing, add the required number of routes. Select a discipline and completed/not-completed result for each. Lead («Трудность») uses the French scale (`3a`–`9c`); boulder («Болдер») uses Fontainebleau (`1B`–`9A`), including intermediate `+` grades within the supported range. These are the app catalog's ranges, not federation-declared difficulty limits. Changing discipline resets the grade: identical labels in different scales do not mean identical difficulty. For speed («Скорость»), explicitly choose «Эталонная 15 м» (Standard 15 m) or «Иная трасса» (Other course); no difficulty grade applies. Speed ascent time is not recorded yet. Save the workout. Its details appear in the calendar and statistics. [Catalog sources and scope](climbing-grades.md) are included in the project; the app needs no internet to use the catalog.
+For climbing, add the required number of routes. Select a discipline and completed/not-completed result for each. Lead («Трудность») uses the French scale (`3a`–`9c`); boulder («Болдер») uses Fontainebleau (`1B`–`9A`), including intermediate `+` grades within the supported range. These are the app catalog's ranges, not federation-declared difficulty limits. Changing discipline resets the grade: identical labels in different scales do not mean identical difficulty. For speed («Скорость»), explicitly choose «Эталонная 15 м» (Standard 15 m) or «Иная трасса» (Other course); no difficulty grade applies. Speed ascent time is not recorded yet. The number of attempts with this result defaults to 1 and must be a positive integer. A value of 12 means 12 attempts with the same discipline, grade and result; put different results in separate rows. Historical repeats are not expanded into invented individual routes. Rows can be changed or removed, retaining at least one. Save the workout. Its details appear in the calendar and statistics. [Catalog sources and scope](climbing-grades.md) are included in the project; the app needs no internet to use the catalog.
 
 Database upgrades and older JSON imports retain the original difficulty label. Only unambiguous old lead grades `5a`–`9c` are recognized as French. Old boulders, speed routes, coarse labels `3`, `4`, `4+`, `5` and unknown values are marked «историческая: шкала/трасса не подтверждена» (historical: scale/course unconfirmed); they are not rounded to a nearby grade. Results and repeat counts remain in the overall counters, but unconfirmed grades do not contribute to highest-grade metrics. You cannot yet manually confirm an old record's scale; keep the source file.
 
-Saved workouts cannot yet be edited or deleted. Check the form before saving; after a save error some fields may need to be entered again. The route-list draft is not yet protected against loss on screen rotation.
+The form closes only after a successful write; errors remain in the form together with your entries. Numeric errors appear next to their field. Fields and repeated save taps are disabled while writing. The draft includes date, center, all football fields and routes with their results/repeat counts; it survives rotation and screen restoration after the system terminates a background process. Switching sports retains a separate draft for each sport. Explicit cancellation, closing the form and force-stopping the app do not promise draft retention; drafts are not included in backups.
+
+## Editing and deleting a result
+
+Select a calendar day, or open Statistics → the sport → expand a workout. Press «Изменить тренировку» (Edit workout) to change date, center and sport metrics. A saved workout's sport cannot be changed. UUID, creation time and identities of retained routes are preserved; new routes receive new UUIDs. The original center may remain even if archived or no longer offering this sport, but a different center must be active and offer it.
+
+An ambiguous historical route's original discipline/grade is read-only; its result and number of identical attempts can be corrected, the row removed or a confirmed modern route added. The form does not automatically assign a modern scale to an old grade.
+
+«Удалить тренировку» (Delete workout) first shows confirmation with date, sport and center. Cancel deletes nothing. Confirmation deletes the result and all of its sport details together without affecting centers or plans. Statistics and calendar update after an edit or deletion. Deletion cannot be undone inside the app; an older backup can restore the record. Reimporting an old copy can restore deleted workouts: no permanent prohibition on their restoration is stored.
+
+If the workout changed or was deleted while the form was open (for example through import), stale saves/deletions are rejected. Close the form and reopen the record; inconsistent edits are not written.
 
 ## Schedule
 
@@ -44,7 +54,7 @@ Press «Изменить» (Edit) to change the name, city or sports. UUID and o
 
 «В архив» (Archive) requires confirmation. The «Архив» tab shows closed centers; «Вернуть» (Restore) makes a center available again. Archiving or removing an offered sport prevents new workouts and plans for that combination without deleting history, favorites, plans or series. Archiving does not cancel existing events. Center deletion is not provided.
 
-Both training forms show only active centers offering the selected sport. Changing the sport or directory clears an incompatible selection, selecting the first available center or offering «Создать центр» (Create center). Creation from the form preselects the current sport without closing the training form. An empty list explains that you should add a center or restore one from the archive. The nested center-creation draft is not yet protected when rotating the training form; save the center before rotating.
+Both new-training forms show only active centers offering the selected sport. Changing the sport or directory clears an incompatible selection, selecting the first available center or offering «Создать центр» (Create center). Creation from the form preselects the current sport without closing the training form. An empty list explains that you should add a center or restore one from the archive. The result form also retains its nested center-creation draft on rotation. Editing a result may retain its original historical reference to an archived center.
 
 ## Import and backup
 
@@ -80,7 +90,7 @@ Check workout counts, details and calendar after transfer. New backups cannot be
 
 ## Known limitations
 
-Historical-scale confirmation, result editing, linking plans to results and advanced filters are planned, not available features. Other scales, such as V-scale or UIAA, cannot yet be selected for new routes. Compatibility with your multi-year history and applicability of the selected scales to your gyms require anonymized examples and confirmation. No external connection is required to transfer files.
+Historical-scale confirmation, linking plans to results and advanced filters are planned, not available features. Other scales, such as V-scale or UIAA, cannot yet be selected for new routes. Compatibility with your multi-year history and applicability of the selected scales to your gyms require anonymized examples and confirmation. No external connection is required to transfer files.
 
 ## Build and verification for developers
 

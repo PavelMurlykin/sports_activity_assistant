@@ -30,6 +30,10 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.mutableLongStateOf
+import com.pamurlykin.sportsactivityassistant.ui.components.TrainingActions
+import com.pamurlykin.sportsactivityassistant.ui.components.TrainingActionDialog
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -148,9 +152,12 @@ fun StatisticsDetailScreen(
     viewModel: MainViewModel,
     onBack: () -> Unit,
 ) {
-    val trainings by viewModel.trainingsForSport(sportId).collectAsState(initial = emptyList())
-    val sportStatistics by viewModel.statisticsForSport(sportId).collectAsState(initial = null)
+    val trainings by remember(viewModel, sportId) { viewModel.trainingsForSport(sportId) }.collectAsState(initial = emptyList())
+    val sportStatistics by remember(viewModel, sportId) { viewModel.statisticsForSport(sportId) }.collectAsState(initial = null)
     val title = viewModel.sportTitle(sportId)
+    var actionId by rememberSaveable { mutableLongStateOf(0) }
+    var deleting by rememberSaveable { mutableStateOf(false) }
+    if (actionId != 0L) TrainingActionDialog(actionId, deleting, viewModel) { actionId = 0 }
 
     Scaffold(
         topBar = {
@@ -211,7 +218,9 @@ fun StatisticsDetailScreen(
                 }
             } else {
                 items(trainings, key = { it.id }) { item ->
-                    ExpandableTrainingCard(item = item)
+                    ExpandableTrainingCard(item = item,
+                        onEdit = { deleting = false; actionId = item.id },
+                        onDelete = { deleting = true; actionId = item.id })
                 }
             }
         }
@@ -219,8 +228,8 @@ fun StatisticsDetailScreen(
 }
 
 @Composable
-private fun ExpandableTrainingCard(item: TrainingSessionUiModel) {
-    var expanded by remember { mutableStateOf(false) }
+private fun ExpandableTrainingCard(item: TrainingSessionUiModel, onEdit: () -> Unit, onDelete: () -> Unit) {
+    var expanded by rememberSaveable(item.id) { mutableStateOf(false) }
     Card(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         modifier = Modifier.animateContentSize(),
@@ -254,6 +263,7 @@ private fun ExpandableTrainingCard(item: TrainingSessionUiModel) {
 
             if (expanded) {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    TrainingActions(item.sportSlug, onEdit, onDelete)
                     item.details.forEach { detail ->
                         Text(
                             text = detail,

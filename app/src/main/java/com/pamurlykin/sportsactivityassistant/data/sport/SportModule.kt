@@ -12,6 +12,8 @@ interface SportModule {
     val title: String
     fun validate(input: AddCompletedTrainingInput, allowHistorical: Boolean = false)
     suspend fun insertDetails(dao: TrainingDao, trainingId: Long, input: AddCompletedTrainingInput)
+    fun validateEdit(input: AddCompletedTrainingInput, original: AddCompletedTrainingInput) = validate(input)
+    suspend fun updateDetails(dao: TrainingDao, bundle: TrainingBundle, input: AddCompletedTrainingInput)
     fun decodeDetails(backup: TrainingBackup, sportId: Int, complexId: Long): AddCompletedTrainingInput
     fun encodeDetails(bundle: TrainingBundle, common: TrainingBackup): TrainingBackup
     fun metrics(items: List<TrainingBundle>): List<MetricUiModel>

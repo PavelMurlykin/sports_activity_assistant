@@ -29,7 +29,7 @@ class SportEditorsTest {
         var saved: AddCompletedTrainingInput? = null
         compose.setContent { MaterialTheme {
             AddCompletedTrainingDialog(listOf(SportSummaryUiModel(5, "football", "Футбол", 0)),
-                LocalDate.parse("2026-10-01"), listOf(SportsCenterUiModel(7, "Центр", null, listOf(SportSummaryUiModel(5, "football", "Футбол", 0)))), {}, { saved = it })
+                LocalDate.parse("2026-10-01"), listOf(SportsCenterUiModel(7, "Центр", null, listOf(SportSummaryUiModel(5, "football", "Футбол", 0)))), {}, { input, _ -> saved = input })
         } }
         compose.waitForIdle()
         compose.onNodeWithText("Сохранить").performClick()
@@ -47,7 +47,7 @@ class SportEditorsTest {
         var saved: AddCompletedTrainingInput? = null
         compose.setContent { MaterialTheme {
             AddCompletedTrainingDialog(listOf(SportSummaryUiModel(6, "climbing", "Скалолазание", 0)),
-                LocalDate.parse("2026-10-01"), listOf(SportsCenterUiModel(8, "Скалодром", null, listOf(SportSummaryUiModel(6, "climbing", "Скалолазание", 0)))), {}, { saved = it })
+                LocalDate.parse("2026-10-01"), listOf(SportsCenterUiModel(8, "Скалодром", null, listOf(SportSummaryUiModel(6, "climbing", "Скалолазание", 0)))), {}, { input, _ -> saved = input })
         } }
         compose.waitForIdle()
         compose.onNodeWithText("+ Добавить трассу").performScrollTo().performClick()
@@ -63,7 +63,7 @@ class SportEditorsTest {
         var saved: AddCompletedTrainingInput? = null
         compose.setContent { MaterialTheme {
             AddCompletedTrainingDialog(listOf(SportSummaryUiModel(6, "climbing", "Скалолазание", 0)),
-                LocalDate.parse("2026-10-07"), listOf(SportsCenterUiModel(8, "Скалодром", null, listOf(SportSummaryUiModel(6, "climbing", "Скалолазание", 0)))), {}, { saved = it })
+                LocalDate.parse("2026-10-07"), listOf(SportsCenterUiModel(8, "Скалодром", null, listOf(SportSummaryUiModel(6, "climbing", "Скалолазание", 0)))), {}, { input, _ -> saved = input })
         } }
         compose.waitForIdle()
         compose.onNodeWithTag("route-0-type").performScrollTo().performClick()
@@ -90,14 +90,14 @@ class SportEditorsTest {
         var saved: AddCompletedTrainingInput? = null
         compose.setContent { MaterialTheme {
             AddCompletedTrainingDialog(listOf(SportSummaryUiModel(6, "climbing", "Скалолазание", 0)),
-                LocalDate.parse("2026-10-07"), listOf(SportsCenterUiModel(8, "Скалодром", null, listOf(SportSummaryUiModel(6, "climbing", "Скалолазание", 0)))), {}, { saved = it })
+                LocalDate.parse("2026-10-07"), listOf(SportsCenterUiModel(8, "Скалодром", null, listOf(SportSummaryUiModel(6, "climbing", "Скалолазание", 0)))), {}, { input, _ -> saved = input })
         } }
         compose.waitForIdle()
         compose.onNodeWithTag("route-0-type").performScrollTo().performClick()
         compose.onNodeWithText("Скорость").performClick()
         compose.onNodeWithText("Сохранить").performClick()
         compose.runOnIdle { assertNull(saved) }
-        compose.onNodeWithText("Выберите трассу скорости").performScrollTo().assertExists()
+        compose.onNodeWithTag("training-error").performScrollTo().assertExists()
         compose.onNodeWithTag("route-0-course").performScrollTo().performClick()
         compose.onNodeWithText("Иная трасса").performClick()
         compose.onNodeWithText("Сохранить").performClick()

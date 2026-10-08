@@ -6,6 +6,9 @@ import com.pamurlykin.sportsactivityassistant.data.backup.*
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.async
+import com.pamurlykin.sportsactivityassistant.data.model.TrainingEditSnapshot
 import kotlinx.coroutines.withContext
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -46,6 +49,8 @@ class MainViewModel(
     private var pendingExport: ByteArray? = null
     private var phase = "idle"
     private var previewJob: Job? = null
+    private var scheduleJob: Job? = null
+    private val trainingWrites = mutableMapOf<String, Deferred<Unit>>()
 
     val scheduleState: StateFlow<ScheduleMonthUiModel?> = _scheduleState.asStateFlow()
     val dataOperationState: StateFlow<DataOperationUiState> = _dataOperationState.asStateFlow()
@@ -91,26 +96,38 @@ class MainViewModel(
             runCatching { repository.addPlannedTraining(repository.localProfileId(), input) }
                 .onFailure { showError(it) }
                 .getOrNull() ?: return@launch
-            val month = if (YearMonth.from(input.date) != visibleMonth.value) {
-                visibleMonth.value = YearMonth.from(input.date)
-                visibleMonth.value
-            } else {
-                visibleMonth.value
-            }
-            selectedDate.value = input.date
-            _scheduleState.value = repository.getScheduleMonth(repository.localProfileId(), month, selectedDate.value, today)
-        }
-    }
-
-    fun addCompletedTraining(input: AddCompletedTrainingInput) {
-        viewModelScope.launch {
-            runCatching { repository.addCompletedTraining(repository.localProfileId(), input) }
-                .onFailure { showError(it) }
-                .getOrNull() ?: return@launch
             visibleMonth.value = YearMonth.from(input.date)
             selectedDate.value = input.date
             refreshSchedule()
-            _dataOperationState.value = DataOperationUiState(message = "Тренировка сохранена")
+        }
+    }
+
+    /** Runs independently of a dialog's composition; a rotation only detaches its waiter. */
+    private suspend fun trainingWrite(key: String, block: suspend () -> Unit) {
+        if (trainingWrites.size >= 64) trainingWrites.entries.removeAll { it.value.isCompleted }
+        val task = trainingWrites[key] ?: viewModelScope.async {
+            try { block() }
+            catch (e: Exception) { trainingWrites.remove(key); throw e }
+        }.also { trainingWrites[key] = it }
+        task.await()
+    }
+
+    suspend fun saveCompletedTraining(input: AddCompletedTrainingInput, requestId: String, snapshot: TrainingEditSnapshot? = null) {
+        trainingWrite(requestId) {
+            if (snapshot == null) repository.addCompletedTraining(repository.localProfileId(), input, requestId)
+            else repository.updateCompletedTraining(snapshot, input)
+            visibleMonth.value = YearMonth.from(input.date)
+            selectedDate.value = input.date
+            refreshSchedule()
+        }
+    }
+
+    suspend fun loadTrainingForEdit(id: Long) = repository.loadTrainingForEdit(id)
+
+    suspend fun deleteCompletedTraining(snapshot: TrainingEditSnapshot, requestId: String) {
+        trainingWrite(requestId) {
+            repository.deleteCompletedTraining(snapshot)
+            refreshSchedule()
         }
     }
 
@@ -259,13 +276,17 @@ class MainViewModel(
     }
 
     private fun refreshSchedule() {
-        viewModelScope.launch {
-            _scheduleState.value = repository.getScheduleMonth(
+        scheduleJob?.cancel()
+        val month = visibleMonth.value
+        val date = normalizeSelectedDate(selectedDate.value, month)
+        scheduleJob = viewModelScope.launch {
+            val next = repository.getScheduleMonth(
                 userId = repository.localProfileId(),
-                month = visibleMonth.value,
-                selectedDate = normalizeSelectedDate(selectedDate.value, visibleMonth.value),
-                today = today,
+                month = month,
+                selectedDate = date,
+                today = LocalDate.now(),
             )
+            _scheduleState.value = next
         }
     }
 
