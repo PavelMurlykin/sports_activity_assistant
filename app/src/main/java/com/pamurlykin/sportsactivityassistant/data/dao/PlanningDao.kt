@@ -40,13 +40,13 @@ interface PlanningDao {
         endDate: LocalDate,
     ): List<RecurrenceRuleEntity>
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertPlannedTraining(item: PlannedTrainingEntity): Long
 
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertRecurrenceRule(item: RecurrenceRuleEntity): Long
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertPlannedTrainings(items: List<PlannedTrainingEntity>)
 
     @Insert(onConflict = OnConflictStrategy.ABORT)

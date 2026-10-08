@@ -18,11 +18,13 @@ import java.util.UUID
 
 @Entity(
     tableName = "users",
+    indices = [Index(value = ["public_id"], unique = true)],
 )
 data class UserEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     @ColumnInfo(name = "display_name") val displayName: String? = null,
     @ColumnInfo(name = "created_at") val createdAt: Instant = Instant.now(),
+    @ColumnInfo(name = "public_id", defaultValue = "''") val publicId: String = UUID.randomUUID().toString(),
 )
 
 @Entity(
@@ -45,6 +47,15 @@ data class SportsComplexEntity(
     val city: String?,
     @ColumnInfo(name = "created_at") val createdAt: Instant = Instant.now(),
     @ColumnInfo(name = "public_id", defaultValue = "''") val publicId: String = UUID.randomUUID().toString(),
+    @ColumnInfo(name = "is_initial", defaultValue = "0") val isInitial: Boolean = false,
+)
+
+/** Remember explicitly confirmed center/profile mappings across subsequent files and restores. */
+@Entity(tableName = "import_aliases", primaryKeys = ["kind", "source_key"])
+data class ImportAliasEntity(
+    val kind: String,
+    @ColumnInfo(name = "source_key") val sourceKey: String,
+    @ColumnInfo(name = "target_public_id") val targetPublicId: String,
 )
 
 @Entity(

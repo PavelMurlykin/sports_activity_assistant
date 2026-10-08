@@ -21,6 +21,7 @@ import com.pamurlykin.sportsactivityassistant.data.entity.SportsComplexSportEnti
 import com.pamurlykin.sportsactivityassistant.data.entity.TrainingEntity
 import com.pamurlykin.sportsactivityassistant.data.entity.UserEntity
 import com.pamurlykin.sportsactivityassistant.data.entity.UserFavoriteComplexEntity
+import com.pamurlykin.sportsactivityassistant.data.entity.ImportAliasEntity
 
 @Database(
     entities = [
@@ -35,8 +36,9 @@ import com.pamurlykin.sportsactivityassistant.data.entity.UserFavoriteComplexEnt
         ClimbingRouteEntity::class,
         RecurrenceRuleEntity::class,
         PlannedTrainingEntity::class,
+        ImportAliasEntity::class,
     ],
-    version = 4,
+    version = 5,
     exportSchema = true,
 )
 @TypeConverters(Converters::class)
@@ -56,7 +58,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "sports_activity_assistant.db",
                 )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
                     .build()
                     .also { instance = it }
             }
@@ -64,6 +66,7 @@ abstract class AppDatabase : RoomDatabase() {
 
         val MIGRATION_2_3: Migration = LocalIdentityMigration()
         val MIGRATION_3_4: Migration = ClimbingGradesMigration()
+        val MIGRATION_4_5: Migration = ExchangeIdentityMigration()
 
         val MIGRATION_1_2 = object : Migration(1, 2) {
             override fun migrate(db: SupportSQLiteDatabase) {

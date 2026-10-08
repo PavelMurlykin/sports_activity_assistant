@@ -36,7 +36,7 @@ class ClimbingGradesMigrationTest {
         }
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val database = Room.databaseBuilder(context, AppDatabase::class.java, name)
-            .addMigrations(AppDatabase.MIGRATION_3_4).build()
+            .addMigrations(AppDatabase.MIGRATION_3_4, AppDatabase.MIGRATION_4_5).build()
         val restored = Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java).build()
         try {
             val routes = database.trainingDao().getAllTrainingBundles().single().climbing!!.routes.sortedBy { it.id }
@@ -64,7 +64,7 @@ class ClimbingGradesMigrationTest {
             assertEquals("old discipline", restoredRoutes[4].legacyWorkoutType)
             assertEquals(ClimbingWorkoutType.UNKNOWN, restoredRoutes[4].workoutType)
         } finally { database.close(); restored.close() }
-        helper.runMigrationsAndValidate(name, 4, true, AppDatabase.MIGRATION_3_4).close()
+        helper.runMigrationsAndValidate(name, 5, true, AppDatabase.MIGRATION_3_4, AppDatabase.MIGRATION_4_5).close()
         context.deleteDatabase(name)
     }
 }

@@ -58,7 +58,7 @@ object ClimbingModule : SportModule {
             ClimbingRouteEntity(climbingTrainingId = trainingId, workoutType = it.workoutType,
                 routeDifficulty = it.routeDifficulty, isCompleted = it.isCompleted, repeatCount = it.repeatCount,
                 gradingSystem = it.gradingSystem, gradeCode = it.gradeCode, speedCourse = it.speedCourse,
-                legacyWorkoutType = it.legacyWorkoutType)
+                legacyWorkoutType = it.legacyWorkoutType, publicId = it.publicId ?: java.util.UUID.randomUUID().toString())
         })
     }
 
@@ -73,14 +73,14 @@ object ClimbingModule : SportModule {
             ClimbingRouteInput(type, it.routeDifficulty, it.completed, it.repeatCount,
                 it.gradingSystem ?: historical.system,
                 if (it.gradingSystem == null) historical.code else it.gradeCode,
-                it.speedCourse, it.legacyWorkoutType)
+                it.speedCourse, it.legacyWorkoutType, it.publicId)
         })
     }
 
     fun encodeRoute(route: ClimbingRouteEntity): ClimbingRouteBackup = ClimbingRouteBackup(
         route.legacyWorkoutType ?: route.workoutType.storageValue, route.routeDifficulty,
         route.isCompleted, route.repeatCount, route.gradingSystem, route.gradeCode,
-        route.speedCourse, route.legacyWorkoutType,
+        route.speedCourse, route.legacyWorkoutType, route.publicId,
     )
 
     override fun encodeDetails(bundle: TrainingBundle, common: TrainingBackup): TrainingBackup = common.copy(

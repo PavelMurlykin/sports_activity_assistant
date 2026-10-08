@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 4,
+  "exportedAt": "2026-10-08T00:00:00Z",
+  "sports": [{"slug": "football", "title": "Футбол"}, {"slug": "climbing", "title": "Скалолазание"}],
+  "profiles": [{"publicId": "19a3dd81-eb2b-4f91-bebb-22ff24992fc3", "displayName": "Контрольная история", "createdAt": "2020-01-01T00:00:00Z"}],
+  "primaryProfilePublicId": "19a3dd81-eb2b-4f91-bebb-22ff24992fc3",
+  "centers": [{"publicId": "6b4783f8-02f6-48fb-a577-2d5b3f1ff37c", "createdAt": "2020-01-01T00:00:00Z", "name": "Контрольный центр", "city": "Москва", "sportSlugs": ["football", "climbing"]}],
+  "trainings": [
+    {
+      "publicId": "c538d72f-a491-4297-9869-f83fe476d36c", "createdAt": "2020-01-02T10:00:00.123Z", "date": "2020-01-02", "sportSlug": "football",
+      "centerPublicId": "6b4783f8-02f6-48fb-a577-2d5b3f1ff37c", "profilePublicId": "19a3dd81-eb2b-4f91-bebb-22ff24992fc3", "centerName": "Контрольный центр", "centerCity": "Москва",
+      "football": {"teamGoalsScored": 3, "teamGoalsConceded": 1, "userGoalsScored": 1, "userAssists": 1, "distanceKm": "7.35", "playersPerTeam": 5, "durationMinutes": 60}
+    },
+    {
+      "publicId": "d451c21f-ed05-4f4d-aa24-c755aefb2aa8", "createdAt": "2020-01-03T10:00:00Z", "date": "2020-01-03", "sportSlug": "climbing",
+      "centerPublicId": "6b4783f8-02f6-48fb-a577-2d5b3f1ff37c", "profilePublicId": "19a3dd81-eb2b-4f91-bebb-22ff24992fc3", "centerName": "Контрольный центр", "centerCity": "Москва",
+      "climbingRoutes": [
+        {"publicId": "5428c762-d03f-46c4-b622-8c16db7eac20", "workoutType": "difficulty", "routeDifficulty": "6b+", "gradingSystem": "french", "gradeCode": "6b+", "completed": true},
+        {"publicId": "68d32fae-6260-42ea-90ba-af977c8a4de6", "workoutType": "speed", "routeDifficulty": "", "gradingSystem": "none", "speedCourse": "standard_15m", "completed": false}
+      ]
+    }
+  ],
+  "recurrenceRules": [{"publicId": "a7ad5bdd-1c90-48f8-80bb-19df1fa7b1b6", "createdAt": "2020-01-01T00:00:00Z", "startDate": "2020-01-01", "endDate": "2020-02-01", "frequency": "weekly", "intervalWeeks": 1, "sportSlug": "football", "centerName": "Контрольный центр", "centerCity": "Москва", "centerPublicId": "6b4783f8-02f6-48fb-a577-2d5b3f1ff37c", "profilePublicId": "19a3dd81-eb2b-4f91-bebb-22ff24992fc3"}],
+  "plannedTrainings": [{"publicId": "96ecf74c-26d0-472c-86f7-844cc6a2a2e3", "createdAt": "2020-01-01T00:00:00Z", "date": "2020-01-08", "status": "canceled", "recurrenceRulePublicId": "a7ad5bdd-1c90-48f8-80bb-19df1fa7b1b6", "sportSlug": "football", "centerName": "Контрольный центр", "centerCity": "Москва", "centerPublicId": "6b4783f8-02f6-48fb-a577-2d5b3f1ff37c", "profilePublicId": "19a3dd81-eb2b-4f91-bebb-22ff24992fc3"}],
+  "favorites": [{"profilePublicId": "19a3dd81-eb2b-4f91-bebb-22ff24992fc3", "centerPublicId": "6b4783f8-02f6-48fb-a577-2d5b3f1ff37c", "createdAt": "2020-01-01T00:00:00Z"}],
+  "aliases": []
+}

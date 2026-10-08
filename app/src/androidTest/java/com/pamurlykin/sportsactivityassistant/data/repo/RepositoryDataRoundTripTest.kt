@@ -38,9 +38,9 @@ class RepositoryDataRoundTripTest {
             val first = targetRepository.importData(backup.toByteArray(), 1)
             val second = targetRepository.importData(backup.toByteArray(), 1)
 
-            assertTrue(backup.contains("\"schemaVersion\": 3"))
-            assertEquals(1, first.importedTrainings)
-            assertEquals(3, first.skippedTrainings)
+            assertTrue(backup.contains("\"schemaVersion\": 4"))
+            assertEquals(4, first.importedTrainings)
+            assertEquals(0, first.skippedTrainings)
             assertEquals(0, second.importedTrainings)
             assertEquals(4, second.skippedTrainings)
         } finally {
@@ -61,8 +61,12 @@ class RepositoryDataRoundTripTest {
             """.trimIndent().toByteArray()
             val repository = AppRepository(database)
 
-            assertEquals(1, repository.importData(csv, 1).importedTrainings)
-            assertEquals(1, repository.importData(csv, 1).skippedTrainings)
+            val parsed = repository.prepareImport(csv)
+            val preview = repository.previewImport(parsed)
+            assertTrue(!preview.canApply)
+            val choices = preview.choices.copy(centerMappings = mapOf(parsed.document.centers.single().publicId!! to database.referenceDao().getComplex(2)!!.publicId))
+            assertEquals(1, repository.applyImport(parsed, choices).importedTrainings)
+            assertEquals(1, repository.applyImport(parsed, choices).skippedTrainings)
         } finally {
             database.close()
         }

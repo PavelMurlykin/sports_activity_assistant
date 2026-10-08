@@ -1,6 +1,5 @@
 package com.pamurlykin.sportsactivityassistant.ui.screen
 
-import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -22,50 +21,39 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.LaunchedEffect
+import com.pamurlykin.sportsactivityassistant.ui.components.ImportPreviewContent
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import java.time.LocalDate
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DataManagementScreen(viewModel: MainViewModel) {
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
     val state by viewModel.dataOperationState.collectAsState()
-
-    fun save(uri: Uri) {
-        scope.launch {
-            runCatching {
-                val backup = viewModel.createBackup()
-                withContext(Dispatchers.IO) {
-                    context.contentResolver.openOutputStream(uri, "w")?.use { stream ->
-                        stream.write(backup.toByteArray(Charsets.UTF_8))
-                    } ?: error("Не удалось открыть файл для записи")
-                }
-            }.onSuccess { viewModel.reportBackupSaved() }.onFailure(viewModel::reportDataError)
+    val busy by viewModel.fileBusy.collectAsState()
+    val ready by viewModel.exportReady.collectAsState()
+    val preview by viewModel.importPreview.collectAsState()
+    val resolver = context.applicationContext.contentResolver
+    val exportLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
+        viewModel.exportSelected(resolver, uri)
+    }
+    val importLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        viewModel.importSelected(resolver, uri)
+    }
+    LaunchedEffect(ready) {
+        if (ready) {
+            viewModel.exportLaunched()
+            try { exportLauncher.launch("sports-activity-${LocalDate.now()}.json") }
+            catch (e: Exception) { viewModel.reportDataError(e) }
         }
     }
-
-    val exportLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.CreateDocument("application/json"),
-    ) { uri -> uri?.let(::save) }
-    val importLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        uri?.let {
-            scope.launch {
-                runCatching {
-                    withContext(Dispatchers.IO) {
-                        context.contentResolver.openInputStream(it)?.use { stream -> stream.readBytes() }
-                            ?: error("Не удалось прочитать выбранный файл")
-                    }
-                }.onSuccess(viewModel::importData).onFailure(viewModel::reportDataError)
-            }
-        }
+    preview?.let {
+        ImportPreviewContent(it, state.inProgress, state.message, viewModel::changeImportChoices, viewModel::confirmImport, viewModel::cancelFile)
+        return
     }
 
     Scaffold(topBar = { TopAppBar(title = { Text("Данные", fontWeight = FontWeight.Bold) }) }) { padding ->
@@ -88,7 +76,8 @@ fun DataManagementScreen(viewModel: MainViewModel) {
                         Text("Данные хранятся только на устройстве. JSON содержит центры, тренировки, спортивную статистику и планы календаря. Автоматический системный бэкап отключён.")
                         Text("Файл не зашифрован. Для работы без интернета выбирайте хранилище устройства в системном диалоге.")
                         Button(
-                            onClick = { exportLauncher.launch("sports-activity-${LocalDate.now()}.json") },
+                            onClick = viewModel::prepareExport,
+                            enabled = !busy,
                             modifier = Modifier.fillMaxWidth(),
                         ) { Text("Сохранить копию в файл") }
                     }
@@ -101,11 +90,15 @@ fun DataManagementScreen(viewModel: MainViewModel) {
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
                         Text("Импорт", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                        Text("Поддерживаются резервные копии JSON и футбольная история из CSV. Совпадающие по содержанию тренировки пропускаются. Интернет и внешний аккаунт не нужны.")
+                        Text("JSON версий 1–4 и футбольный CSV: перед применением — проверка, выбор профиля и центров. Совпадения UUID пропускаются; одинаковые тренировки с разными UUID сохраняются. Лимит файла — 16 МиБ.")
                         OutlinedButton(
-                            onClick = { importLauncher.launch(arrayOf("application/json", "text/csv", "text/*", "application/octet-stream")) },
+                            onClick = {
+                                if (viewModel.beginImportSelection()) try {
+                                    importLauncher.launch(arrayOf("application/json", "text/csv", "text/*", "application/octet-stream"))
+                                } catch (e: Exception) { viewModel.reportDataError(e) }
+                            },
                             modifier = Modifier.fillMaxWidth(),
-                            enabled = !state.inProgress,
+                            enabled = !busy,
                         ) { Text("Выбрать файл") }
                     }
                 }
@@ -122,7 +115,7 @@ fun DataManagementScreen(viewModel: MainViewModel) {
                                 message,
                                 color = if (state.isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
                             )
-                            OutlinedButton(onClick = viewModel::clearDataMessage) { Text("Закрыть") }
+                            OutlinedButton(onClick = viewModel::clearDataMessage, enabled = !state.inProgress) { Text("Закрыть") }
                         }
                     }
                 }

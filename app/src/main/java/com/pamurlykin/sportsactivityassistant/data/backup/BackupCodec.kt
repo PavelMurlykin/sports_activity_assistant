@@ -7,36 +7,50 @@ import com.pamurlykin.sportsactivityassistant.data.model.HistoricalClimbingGrade
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.int
 
 object BackupCodec {
     private val json = Json {
         prettyPrint = true
         encodeDefaults = true
-        ignoreUnknownKeys = true
+        ignoreUnknownKeys = false
     }
 
     fun encode(document: BackupDocument): String = json.encodeToString(document)
 
     fun decode(raw: String): BackupDocument {
+        sourceVersion(raw)
         val document = json.decodeFromString<BackupDocument>(raw)
         require(document.schemaVersion in 1..BackupDocument.CURRENT_SCHEMA_VERSION) {
             "Версия резервной копии ${document.schemaVersion} не поддерживается"
         }
         if (document.schemaVersion >= 3) {
             require(document.trainings.flatMap { it.climbingRoutes }.all { it.gradingSystem != null }) {
-                "В копии версии 3 должна быть указана шкала каждой трассы"
+                "В копии версии 3/4 должна быть указана шкала каждой трассы"
             }
             return document
         }
         require(document.trainings.flatMap { it.climbingRoutes }.all {
             it.gradingSystem == null && it.gradeCode == null && it.speedCourse == null && it.legacyWorkoutType == null
         }) { "Данные шкалы не соответствуют версии копии" }
-        return document.copy(schemaVersion = BackupDocument.CURRENT_SCHEMA_VERSION, trainings = document.trainings.map { training -> training.copy(
+        return document.copy(schemaVersion = 3, trainings = document.trainings.map { training -> training.copy(
             climbingRoutes = training.climbingRoutes.map { route ->
                 val grade = HistoricalClimbingGrades.classify(route.workoutType, route.routeDifficulty)
                 route.copy(gradingSystem = grade.system, gradeCode = grade.code)
             },
         ) })
+    }
+
+    fun sourceVersion(raw: String): Int {
+        val value = requireNotNull(json.parseToJsonElement(raw).jsonObject["schemaVersion"]) {
+            "JSON: поле schemaVersion обязательно"
+        }.jsonPrimitive
+        require(!value.isString) { "JSON: schemaVersion должно быть целым числом, не строкой" }
+        val version = value.int
+        require(version in 1..BackupDocument.CURRENT_SCHEMA_VERSION) { "Версия резервной копии $version не поддерживается" }
+        return version
     }
 
     fun decodeText(bytes: ByteArray): String {

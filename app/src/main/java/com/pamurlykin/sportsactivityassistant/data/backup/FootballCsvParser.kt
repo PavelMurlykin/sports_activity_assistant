@@ -12,80 +12,95 @@ data class LegacyFootballCsvRow(
     val userGoalsScored: Int,
     val userAssists: Int,
     val distanceKm: BigDecimal?,
+    val playersPerTeam: Int? = null,
+    val durationMinutes: Int? = null,
+    val sourceLine: Int = 0,
 )
 
 object FootballCsvParser {
-    private val requiredHeaders = setOf(
-        "user_id",
-        "training_date",
-        "sports_complex_id",
-        "team_goals_scored",
-        "team_goals_conceded",
-        "user_goals_scored",
-        "user_assists",
-        "distance_km",
-    )
+    private val requiredHeaders = setOf("user_id", "training_date", "sports_complex_id",
+        "team_goals_scored", "team_goals_conceded", "user_goals_scored", "user_assists")
+    private data class Record(val line: Int, val cells: List<String>)
 
     fun parse(raw: String): List<LegacyFootballCsvRow> {
-        val records = raw.lineSequence().filter(String::isNotBlank).toList()
-        require(records.isNotEmpty()) { "CSV-файл пуст" }
-        val delimiter = if (countUnquoted(records.first(), ';') >= countUnquoted(records.first(), ',')) ';' else ','
-        val headers = splitRecord(records.first(), delimiter).map { it.trim() }
+        val text = raw.removePrefix("\uFEFF")
+        val header = text.lineSequence().firstOrNull(String::isNotBlank) ?: error("CSV-файл пуст")
+        val delimiter = if (header.count { it == ';' } >= header.count { it == ',' }) ';' else ','
+        val records = records(text, delimiter)
+        val headers = records.first().cells.map { it.trim() }
+        require(headers.distinct().size == headers.size) { "CSV: повторяющиеся колонки заголовка" }
         val missing = requiredHeaders - headers.toSet()
         require(missing.isEmpty()) { "В CSV отсутствуют колонки: ${missing.sorted().joinToString()}" }
-
-        return records.drop(1).mapIndexed { index, record ->
-            val values = splitRecord(record, delimiter)
-            require(values.size == headers.size) { "Строка ${index + 2}: число значений не совпадает с заголовком" }
-            val row = headers.zip(values).toMap()
-            fun required(name: String): String = row.getValue(name).trim().also {
-                require(it.isNotEmpty()) { "Строка ${index + 2}: поле $name не заполнено" }
+        require(records.size > 1) { "В CSV нет тренировок" }
+        return records.drop(1).map { record ->
+            require(record.cells.size == headers.size) { "Строка ${record.line}: число значений не совпадает с заголовком" }
+            val row = headers.zip(record.cells).toMap()
+            fun required(name: String) = row.getValue(name).trim().also {
+                require(it.isNotEmpty()) { "Строка ${record.line}, $name: поле не заполнено" }
             }
-            fun nonNegative(name: String): Int = required(name).toInt().also {
-                require(it >= 0) { "Строка ${index + 2}: поле $name не может быть отрицательным" }
+            fun long(name: String) = requireNotNull(required(name).toLongOrNull()) {
+                "Строка ${record.line}, $name: требуется целое число"
+            }.also { require(it > 0) { "Строка ${record.line}, $name: значение должно быть положительным" } }
+            fun number(name: String) = requireNotNull(required(name).toIntOrNull()) {
+                "Строка ${record.line}, $name: требуется целое число в диапазоне Int"
+            }.also { require(it >= 0) { "Строка ${record.line}, $name: значение не может быть отрицательным" } }
+            fun optional(name: String) = row[name]?.trim()?.takeIf(String::isNotEmpty)?.let {
+                requireNotNull(it.toIntOrNull()) { "Строка ${record.line}, $name: требуется целое число" }
             }
-
-            LegacyFootballCsvRow(
-                sourceUserId = required("user_id").toLong().also { require(it > 0) },
-                trainingDate = LocalDate.parse(required("training_date")),
-                sportsComplexId = required("sports_complex_id").toLong().also { require(it > 0) },
-                teamGoalsScored = nonNegative("team_goals_scored"),
-                teamGoalsConceded = nonNegative("team_goals_conceded"),
-                userGoalsScored = nonNegative("user_goals_scored"),
-                userAssists = nonNegative("user_assists"),
-                distanceKm = row.getValue("distance_km").trim().takeIf(String::isNotEmpty)
-                    ?.replace(',', '.')
-                    ?.toBigDecimal()
-                    ?.also { require(it >= BigDecimal.ZERO) },
-            )
+            val date = runCatching { LocalDate.parse(required("training_date")) }.getOrElse {
+                error("Строка ${record.line}, training_date: используйте YYYY-MM-DD")
+            }
+            val distance = row["distance_km"]?.trim()?.takeIf(String::isNotEmpty)?.let {
+                require(it.length <= 64) { "Строка ${record.line}, distance_km: слишком длинное число" }
+                requireNotNull(it.replace(',', '.').toBigDecimalOrNull()) { "Строка ${record.line}, distance_km: неверное число" }
+            }
+            LegacyFootballCsvRow(long("user_id"), date, long("sports_complex_id"), number("team_goals_scored"),
+                number("team_goals_conceded"), number("user_goals_scored"), number("user_assists"), distance,
+                optional("players_per_team"), optional("duration_minutes"), record.line)
         }
     }
 
-    private fun countUnquoted(value: String, delimiter: Char): Int = splitRecord(value, delimiter).size
-
-    private fun splitRecord(record: String, delimiter: Char): List<String> {
-        val result = mutableListOf<String>()
-        val current = StringBuilder()
+    /** Quoted separators, doubled quotes and embedded newlines, with physical source line numbers. */
+    private fun records(text: String, delimiter: Char): List<Record> {
+        val result = mutableListOf<Record>()
+        val cells = mutableListOf<String>()
+        val field = StringBuilder()
         var quoted = false
-        var index = 0
-        while (index < record.length) {
-            val char = record[index]
-            when {
-                char == '"' && quoted && record.getOrNull(index + 1) == '"' -> {
-                    current.append('"')
-                    index++
-                }
-                char == '"' -> quoted = !quoted
-                char == delimiter && !quoted -> {
-                    result += current.toString()
-                    current.clear()
-                }
-                else -> current.append(char)
+        var closed = false
+        var line = 1
+        var startLine = 1
+        var i = 0
+        fun endField() { cells += field.toString(); field.clear(); closed = false }
+        fun endRecord() {
+            endField()
+            if (cells.any(String::isNotBlank)) {
+                require(result.size <= ImportFiles.MAX_ITEMS) { "CSV: слишком много записей" }
+                result += Record(startLine, cells.toList())
             }
-            index++
+            cells.clear()
         }
-        require(!quoted) { "В CSV обнаружена незакрытая кавычка" }
-        result += current.toString()
+        while (i < text.length) {
+            val char = text[i]
+            when {
+                quoted && char == '"' && text.getOrNull(i + 1) == '"' -> { field.append('"'); i++ }
+                quoted && char == '"' -> { quoted = false; closed = true }
+                quoted -> { field.append(char); if (char == '\n') line++ }
+                char == '"' -> {
+                    require(!closed && field.isBlank()) { "Строка $line: кавычка внутри некавыченного поля" }
+                    field.clear(); quoted = true
+                }
+                char == delimiter -> endField()
+                char == '\n' || char == '\r' -> {
+                    if (char == '\r' && text.getOrNull(i + 1) == '\n') i++
+                    endRecord(); line++; startLine = line
+                }
+                closed -> require(char == ' ' || char == '\t') { "Строка $line: символ после закрывающей кавычки" }
+                else -> field.append(char)
+            }
+            i++
+        }
+        require(!quoted) { "Строка $startLine: незакрытая кавычка" }
+        if (field.isNotEmpty() || cells.isNotEmpty() || closed) endRecord()
         return result
     }
 }

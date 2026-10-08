@@ -26,7 +26,7 @@ object LocalSeed {
                 Triple("Фабрика Футбола", "Санкт-Петербург", footballId),
                 Triple("Арена на горе", "Анталья", footballId),
             ).forEach { (name, city, sportId) ->
-                val id = references.insertComplex(SportsComplexEntity(name = name, city = city))
+                val id = references.insertComplex(SportsComplexEntity(name = name, city = city, isInitial = true))
                 references.insertComplexSports(listOf(SportsComplexSportEntity(sportsComplexId = id, sportId = sportId)))
             }
         }

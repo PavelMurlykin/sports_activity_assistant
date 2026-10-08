@@ -1,5 +1,12 @@
 ﻿package com.pamurlykin.sportsactivityassistant.ui.screen
 
+import android.content.ContentResolver
+import android.net.Uri
+import com.pamurlykin.sportsactivityassistant.data.backup.*
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.withContext
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -28,6 +35,17 @@ class MainViewModel(
     private val selectedDate = MutableStateFlow(today)
     private val _scheduleState = MutableStateFlow<ScheduleMonthUiModel?>(null)
     private val _dataOperationState = MutableStateFlow(DataOperationUiState())
+
+    private val _importPreview = MutableStateFlow<ImportPreview?>(null)
+    private val _fileBusy = MutableStateFlow(false)
+    private val _exportReady = MutableStateFlow(false)
+    val importPreview = _importPreview.asStateFlow()
+    val fileBusy = _fileBusy.asStateFlow()
+    val exportReady = _exportReady.asStateFlow()
+    private var pendingImport: ParsedImport? = null
+    private var pendingExport: ByteArray? = null
+    private var phase = "idle"
+    private var previewJob: Job? = null
 
     val scheduleState: StateFlow<ScheduleMonthUiModel?> = _scheduleState.asStateFlow()
     val dataOperationState: StateFlow<DataOperationUiState> = _dataOperationState.asStateFlow()
@@ -112,31 +130,129 @@ class MainViewModel(
 
     fun statisticsForSport(sportId: Int) = repository.observeSportStatistics(sportId)
 
-    suspend fun createBackup(): String = repository.createBackup()
+    private fun beginFile(nextPhase: String): Boolean {
+        if (_fileBusy.value) return false
+        _fileBusy.value = true
+        phase = nextPhase
+        _dataOperationState.value = DataOperationUiState(inProgress = true, message = "Работа с файлом…")
+        return true
+    }
 
-    fun importData(bytes: ByteArray) {
+    fun beginImportSelection(): Boolean = beginFile("importSelection")
+
+    fun importSelected(resolver: ContentResolver, uri: Uri?) {
+        if (phase != "importSelection") {
+            if (uri != null && phase == "idle") showError(IllegalStateException("Выбор файла прерван. Выберите файл ещё раз; база не изменена."))
+            return
+        }
+        if (uri == null) { cancelFile(); return }
+        phase = "reading"
         viewModelScope.launch {
-            _dataOperationState.value = DataOperationUiState(inProgress = true, message = "Импорт данных…")
-            runCatching { repository.importData(bytes, repository.localProfileId()) }
-                .onSuccess { result ->
-                    _dataOperationState.value = DataOperationUiState(
-                        message = "Импорт завершён: ${result.importedTrainings} добавлено, ${result.skippedTrainings} пропущено (${result.source})" +
-                            if (result.historicalRouteAttempts > 0) "\nВ файле ${result.historicalRouteAttempts} исторических попыток: шкала/трасса не подтверждена, категории не участвуют в максимумах." else "",
-                    )
-                    refreshSchedule()
-                }
-                .onFailure(::showError)
+            try {
+                val bytes = withContext(Dispatchers.IO) { LocalFiles.read(resolver, uri) }
+                val source = repository.prepareImport(bytes)
+                pendingImport = source
+                _importPreview.value = repository.previewImport(source)
+                phase = "preview"
+                _dataOperationState.value = DataOperationUiState()
+            } catch (e: CancellationException) { throw e }
+            catch (e: Exception) { finishFile(); showError(e) }
         }
     }
 
-    fun reportBackupSaved() {
-        _dataOperationState.value = DataOperationUiState(message = "Резервная копия сохранена")
+    fun changeImportChoices(choices: ImportChoices) {
+        if (phase !in setOf("preview", "previewing")) return
+        val source = pendingImport ?: return
+        previewJob?.cancel()
+        phase = "previewing"
+        _dataOperationState.value = DataOperationUiState(inProgress = true, message = "Проверка выбора…")
+        previewJob = viewModelScope.launch {
+            try {
+                _importPreview.value = repository.previewImport(source, choices)
+                phase = "preview"
+                _dataOperationState.value = DataOperationUiState()
+            } catch (e: CancellationException) { throw e }
+            catch (e: Exception) { phase = "preview"; showError(e) }
+        }
     }
 
-    fun reportDataError(error: Throwable) = showError(error)
+    fun confirmImport() {
+        if (phase != "preview") return
+        val source = pendingImport ?: return
+        val preview = _importPreview.value?.takeIf { it.canApply } ?: return
+        phase = "applying"
+        _dataOperationState.value = DataOperationUiState(inProgress = true, message = "Применение импорта…")
+        viewModelScope.launch {
+            try {
+                val r = repository.applyImport(source, preview.choices)
+                finishFile()
+                _dataOperationState.value = DataOperationUiState(message =
+                    "Импорт завершён: ${r.importedTrainings} тренировок добавлено, ${r.skippedTrainings} пропущено; " +
+                    "${r.importedPlans} планов, ${r.importedRules} серий, ${r.importedCenters} центров, ${r.importedFavorites} избранных. " +
+                    if (r.historicalRouteAttempts > 0) "\n${r.historicalRouteAttempts} исторических попыток без сравнимой оценки." else "")
+                refreshSchedule()
+            } catch (e: CancellationException) { throw e }
+            catch (e: Exception) {
+                phase = "preview"
+                _importPreview.value = repository.previewImport(source, preview.choices)
+                showError(e)
+            }
+        }
+    }
+
+    fun prepareExport() {
+        if (!beginFile("exportPreparing")) return
+        viewModelScope.launch {
+            try {
+                val bytes = repository.createBackup().toByteArray(Charsets.UTF_8)
+                require(bytes.size <= ImportFiles.MAX_BYTES) { "Копия превышает поддерживаемый лимит 16 МиБ" }
+                pendingExport = bytes
+                phase = "exportSelection"
+                _exportReady.value = true
+            } catch (e: CancellationException) { throw e }
+            catch (e: Exception) { cancelFile(); showError(e) }
+        }
+    }
+
+    fun exportLaunched() { _exportReady.value = false }
+
+    fun exportSelected(resolver: ContentResolver, uri: Uri?) {
+        if (uri == null) { if (phase == "exportSelection") cancelFile(); return }
+        val bytes = pendingExport
+        if (phase != "exportSelection" || bytes == null) {
+            showError(IllegalStateException("Операция прервана. Файл может быть пустым; создайте новую копию."))
+            return
+        }
+        phase = "writing"
+        viewModelScope.launch {
+            try {
+                withContext(Dispatchers.IO) { LocalFiles.writeVerified(resolver, uri, bytes) }
+                finishFile()
+                _dataOperationState.value = DataOperationUiState(message = "Копия сохранена и проверена чтением файла")
+            } catch (e: CancellationException) { throw e }
+            catch (e: Exception) { finishFile(); showError(e) }
+        }
+    }
+
+    fun cancelFile() {
+        if (phase == "applying" || phase == "writing") return
+        previewJob?.cancel()
+        pendingImport = null; pendingExport = null
+        _importPreview.value = null; _exportReady.value = false
+        _fileBusy.value = false
+        phase = "idle"
+        _dataOperationState.value = DataOperationUiState()
+    }
+
+    private fun finishFile() {
+        phase = "finished"
+        cancelFile()
+    }
+
+    fun reportDataError(error: Throwable) { finishFile(); showError(error) }
 
     fun clearDataMessage() {
-        _dataOperationState.value = DataOperationUiState()
+        if (!_dataOperationState.value.inProgress) _dataOperationState.value = DataOperationUiState()
     }
 
     fun sportTitle(sportId: Int): String {

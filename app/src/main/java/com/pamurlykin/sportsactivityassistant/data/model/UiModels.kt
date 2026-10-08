@@ -157,6 +157,7 @@ data class ClimbingRouteInput(
     val gradeCode: String? = ClimbingDifficultyCatalog.find(gradingSystem, routeDifficulty)?.code,
     val speedCourse: String? = null,
     val legacyWorkoutType: String? = null,
+    val publicId: String? = null,
 )
 
 data class AddCompletedTrainingInput(

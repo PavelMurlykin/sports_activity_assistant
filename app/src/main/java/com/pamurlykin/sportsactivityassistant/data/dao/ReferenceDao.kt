@@ -12,10 +12,18 @@ import com.pamurlykin.sportsactivityassistant.data.entity.SportsComplexSportEnti
 import com.pamurlykin.sportsactivityassistant.data.entity.SportsComplexWithSports
 import com.pamurlykin.sportsactivityassistant.data.entity.UserEntity
 import com.pamurlykin.sportsactivityassistant.data.entity.UserFavoriteComplexEntity
+import com.pamurlykin.sportsactivityassistant.data.entity.ImportAliasEntity
 import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface ReferenceDao {
+    @Update suspend fun updateUser(item: UserEntity)
+    @Insert suspend fun insertUser(item: UserEntity): Long
+    @Query("SELECT * FROM import_aliases ORDER BY kind, source_key")
+    suspend fun getImportAliases(): List<ImportAliasEntity>
+    @Insert(onConflict = OnConflictStrategy.ABORT)
+    suspend fun insertImportAlias(item: ImportAliasEntity)
+
     @Query("SELECT * FROM sports ORDER BY id")
     fun observeSports(): Flow<List<SportEntity>>
 

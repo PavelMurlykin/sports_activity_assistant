@@ -30,7 +30,7 @@ class ClimbingExchangeTest {
                 ClimbingRouteInput(ClimbingWorkoutType.SPEED, "", false, speedCourse = "other"),
             )))
             val backup = BackupCodec.decode(repository.createBackup())
-            assertEquals(3, backup.schemaVersion)
+            assertEquals(4, backup.schemaVersion)
             val rows = backup.trainings.single().climbingRoutes
             assertEquals(listOf("french", "fontainebleau", "none", "none"), rows.map { it.gradingSystem })
             val importer = AppRepository(target)
@@ -80,7 +80,7 @@ class ClimbingExchangeTest {
             val repository = AppRepository(db)
             val user = repository.localProfileId()
             val before = BackupCodec.decode(repository.createBackup()).copy(exportedAt = "")
-            val document = BackupDocument(exportedAt = "2026-10-07T00:00:00Z", sports = listOf(SportBackup("climbing", "Скалолазание")),
+            val document = BackupDocument(schemaVersion = 3, exportedAt = "2026-10-07T00:00:00Z", sports = listOf(SportBackup("climbing", "Скалолазание")),
                 centers = listOf(CenterBackup(name = "Новый зал", sportSlugs = listOf("climbing"))),
                 trainings = listOf(TrainingBackup(date = "2026-10-07", sportSlug = "climbing", centerName = "Новый зал", climbingRoutes = listOf(
                     ClimbingRouteBackup("bouldering", "6A", true, gradingSystem = "french", gradeCode = "6a")))))

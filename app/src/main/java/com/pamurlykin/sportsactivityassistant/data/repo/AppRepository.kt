@@ -1,20 +1,13 @@
 package com.pamurlykin.sportsactivityassistant.data.repo
 
 import androidx.room.withTransaction
+import com.pamurlykin.sportsactivityassistant.data.backup.*
+import com.pamurlykin.sportsactivityassistant.data.model.TrainingValidation
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import com.pamurlykin.sportsactivityassistant.data.AppDatabase
-import com.pamurlykin.sportsactivityassistant.data.backup.BackupCodec
-import com.pamurlykin.sportsactivityassistant.data.backup.BackupDocument
-import com.pamurlykin.sportsactivityassistant.data.backup.CenterBackup
-import com.pamurlykin.sportsactivityassistant.data.backup.FootballBackup
-import com.pamurlykin.sportsactivityassistant.data.backup.FootballCsvParser
-import com.pamurlykin.sportsactivityassistant.data.backup.ImportResult
-import com.pamurlykin.sportsactivityassistant.data.backup.PlannedTrainingBackup
-import com.pamurlykin.sportsactivityassistant.data.backup.RecurrenceRuleBackup
-import com.pamurlykin.sportsactivityassistant.data.backup.SportBackup
-import com.pamurlykin.sportsactivityassistant.data.backup.TrainingBackup
 import com.pamurlykin.sportsactivityassistant.data.entity.PlannedTrainingEntity
 import com.pamurlykin.sportsactivityassistant.data.entity.RecurrenceRuleEntity
-import com.pamurlykin.sportsactivityassistant.data.entity.SportEntity
 import com.pamurlykin.sportsactivityassistant.data.entity.SportsComplexEntity
 import com.pamurlykin.sportsactivityassistant.data.entity.SportsComplexSportEntity
 import com.pamurlykin.sportsactivityassistant.data.entity.TrainingBundle
@@ -22,7 +15,6 @@ import com.pamurlykin.sportsactivityassistant.data.entity.TrainingEntity
 import com.pamurlykin.sportsactivityassistant.data.model.AddCompletedTrainingInput
 import com.pamurlykin.sportsactivityassistant.data.model.AddPlannedTrainingInput
 import com.pamurlykin.sportsactivityassistant.data.model.ComplexOptionUiModel
-import com.pamurlykin.sportsactivityassistant.data.model.HistoricalClimbingGrades
 import com.pamurlykin.sportsactivityassistant.data.model.PlannedTrainingStatus
 import com.pamurlykin.sportsactivityassistant.data.model.RecurrenceFrequency
 import com.pamurlykin.sportsactivityassistant.data.model.SaveSportsCenterInput
@@ -36,7 +28,6 @@ import com.pamurlykin.sportsactivityassistant.data.model.SportsCenterUiModel
 import com.pamurlykin.sportsactivityassistant.data.model.StatisticsOverviewUiModel
 import com.pamurlykin.sportsactivityassistant.data.model.TrainingSessionUiModel
 import java.time.DayOfWeek
-import java.time.Instant
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.temporal.TemporalAdjusters
@@ -49,7 +40,6 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import com.pamurlykin.sportsactivityassistant.data.seed.LocalSeed
 import com.pamurlykin.sportsactivityassistant.data.sport.SportModules
-import com.pamurlykin.sportsactivityassistant.data.sport.ClimbingModule
 
 class AppRepository(private val database: AppDatabase) {
     private val initializationLock = Mutex()
@@ -72,16 +62,16 @@ class AppRepository(private val database: AppDatabase) {
     fun observeStatisticsOverview(): Flow<StatisticsOverviewUiModel> = readyFlow { combine(
         database.referenceDao().observeSports(),
         database.trainingDao().observeAllTrainingBundles(),
-        StatisticsMapper::overview,
-    ) }
+    ) { sports, bundles -> StatisticsMapper.overview(sports, bundles.filter { it.training.userId == profileId }) }
+    }
 
     fun observeTrainingsForSport(sportId: Int): Flow<List<TrainingSessionUiModel>> =
-        readyFlow { database.trainingDao().observeTrainingBundlesBySport(sportId).map { it.map(::mapTrainingBundle) } }
+        readyFlow { database.trainingDao().observeTrainingBundlesBySport(sportId).map { it.filter { bundle -> bundle.training.userId == profileId }.map(::mapTrainingBundle) } }
 
     fun observeSportStatistics(sportId: Int): Flow<SportStatisticsUiModel?> = readyFlow { combine(
         database.referenceDao().observeSports(),
         database.trainingDao().observeTrainingBundlesBySport(sportId),
-    ) { sports, bundles -> sports.firstOrNull { it.id == sportId }?.let { StatisticsMapper.sport(it, bundles) } } }
+    ) { sports, bundles -> sports.firstOrNull { it.id == sportId }?.let { StatisticsMapper.sport(it, bundles.filter { bundle -> bundle.training.userId == profileId }) } } }
 
     fun observeSportsCenters(): Flow<List<SportsCenterUiModel>> =
         readyFlow { database.referenceDao().observeComplexesWithSports().map { centers ->
@@ -107,7 +97,7 @@ class AppRepository(private val database: AppDatabase) {
         input.sportIds.forEach { id -> SportModules.require(requireNotNull(database.referenceDao().getSport(id)) { "Вид спорта не найден" }.slug) }
         val existing = input.id?.let { requireNotNull(database.referenceDao().getComplex(it)) { "Спортивный центр не найден" } }
         val entity = (existing ?: SportsComplexEntity(name = input.name, city = input.city)).copy(
-            name = input.name.trim(), city = input.city?.trim()?.takeIf(String::isNotBlank),
+            name = input.name.trim(), city = input.city?.trim()?.takeIf(String::isNotBlank), isInitial = false,
         )
         val centerId = if (input.id == null) {
             database.referenceDao().insertComplex(entity)
@@ -123,6 +113,7 @@ class AppRepository(private val database: AppDatabase) {
     }
 
     suspend fun addCompletedTraining(userId: Long, input: AddCompletedTrainingInput): Long = readyTransaction {
+        TrainingValidation.date(input.date)
         val sport = requireNotNull(database.referenceDao().getSport(input.sportId)) { "Вид спорта не найден" }
         require(database.referenceDao().getComplexesForSport(sport.id).any { it.id == input.complexId }) {
             "Выбранный спорт недоступен в этом центре"
@@ -190,8 +181,8 @@ class AppRepository(private val database: AppDatabase) {
         val sport = requireNotNull(database.referenceDao().getSport(input.sportId)) { "Вид спорта не найден" }
         SportModules.require(sport.slug)
         require(database.referenceDao().getComplexesForSport(sport.id).any { it.id == input.complexId }) { "Выбранный спорт недоступен в этом центре" }
-        require(input.intervalWeeks > 0) { "Интервал должен быть положительным" }
-        require(input.endDate == null || input.endDate >= input.date) { "Дата окончания раньше начала серии" }
+        require(database.referenceDao().getUsers().any { it.id == userId }) { "Локальный профиль не найден" }
+        TrainingValidation.recurrence(input.date, input.endDate, input.intervalWeeks)
         if (input.repeatWeekly) {
             database.planningDao().insertRecurrenceRule(
                 RecurrenceRuleEntity(
@@ -210,166 +201,30 @@ class AppRepository(private val database: AppDatabase) {
         }
     }
 
-    suspend fun createBackup(): String = readyTransaction {
-        val sports = database.referenceDao().getSports()
-        val sportsById = sports.associateBy { it.id }
-        val centers = database.referenceDao().getComplexesWithSports()
-        val trainings = database.trainingDao().getAllTrainingBundles()
-        val centerById = centers.associateBy { it.complex.id }
-        val document = BackupDocument(
-            exportedAt = Instant.now().toString(),
-            sports = sports.map { SportBackup(it.slug, it.title) },
-            centers = centers.map { item ->
-                CenterBackup(item.complex.id, item.complex.name, item.complex.city, item.sports.map { it.slug })
-            },
-            trainings = trainings.map { bundle ->
-                val common = TrainingBackup(
-                    legacyId = bundle.training.id, date = bundle.training.trainingDate.toString(),
-                    sportSlug = bundle.sport.slug, centerLegacyId = bundle.complex.id,
-                    centerName = bundle.complex.name, centerCity = bundle.complex.city,
-                )
-                // Preserve all stored payloads, even inconsistent historical ones from old imports.
-                // Current writers cannot create mixed payloads, but export must never silently lose one.
-                SportModules.all.fold(common) { backup, module -> module.encodeDetails(bundle, backup) }
-            },
-            plannedTrainings = database.planningDao().getAllPlannedTrainings().mapNotNull { item ->
-                val sport = sportsById[item.sportId] ?: return@mapNotNull null
-                val center = centerById[item.sportsComplexId]?.complex ?: return@mapNotNull null
-                PlannedTrainingBackup(item.plannedDate.toString(), sport.slug, center.name, center.city, item.status.storageValue)
-            },
-            recurrenceRules = database.planningDao().getAllRecurrenceRules().mapNotNull { item ->
-                val sport = sportsById[item.sportId] ?: return@mapNotNull null
-                val center = centerById[item.sportsComplexId]?.complex ?: return@mapNotNull null
-                RecurrenceRuleBackup(
-                    item.startDate.toString(), item.endDate?.toString(), sport.slug,
-                    center.name, center.city, item.intervalWeeks,
-                )
-            },
-        )
-        BackupCodec.encode(document)
+    suspend fun createBackup(): String = withContext(Dispatchers.IO) {
+        readyTransaction {
+            val document = DataExchange(database).snapshot(localProfileId())
+            require(document.objectCount() <= ImportFiles.MAX_ITEMS) { "Копия превышает поддерживаемый лимит 100000 объектов" }
+            BackupCodec.encode(document).also { require(it.toByteArray(Charsets.UTF_8).size <= ImportFiles.MAX_BYTES) { "Копия превышает поддерживаемый лимит 16 МиБ" } }
+        }
     }
 
+    suspend fun prepareImport(bytes: ByteArray): ParsedImport = withContext(Dispatchers.Default) { ImportParser.parse(bytes) }
+
+    suspend fun previewImport(source: ParsedImport, choices: ImportChoices? = null): ImportPreview = withContext(Dispatchers.IO) {
+        readyTransaction { DataExchange(database).preview(source, choices, localProfileId()) }
+    }
+
+    suspend fun applyImport(source: ParsedImport, choices: ImportChoices): ImportResult = withContext(Dispatchers.IO) {
+        readyTransaction { DataExchange(database).apply(source, choices, localProfileId()) }
+    }
+
+    /** Non-UI clients must provide explicit choices when defaults cannot safely resolve a file. */
     suspend fun importData(bytes: ByteArray, userId: Long): ImportResult {
-        localProfileId()
-        val raw = BackupCodec.decodeText(bytes).trim()
-        require(raw.isNotEmpty()) { "Файл пуст" }
-        return if (raw.startsWith("{")) importBackup(BackupCodec.decode(raw), userId) else importFootballCsv(raw, userId)
-    }
-
-    private suspend fun importFootballCsv(raw: String, userId: Long): ImportResult = readyTransaction {
-        val rows = FootballCsvParser.parse(raw)
-        val sport = requireNotNull(database.referenceDao().getSportBySlug("football")) { "Справочник футбола не найден" }
-        val centers = database.referenceDao().getAllComplexes().associateBy { it.id }
-        val existing = database.trainingDao().getAllTrainingBundles().map(::fingerprint).toMutableSet()
-        var imported = 0
-        var skipped = 0
-        rows.forEachIndexed { index, row ->
-            val center = centers[row.sportsComplexId]
-                ?: error("Строка ${index + 2}: спортивный центр id=${row.sportsComplexId} не найден")
-            val backup = TrainingBackup(
-                date = row.trainingDate.toString(), sportSlug = sport.slug,
-                centerLegacyId = center.id, centerName = center.name, centerCity = center.city,
-                football = FootballBackup(
-                    row.teamGoalsScored, row.teamGoalsConceded, row.userGoalsScored,
-                    row.userAssists, row.distanceKm?.toPlainString(),
-                ),
-            )
-            if (!existing.add(fingerprint(backup))) {
-                skipped++
-            } else {
-                insertBackupTraining(backup, userId, sport, center)
-                imported++
-            }
-        }
-        ImportResult(imported, skipped, 0, "футбольный CSV")
-    }
-
-    private suspend fun importBackup(document: BackupDocument, userId: Long): ImportResult = readyTransaction {
-        // Reject every unsupported reference before creating centers or writing any history.
-        (document.sports.map { it.slug } + document.centers.flatMap { it.sportSlugs } +
-            document.trainings.map { it.sportSlug } + document.plannedTrainings.map { it.sportSlug } +
-            document.recurrenceRules.map { it.sportSlug }).distinct().forEach { SportModules.require(it) }
-        val referenceDao = database.referenceDao()
-        val sports = referenceDao.getSports().associateBy { it.slug }.toMutableMap()
-        document.sports.forEach { backup ->
-            if (backup.slug !in sports) {
-                referenceDao.insertSports(listOf(SportEntity(slug = backup.slug, title = backup.title)))
-                sports[backup.slug] = requireNotNull(referenceDao.getSportBySlug(backup.slug))
-            }
-        }
-        val centers = referenceDao.getAllComplexes().associateBy { centerKey(it.name, it.city) }.toMutableMap()
-        var importedCenters = 0
-        document.centers.forEach { backup ->
-            val key = centerKey(backup.name, backup.city)
-            val center = centers[key] ?: SportsComplexEntity(
-                id = referenceDao.insertComplex(SportsComplexEntity(name = backup.name, city = backup.city)),
-                name = backup.name, city = backup.city,
-            ).also { centers[key] = it; importedCenters++ }
-            val currentLinks = referenceDao.getComplexSports().filter { it.sportsComplexId == center.id }.map { it.sportId }.toSet()
-            val newIds = backup.sportSlugs.mapNotNull(sports::get).map { it.id }.filterNot(currentLinks::contains)
-            if (newIds.isNotEmpty()) referenceDao.insertComplexSports(newIds.map { SportsComplexSportEntity(sportsComplexId = center.id, sportId = it) })
-        }
-        val existing = database.trainingDao().getAllTrainingBundles().map(::fingerprint).toMutableSet()
-        var imported = 0
-        var skipped = 0
-        document.trainings.forEach { backup ->
-            val sport = requireNotNull(sports[backup.sportSlug]) { "Неизвестный вид спорта: ${backup.sportSlug}" }
-            val center = centers[centerKey(backup.centerName, backup.centerCity)]
-                ?: error("Спортивный центр «${backup.centerName}» отсутствует в копии")
-            val module = SportModules.require(sport.slug)
-            module.validate(module.decodeDetails(backup, sport.id, center.id), allowHistorical = true)
-            if (!existing.add(fingerprint(backup))) skipped++ else {
-                insertBackupTraining(backup, userId, sport, center)
-                imported++
-            }
-        }
-        importPlans(document, userId, sports, centers)
-        ImportResult(imported, skipped, importedCenters, "резервная копия JSON",
-            document.trainings.flatMap { it.climbingRoutes }.filter { it.gradingSystem == "legacy" }.sumOf { it.repeatCount.toLong() })
-    }
-
-    private suspend fun insertBackupTraining(backup: TrainingBackup, userId: Long, sport: SportEntity, center: SportsComplexEntity) {
-        val module = SportModules.require(sport.slug)
-        val input = module.decodeDetails(backup, sport.id, center.id)
-        module.validate(input, allowHistorical = true)
-        require(database.referenceDao().getComplexesForSport(sport.id).any { it.id == center.id }) { "Выбранный спорт недоступен в этом центре" }
-        val id = database.trainingDao().insertTraining(
-            TrainingEntity(userId = userId, sportId = sport.id, sportsComplexId = center.id, trainingDate = input.date),
-        )
-        module.insertDetails(database.trainingDao(), id, input)
-    }
-
-    private suspend fun importPlans(
-        document: BackupDocument,
-        userId: Long,
-        sports: Map<String, SportEntity>,
-        centers: Map<String, SportsComplexEntity>,
-    ) {
-        val existingPlans = database.planningDao().getAllPlannedTrainings().map { "${it.sportId}|${it.sportsComplexId}|${it.plannedDate}" }.toSet()
-        document.plannedTrainings.forEach { backup ->
-            val sport = sports[backup.sportSlug] ?: return@forEach
-            val center = centers[centerKey(backup.centerName, backup.centerCity)] ?: return@forEach
-            val key = "${sport.id}|${center.id}|${backup.date}"
-            if (key !in existingPlans) database.planningDao().insertPlannedTraining(
-                PlannedTrainingEntity(
-                    userId = userId, sportId = sport.id, sportsComplexId = center.id,
-                    plannedDate = LocalDate.parse(backup.date),
-                    status = PlannedTrainingStatus.fromStorage(backup.status),
-                ),
-            )
-        }
-        val existingRules = database.planningDao().getAllRecurrenceRules().map { "${it.sportId}|${it.sportsComplexId}|${it.startDate}|${it.endDate}" }.toSet()
-        document.recurrenceRules.forEach { backup ->
-            val sport = sports[backup.sportSlug] ?: return@forEach
-            val center = centers[centerKey(backup.centerName, backup.centerCity)] ?: return@forEach
-            val key = "${sport.id}|${center.id}|${backup.startDate}|${backup.endDate}"
-            if (key !in existingRules) database.planningDao().insertRecurrenceRule(
-                RecurrenceRuleEntity(
-                    userId = userId, sportId = sport.id, sportsComplexId = center.id,
-                    startDate = LocalDate.parse(backup.startDate), endDate = backup.endDate?.let(LocalDate::parse),
-                    frequency = RecurrenceFrequency.WEEKLY, intervalWeeks = backup.intervalWeeks.coerceAtLeast(1),
-                ),
-            )
+        require(userId == localProfileId()) { "Импорт выполняется через текущий локальный профиль" }
+        val source = prepareImport(bytes)
+        return withContext(Dispatchers.IO) {
+            readyTransaction { DataExchange(database).apply(source, null, userId) }
         }
     }
 
@@ -385,38 +240,6 @@ class AppRepository(private val database: AppDatabase) {
     private fun trainingDetails(bundle: TrainingBundle): List<String> =
         SportModules.find(bundle.sport.slug)?.details(bundle)
             ?: listOf("Историческая запись: этот вид спорта не поддерживается текущей версией")
-
-    private fun fingerprint(bundle: TrainingBundle): String = fingerprint(
-        TrainingBackup(
-            date = bundle.training.trainingDate.toString(), sportSlug = bundle.sport.slug,
-            centerName = bundle.complex.name, centerCity = bundle.complex.city,
-            football = bundle.football?.let {
-                FootballBackup(
-                    it.teamGoalsScored, it.teamGoalsConceded, it.userGoalsScored, it.userAssists,
-                    it.distanceKm?.stripTrailingZeros()?.toPlainString(), it.playersPerTeam, it.durationMinutes,
-                )
-            },
-            climbingRoutes = bundle.climbing?.routes.orEmpty().map {
-                ClimbingModule.encodeRoute(it)
-            },
-        ),
-    )
-
-    private fun fingerprint(item: TrainingBackup): String = listOf(
-        item.date, item.sportSlug, centerKey(item.centerName, item.centerCity),
-        item.football?.let {
-            listOf(it.teamGoalsScored, it.teamGoalsConceded, it.userGoalsScored, it.userAssists, it.distanceKm?.toBigDecimalOrNull()?.stripTrailingZeros(), it.playersPerTeam, it.durationMinutes).joinToString(":")
-        }.orEmpty(),
-        item.climbingRoutes.map {
-            // Compare canonical metadata too: identical labels in different scales are not identical data.
-            val historical = HistoricalClimbingGrades.classify(it.workoutType, it.routeDifficulty)
-            val system = it.gradingSystem ?: historical.system
-            val code = if (it.gradingSystem == null) historical.code else it.gradeCode
-            "${it.workoutType}:${it.routeDifficulty}:${it.completed}:${it.repeatCount}:$system:$code:${it.speedCourse}:${it.legacyWorkoutType}"
-        }.sorted().joinToString(";"),
-    ).joinToString("|")
-
-    private fun centerKey(name: String, city: String?): String = "${name.trim().lowercase()}|${city.orEmpty().trim().lowercase()}"
 
     private fun expandRecurringDates(rule: RecurrenceRuleEntity, rangeStart: LocalDate, rangeEnd: LocalDate): List<LocalDate> {
         if (rule.frequency != RecurrenceFrequency.WEEKLY) return emptyList()

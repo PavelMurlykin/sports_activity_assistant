@@ -69,7 +69,7 @@ interface TrainingDao {
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertClimbingTraining(item: ClimbingTrainingEntity)
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertClimbingRoutes(items: List<ClimbingRouteEntity>)
 
     @Query("DELETE FROM trainings")

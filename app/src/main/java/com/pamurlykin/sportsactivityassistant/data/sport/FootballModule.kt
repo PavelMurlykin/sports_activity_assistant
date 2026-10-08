@@ -25,6 +25,9 @@ object FootballModule : SportModule {
         require(details.userGoalsScored <= details.teamGoalsScored) { "Личные голы не могут превышать счёт команды" }
         require(details.userAssists <= details.teamGoalsScored) { "Передачи не могут превышать число голов команды" }
         require(details.distanceKm == null || details.distanceKm >= BigDecimal.ZERO) { "Дистанция не может быть отрицательной" }
+        require(details.distanceKm == null || (details.distanceKm.precision() <= 16 && details.distanceKm.scale() in -6..6)) {
+            "Дистанция: не более 16 значащих цифр и 6 десятичных знаков"
+        }
         require(details.playersPerTeam == null || details.playersPerTeam > 0) { "Число игроков должно быть положительным" }
         require(details.durationMinutes == null || details.durationMinutes > 0) { "Время игры должно быть положительным" }
     }
@@ -42,14 +45,14 @@ object FootballModule : SportModule {
         val it = requireNotNull(backup.football) { "В футбольной записи отсутствует статистика" }
         return AddCompletedTrainingInput(sportId, complexId, LocalDate.parse(backup.date), football = FootballTrainingInput(
             it.teamGoalsScored, it.teamGoalsConceded, it.userGoalsScored, it.userAssists,
-            it.distanceKm?.toBigDecimal(), it.playersPerTeam, it.durationMinutes,
+            it.distanceKm?.also { value -> require(value.length <= 64) { "Слишком длинная дистанция" } }?.toBigDecimal(), it.playersPerTeam, it.durationMinutes,
         ))
     }
 
     override fun encodeDetails(bundle: TrainingBundle, common: TrainingBackup): TrainingBackup = common.copy(
         football = bundle.football?.let {
             FootballBackup(it.teamGoalsScored, it.teamGoalsConceded, it.userGoalsScored, it.userAssists,
-                it.distanceKm?.toPlainString(), it.playersPerTeam, it.durationMinutes)
+                it.distanceKm?.toString(), it.playersPerTeam, it.durationMinutes)
         },
     )
 

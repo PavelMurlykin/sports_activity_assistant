@@ -8,13 +8,13 @@ Install the debug APK from `app/build/outputs/apk/debug/app-debug.apk`, built as
 
 Before uninstalling the app or clearing its data, save a backup: both actions remove the local database. Do not install test builds over your only copy of important history without first saving a file.
 
-Upgrading to the current database schema (version 4) preserves local keys, UUIDs, workouts, historical route repeat counts, centers, plans and their relationships. Inherited external profile identifiers are removed; an existing local name is retained. Reference initialization completes before data reads and writes without overwriting existing records. Broken references abort the migration; the database is not automatically recreated.
+Upgrading to the current database schema (version 5) preserves local keys, UUIDs, workouts, historical route repeat counts, centers, plans and their relationships. Inherited external profile identifiers are removed; an existing local name is retained. Reference initialization completes before data reads and writes without overwriting existing records. Broken references abort the migration; the database is not automatically recreated.
 
 ## Recording a workout
 
-On «Расписание» (Schedule), press the add button and select «Записать результат» (Record result). Choose a sport, date and sports center that offers that sport. The current date field uses `YYYY-MM-DD`.
+On «Расписание» (Schedule), press the add button and select «Записать результат» (Record result). Choose a sport, date and sports center that offers that sport. The current date field uses `YYYY-MM-DD`, with years 0001–9999.
 
-For football, enter team goals scored/conceded, personal goals and assists. Zero results are valid. Optionally enter distance in kilometers, players per team and game duration in minutes; optional fields may be left empty. Distance accepts a decimal point or comma. Negative values are invalid; players and duration must be positive when supplied.
+For football, enter team goals scored/conceded, personal goals and assists. Zero results are valid. Optionally enter distance in kilometers, players per team and game duration in minutes; optional fields may be left empty. Distance accepts a decimal point or comma, up to 16 significant digits and 6 decimal places. Negative values are invalid; players and duration must be positive when supplied.
 
 Personal goals and assists, each considered separately, cannot exceed the team's goals scored. A football record cannot contain climbing routes, and a climbing record cannot contain football metrics. The common record and all sport details are saved together: an error does not leave an incomplete workout. Two identical workouts on the same day can be recorded manually; each has its own stable identifier within the database.
 
@@ -42,24 +42,39 @@ On «Центры» (Centers), add a center with its name, optional city and ava
 
 ## Import and backup
 
-On «Данные» (Data), press «Сохранить копию в файл» (Save backup to file), choose a local folder in Android's system file dialog and confirm. Version 3 JSON contains sports, centers and their associations, workouts with sport-specific details, one-off plans and recurrence rules, plus grading system, grade code, original label and speed course type. The file is not encrypted. The app does not upload it to a server; if you select a cloud provider in the system dialog, file handling depends on that third-party app. Choose device storage for fully local operation.
+On «Данные» (Data), press «Сохранить копию в файл» (Save backup to file) and choose a local folder in Android's system dialog. Version 4 JSON preserves UUIDs and creation times for profiles, centers, workouts, routes, plans and series; sport details, statuses and plan-to-series links; favorite centers and confirmed legacy-file mappings. The snapshot is consistent, and the written file is read back and checked. Only successful verification produces «Копия сохранена и проверена чтением файла» (Backup saved and verified by reading the file). Canceling the dialog is not success. A failed file may be incomplete: do not replace your previous verified copy with it.
 
-To import, press «Выбрать файл» (Choose file). JSON backup versions 1–3 are supported (older versions are explicitly adapted while retaining original grades), as are football CSV files with UTF-8/UTF-8 BOM or Windows-1251 encoding and `;` or `,` delimiters. Do not import a new backup into an older app build. After import, a warning is shown if the file contains unconfirmed historical attempts. Example CSV:
+The file is not encrypted. The app does not upload it; cloud entries in the system dialog belong to third-party apps. Choose device storage for fully local operation. Broad storage permissions are not required. Import and export are limited to 16 MiB and 100000 objects in total, including routes and reference records.
+
+To import, press «Выбрать файл» (Choose file). Supported formats are JSON 1–4 with valid UTF-8 and football CSV with UTF-8/BOM or Windows-1251 encoding and `;` or `,` delimiters. CSV supports quoted fields, doubled quotes and embedded newlines. Example including optional fields:
 
 ```csv
-user_id;training_date;sports_complex_id;team_goals_scored;team_goals_conceded;user_goals_scored;user_assists;distance_km
-1;2025-12-14;2;5;3;2;1;7,35
+user_id;training_date;sports_complex_id;team_goals_scored;team_goals_conceded;user_goals_scored;user_assists;distance_km;players_per_team;duration_minutes
+1;2025-12-14;2;5;3;2;1;7,35;5;60
+1;2025-12-21;2;1;1;0;1;;;
 ```
 
-The center ID must already exist in the app. Initial centers: `1` — «Энергия Высоты» (climbing), `2` — «Фабрика Футбола» (football), `3` — «Арена на горе» (football). CSV does not yet import players per team, duration or climbing data. `user_id` is only a field in the older file format; data always goes into the local profile. Do not combine different people's histories in an imported file.
+Distance, players-per-team and duration columns may be omitted; empty values remain absent. With a comma delimiter, quote a number containing a decimal comma. Climbing CSV is not supported yet; multiple routes in one workout are transferred through JSON.
 
-Import merges records with existing data without clearing the database. Content-identical workouts are skipped, which may collapse two real identical workouts. There is no preview or unknown-center mapping yet. JSON does not preserve a planned occurrence's association with a series and does not guarantee full restoration of every state. Keep the source file and check workout counts, details and calendar after import. An import-success message does not replace verification of restored data.
+«Проверка импорта» (Import review) first shows format, counts, errors, warnings and center mappings. A CSV center number is only a hint, not a reliable ID on a new installation: confirm an existing center or creation of a historical center. Mapping to a user center preserves its name, creation time and current offerings. Historical workouts may refer to a sport no longer offered there; new workouts and plans still require the sport to be available.
 
-An unsupported sport, mixed sport details, a scale incompatible with its discipline, an invalid attempt count or an unknown discipline without explicit historical-record metadata causes an error without partially saving that file. An unknown discipline stored in an old database is not replaced with lead; version 3 JSON preserves it as explicitly historical, without comparing its grade. Unsupported historical sports already in the database are not deleted: common information remains viewable, but new results cannot be added for them. Version 3 JSON does not yet transfer stable identifiers; content-based deduplication limitations still apply. The initial numeric center IDs in the example apply only to a fresh installation and may differ after migration.
+If the file contains several `user_id` values or local profiles, choose one for the current personal history or «Сохранить все отдельно» (Keep all separately). In the latter case, the primary profile corresponds to current personal statistics; other profiles are retained separately and included in the next backup. Their results are not mixed into the current calendar or statistics; profile switching is not available in the UI yet. `user_id` is only a file field, not an external account. Old JSON did not contain owners, so original user separation cannot be recovered from it.
+
+The center directory is shared: the file's entire directory is imported even when selecting one profile. Other profiles' history and favorites are not imported in that mode. If different profiles were already explicitly merged into the personal history by earlier imports, the app cannot split them automatically: the keep-all-separately mode is blocked for that mapping. You can import a selected profile separately.
+
+An existing UUID is skipped. If the same UUID contains different data, explicitly confirm «Сохранить локальную запись» (Keep local record): import will not overwrite a workout, plan, series, center or profile metadata. Identical real workouts with different UUIDs are both retained. Content matches are suggestions only: select «Пропустить запись из файла» (Skip file record) only after checking. This skip is not a permanent prohibition on later imports.
+
+For older files without UUIDs, identity depends on exact file bytes and record position. An unchanged file can be imported again without duplicates; changing encoding, whitespace or rows creates a different source. Keep original files. JSON 1–3 did not preserve creation times or one-off-plan-to-series links: missing information is not guessed, and creation times are assigned during import.
+
+Press «Применить импорт» (Apply import) after reviewing. Until then, the database is unchanged; «Отмена» (Cancel) closes the preview. Any file or write error rolls back the entire operation; existing data is never cleared. Reading and parsing run in the background, and repeated file operations are blocked. Preview and backup snapshot survive rotation, but process termination requires restarting the operation; an interrupted export file may be empty.
+
+Unknown JSON versions/fields, unsupported sports, mixed sport details, invalid scale/grade, date, number, status, frequency or missing reference cause an error without partial writes. Explicitly historical unknown disciplines and original categories are retained without highest-grade comparisons. Data from an inconsistent old database is exported without silent removal, but validation may reject reimport; retain the original and do not manually alter your only copy.
+
+Check workout counts, details and calendar after transfer. New backups cannot be imported into older app builds. A [format and limitations reference](backup-format.md) is included in the project.
 
 ## Known limitations
 
-Safe identifier exchange, complete restoration, historical-scale confirmation, result editing, linking plans to results and advanced filters are planned, not available features. Other scales, such as V-scale or UIAA, cannot yet be selected for new routes. Compatibility with your multi-year history and applicability of the selected scales to your gyms require anonymized examples and confirmation. No external connection is required to transfer files.
+Historical-scale confirmation, result editing, linking plans to results and advanced filters are planned, not available features. Other scales, such as V-scale or UIAA, cannot yet be selected for new routes. Compatibility with your multi-year history and applicability of the selected scales to your gyms require anonymized examples and confirmation. No external connection is required to transfer files.
 
 ## Build and verification for developers
 

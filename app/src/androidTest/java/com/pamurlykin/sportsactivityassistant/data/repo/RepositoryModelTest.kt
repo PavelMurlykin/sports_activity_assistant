@@ -113,7 +113,7 @@ class RepositoryModelTest {
         withDatabase { database, repository ->
             val user = repository.localProfileId()
             val before = repository.createBackup()
-            val backup = BackupDocument(exportedAt = Instant.now().toString(),
+            val backup = BackupDocument(schemaVersion = 3, exportedAt = Instant.now().toString(),
                 sports = listOf(SportBackup("unsupported", "Другой спорт")),
                 centers = listOf(CenterBackup(name = "Новый центр", city = null, sportSlugs = listOf("unsupported"))),
                 trainings = emptyList())
