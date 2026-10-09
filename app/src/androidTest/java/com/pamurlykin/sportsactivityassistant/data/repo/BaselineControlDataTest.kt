@@ -57,7 +57,7 @@ class BaselineControlDataTest {
             assertEquals("4 км", football["Учтённая дистанция"])
             assertEquals("40 мин", football["Средняя длительность"])
             val climbing = metrics("climbing")
-            assertEquals("3", climbing["Трассы"])
+            assertEquals("3", climbing["Попытки (с повторами)"])
             assertEquals("2 (66%)", climbing["Успешно пройдено"])
             assertEquals("6a+", climbing["Максимум · Трудность (Французская)"])
 

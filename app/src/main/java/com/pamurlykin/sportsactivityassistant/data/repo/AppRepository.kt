@@ -39,6 +39,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.flowOn
 import com.pamurlykin.sportsactivityassistant.data.model.*
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -63,19 +64,59 @@ class AppRepository(private val database: AppDatabase) {
         return database.withTransaction(block)
     }
 
-    fun observeStatisticsOverview(): Flow<StatisticsOverviewUiModel> = readyFlow { combine(
-        database.referenceDao().observeSports(),
-        database.trainingDao().observeAllTrainingBundles(),
-    ) { sports, bundles -> StatisticsMapper.overview(sports, bundles.filter { it.training.userId == profileId }) }
+    private fun observeStatisticsChanges() = database.invalidationTracker.createFlow(
+        "trainings", "football_trainings", "climbing_routes", "sports", "sports_complexes",
+    )
+
+    fun observeStatisticsOverview(filter: StatisticsFilter = StatisticsFilter()): Flow<StatisticsOverviewUiModel> =
+        readyFlow { observeStatisticsChanges().map {
+            readyTransaction {
+                val user = localProfileId()
+                val dao = database.trainingDao()
+                val sports = database.referenceDao().getSports()
+                val counts = dao.sportCounts(user, filter.firstDate, filter.lastDate, filter.centerId)
+                val highlights = sports.associate { sport ->
+                    sport.id to SportModules.find(sport.slug)?.aggregate(dao, StatisticsSelection(user, sport.id, filter), includeMetrics = false)?.highlights.orEmpty()
+                }
+                StatisticsMapper.aggregatedOverview(sports, counts,
+                    dao.monthCounts(user, filter.firstDate, filter.lastDate, filter.centerId), highlights, filter)
+            }
+        } }.flowOn(Dispatchers.IO)
+
+    /** Compatibility API: the first bounded page, not the entire training history. */
+    fun observeTrainingsForSport(sportId: Int): Flow<List<TrainingSessionUiModel>> =
+        observeTrainingPage(sportId).map { it.items }
+
+    fun observeTrainingPage(sportId: Int, filter: StatisticsFilter = StatisticsFilter(), page: Int = 0): Flow<TrainingPageUiModel> {
+        require(page >= 0) { "Некорректная страница" }
+        return readyFlow { observeStatisticsChanges().map {
+            readyTransaction {
+                val dao = database.trainingDao()
+                val user = localProfileId()
+                val total = dao.trainingCount(user, sportId, filter.firstDate, filter.lastDate, filter.centerId)
+                val pageCount = ((total.toLong() + TrainingPageUiModel.SIZE - 1) / TrainingPageUiModel.SIZE).toInt().coerceAtLeast(1)
+                val actual = page.coerceAtMost(pageCount - 1)
+                TrainingPageUiModel(dao.trainingPage(user, sportId, filter.firstDate, filter.lastDate,
+                    filter.centerId, TrainingPageUiModel.SIZE, actual * TrainingPageUiModel.SIZE).map(::mapTrainingBundle), actual, total, filter)
+            }
+        } }.flowOn(Dispatchers.IO)
     }
 
-    fun observeTrainingsForSport(sportId: Int): Flow<List<TrainingSessionUiModel>> =
-        readyFlow { database.trainingDao().observeTrainingBundlesBySport(sportId).map { it.filter { bundle -> bundle.training.userId == profileId }.map(::mapTrainingBundle) } }
-
-    fun observeSportStatistics(sportId: Int): Flow<SportStatisticsUiModel?> = readyFlow { combine(
-        database.referenceDao().observeSports(),
-        database.trainingDao().observeTrainingBundlesBySport(sportId),
-    ) { sports, bundles -> sports.firstOrNull { it.id == sportId }?.let { StatisticsMapper.sport(it, bundles.filter { bundle -> bundle.training.userId == profileId }) } } }
+    fun observeSportStatistics(sportId: Int, filter: StatisticsFilter = StatisticsFilter()): Flow<SportStatisticsUiModel?> =
+        readyFlow { observeStatisticsChanges().map {
+            readyTransaction {
+                database.referenceDao().getSport(sportId)?.let { sport ->
+                    val module = SportModules.find(sport.slug)
+                    val selection = StatisticsSelection(localProfileId(), sport.id, filter)
+                    val metrics = module?.aggregate(database.trainingDao(), selection)?.metrics ?: listOf(
+                        MetricUiModel("Исторические тренировки", database.trainingDao().trainingCount(
+                            selection.userId, sportId, filter.firstDate, filter.lastDate, filter.centerId).toString()),
+                        MetricUiModel("Статистика", "Вид спорта не поддерживается"),
+                    )
+                    SportStatisticsUiModel(sport.id, sport.slug, sport.title, metrics, filter)
+                }
+            }
+        } }.flowOn(Dispatchers.IO)
 
     fun observeSportsCenters(): Flow<List<SportsCenterUiModel>> =
         readyFlow { database.referenceDao().observeComplexesWithSports().map { centers ->
@@ -157,9 +198,13 @@ class AppRepository(private val database: AppDatabase) {
         trainingId
     }
 
-    private fun sameInput(a: AddCompletedTrainingInput, b: AddCompletedTrainingInput): Boolean =
-        a.copy(climbingRoutes = a.climbingRoutes.sortedBy { it.publicId }) ==
-            b.copy(climbingRoutes = b.climbingRoutes.sortedBy { it.publicId })
+    private fun sameInput(a: AddCompletedTrainingInput, b: AddCompletedTrainingInput): Boolean {
+        fun canonical(it: AddCompletedTrainingInput) = it.copy(
+            football = it.football?.let { details -> details.copy(distanceKm = details.distanceKm?.stripTrailingZeros()) },
+            climbingRoutes = it.climbingRoutes.sortedBy { route -> route.publicId },
+        )
+        return canonical(a) == canonical(b)
+    }
 
     private fun editSnapshot(bundle: TrainingBundle): TrainingEditSnapshot {
         val module = SportModules.require(bundle.sport.slug)
@@ -276,10 +321,10 @@ class AppRepository(private val database: AppDatabase) {
     }
 
     fun observeScheduleMonth(userId: Long, month: YearMonth, selectedDate: LocalDate, today: LocalDate): Flow<ScheduleMonthUiModel> =
-        readyFlow { combine(database.planningDao().observeChanges(), database.trainingDao().observeAllTrainingBundles(),
-            database.referenceDao().observeComplexesWithSports(), database.referenceDao().observeSports()) { _, _, _, _ ->
+        readyFlow { database.invalidationTracker.createFlow("planned_trainings", "recurrence_rules",
+            "trainings", "football_trainings", "climbing_routes", "sports_complexes", "sports").map {
                 getScheduleMonth(userId, month, selectedDate, today)
-            } }
+            } }.flowOn(Dispatchers.IO)
 
     suspend fun addPlannedTraining(userId: Long, input: AddPlannedTrainingInput, requestId: String = java.util.UUID.randomUUID().toString()): Long =
         readyTransaction { PlanningStore(database, userId).create(input, requestId) }

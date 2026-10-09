@@ -50,7 +50,7 @@ class StatisticsMapperTest {
 
         val values = StatisticsMapper.sport(sport, listOf(bundle)).metrics.associate { it.label to it.value }
 
-        assertEquals("4", values["Трассы"])
+        assertEquals("4", values["Попытки (с повторами)"])
         assertEquals("3 (75%)", values["Успешно пройдено"])
         assertEquals("6b", values["Максимум · Трудность (Французская)"])
     }

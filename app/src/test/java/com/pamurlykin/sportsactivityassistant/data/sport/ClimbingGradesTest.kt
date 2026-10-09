@@ -50,7 +50,7 @@ class ClimbingGradesTest {
         val bundle = TrainingBundle(TrainingEntity(1, 1, 2, 1, date), SportEntity(2, "climbing", "Скалолазание"),
             SportsComplexEntity(1, "Центр", null), null, ClimbingTrainingWithRoutes(ClimbingTrainingEntity(1), routes))
         val metrics = ClimbingModule.metrics(listOf(bundle)).associate { it.label to it.value }
-        assertEquals("12", metrics["Трассы"])
+        assertEquals("12", metrics["Попытки (с повторами)"])
         assertEquals("11 (91%)", metrics["Успешно пройдено"])
         assertEquals("6b+", metrics["Максимум · Трудность (Французская)"])
         assertEquals("7A", metrics["Максимум · Болдер (Fontainebleau)"])
@@ -64,7 +64,7 @@ class ClimbingGradesTest {
         val bundle = TrainingBundle(TrainingEntity(1, 1, 2, 1, date), SportEntity(2, "climbing", "Скалолазание"),
             SportsComplexEntity(1, "Центр", null), null, ClimbingTrainingWithRoutes(ClimbingTrainingEntity(1), routes))
         val metrics = ClimbingModule.metrics(listOf(bundle)).associate { it.label to it.value }
-        assertEquals("4294967294", metrics["Трассы"])
+        assertEquals("4294967294", metrics["Попытки (с повторами)"])
         assertEquals("4294967294 (100%)", metrics["Успешно пройдено"])
     }
 }

@@ -65,6 +65,7 @@ data class StatisticsOverviewUiModel(
     val totalTrainings: Int,
     val sports: List<SportSummaryUiModel>,
     val months: List<MonthStatisticsUiModel> = emptyList(),
+    val filter: StatisticsFilter = StatisticsFilter(),
 )
 
 data class MetricUiModel(
@@ -77,6 +78,7 @@ data class SportStatisticsUiModel(
     val sportSlug: String,
     val sportTitle: String,
     val metrics: List<MetricUiModel>,
+    val filter: StatisticsFilter = StatisticsFilter(),
 )
 
 data class ComplexOptionUiModel(

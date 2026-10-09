@@ -63,10 +63,10 @@ class ClimbingExchangeTest {
             assertEquals(0, repository.importData(bytes, user).importedTrainings)
             val sport = db.referenceDao().getSportBySlug("climbing")!!
             val metrics = repository.observeSportStatistics(sport.id).first()!!.metrics.associate { it.label to it.value }
-            assertEquals("10", metrics["Трассы"])
+            assertEquals("10", metrics["Попытки (с повторами)"])
             assertEquals("9", metrics["Исторические категории без сравнения"])
             assertEquals("6b", metrics["Максимум · Трудность (Французская)"])
-            assertNull(metrics["Максимум · Болдер (Fontainebleau)"])
+            assertEquals("Нет успешных", metrics["Максимум · Болдер (Fontainebleau)"])
             val details = repository.observeTrainingsForSport(sport.id).first().single().details
             assertTrue(details.any { it.contains(" 7B  (историческая") })
             assertTrue(details.any { it.contains("10Z (историческая") })

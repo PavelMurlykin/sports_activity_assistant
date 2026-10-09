@@ -5,6 +5,8 @@ import com.pamurlykin.sportsactivityassistant.data.dao.TrainingDao
 import com.pamurlykin.sportsactivityassistant.data.entity.TrainingBundle
 import com.pamurlykin.sportsactivityassistant.data.model.AddCompletedTrainingInput
 import com.pamurlykin.sportsactivityassistant.data.model.MetricUiModel
+import com.pamurlykin.sportsactivityassistant.data.model.StatisticsSelection
+import com.pamurlykin.sportsactivityassistant.data.model.SportAggregate
 
 /** Sport-specific policy. A matching editor is registered in ui.components.SportEditors. */
 interface SportModule {
@@ -16,6 +18,8 @@ interface SportModule {
     suspend fun updateDetails(dao: TrainingDao, bundle: TrainingBundle, input: AddCompletedTrainingInput)
     fun decodeDetails(backup: TrainingBackup, sportId: Int, complexId: Long): AddCompletedTrainingInput
     fun encodeDetails(bundle: TrainingBundle, common: TrainingBackup): TrainingBackup
+    /** Caller holds a read transaction; selection is identical for every aggregate. */
+    suspend fun aggregate(dao: TrainingDao, selection: StatisticsSelection, includeMetrics: Boolean = true): SportAggregate
     fun metrics(items: List<TrainingBundle>): List<MetricUiModel>
     fun highlights(items: List<TrainingBundle>): List<String>
     fun details(bundle: TrainingBundle): List<String>

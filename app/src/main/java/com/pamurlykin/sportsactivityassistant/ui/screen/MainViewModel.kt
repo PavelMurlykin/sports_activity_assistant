@@ -10,6 +10,15 @@ import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.async
 import com.pamurlykin.sportsactivityassistant.data.model.TrainingEditSnapshot
 import kotlinx.coroutines.withContext
+import androidx.lifecycle.SavedStateHandle
+import androidx.lifecycle.createSavedStateHandle
+import androidx.lifecycle.viewmodel.CreationExtras
+import com.pamurlykin.sportsactivityassistant.data.model.StatisticsFilter
+import com.pamurlykin.sportsactivityassistant.data.model.TrainingPageUiModel
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -32,10 +41,16 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.ensureActive
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class MainViewModel(
     private val repository: AppRepository,
+    private val savedState: SavedStateHandle,
     private val currentDate: () -> LocalDate = { LocalDate.now() },
 ) : ViewModel() {
+    @androidx.annotation.VisibleForTesting
+    constructor(repository: AppRepository, currentDate: () -> LocalDate = { LocalDate.now() }) :
+        this(repository, SavedStateHandle(), currentDate)
+
     private var today = currentDate()
     private val visibleMonth = MutableStateFlow(YearMonth.from(today))
     private val selectedDate = MutableStateFlow(today)
@@ -57,7 +72,23 @@ class MainViewModel(
 
     val scheduleState: StateFlow<ScheduleMonthUiModel?> = _scheduleState.asStateFlow()
     val dataOperationState: StateFlow<DataOperationUiState> = _dataOperationState.asStateFlow()
-    val statisticsState: StateFlow<StatisticsOverviewUiModel> = repository.observeStatisticsOverview().stateIn(
+    private val _statisticsFilter = MutableStateFlow(runCatching {
+        val values = savedState.get<List<String>>("statisticsFilter") ?: emptyList()
+        if (values.size != 3) StatisticsFilter() else StatisticsFilter(
+            values[0].takeIf { it.isNotEmpty() }?.let(LocalDate::parse),
+            values[1].takeIf { it.isNotEmpty() }?.let(LocalDate::parse), values[2].toLongOrNull())
+    }.getOrDefault(StatisticsFilter()))
+    val statisticsFilter = _statisticsFilter.asStateFlow()
+
+    fun setStatisticsFilter(filter: StatisticsFilter) {
+        savedState["statisticsFilter"] = arrayListOf(filter.startDate?.toString().orEmpty(),
+            filter.endDate?.toString().orEmpty(), filter.centerId?.toString().orEmpty())
+        _statisticsFilter.value = filter
+    }
+
+    val statisticsState: StateFlow<StatisticsOverviewUiModel> = statisticsFilter.flatMapLatest {
+        repository.observeStatisticsOverview(it)
+    }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),
         initialValue = StatisticsOverviewUiModel(totalTrainings = 0, sports = emptyList()),
@@ -180,9 +211,14 @@ class MainViewModel(
         return repository.getComplexOptionsForSport(sportId)
     }
 
-    fun trainingsForSport(sportId: Int) = repository.observeTrainingsForSport(sportId)
+    fun trainingsPageForSport(sportId: Int, page: Int) = statisticsFilter.flatMapLatest { filter ->
+        repository.observeTrainingPage(sportId, filter, page).map<TrainingPageUiModel, TrainingPageUiModel?> { it }
+            .onStart { emit(null) }
+    }
 
-    fun statisticsForSport(sportId: Int) = repository.observeSportStatistics(sportId)
+    fun statisticsForSport(sportId: Int) = statisticsFilter.flatMapLatest { filter ->
+        repository.observeSportStatistics(sportId, filter).onStart { emit(null) }
+    }
 
     private fun beginFile(nextPhase: String): Boolean {
         if (_fileBusy.value) return false
@@ -348,8 +384,8 @@ class MainViewModel(
         fun provideFactory(repository: AppRepository): ViewModelProvider.Factory {
             return object : ViewModelProvider.Factory {
                 @Suppress("UNCHECKED_CAST")
-                override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                    return MainViewModel(repository) as T
+                override fun <T : ViewModel> create(modelClass: Class<T>, extras: CreationExtras): T {
+                    return MainViewModel(repository, extras.createSavedStateHandle()) as T
                 }
             }
         }

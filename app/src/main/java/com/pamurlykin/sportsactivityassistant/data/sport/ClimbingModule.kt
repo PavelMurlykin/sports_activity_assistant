@@ -13,6 +13,7 @@ import com.pamurlykin.sportsactivityassistant.data.model.ClimbingWorkoutType
 import com.pamurlykin.sportsactivityassistant.data.model.HistoricalClimbingGrades
 import com.pamurlykin.sportsactivityassistant.data.model.MetricUiModel
 import com.pamurlykin.sportsactivityassistant.data.model.SpeedCourse
+import com.pamurlykin.sportsactivityassistant.data.model.*
 import java.time.LocalDate
 
 object ClimbingModule : SportModule {
@@ -118,38 +119,60 @@ object ClimbingModule : SportModule {
         climbingRoutes = bundle.climbing?.routes.orEmpty().map(::encodeRoute),
     )
 
-    override fun highlights(items: List<TrainingBundle>): List<String> {
-        val routes = items.flatMap { it.climbing?.routes.orEmpty() }
-        return listOf("${routes.filter { it.isCompleted }.sumOf { it.repeatCount.toLong() }} из ${routes.sumOf { it.repeatCount.toLong() }} трасс пройдено")
+    override suspend fun aggregate(dao: TrainingDao, selection: StatisticsSelection, includeMetrics: Boolean): SportAggregate {
+        val (user, sport, filter) = selection
+        val trainings = dao.trainingCount(user, sport, filter.firstDate, filter.lastDate, filter.centerId)
+        return result(trainings, dao.climbingBuckets(user, sport, filter.firstDate, filter.lastDate, filter.centerId)).let {
+            if (includeMetrics) it else it.copy(metrics = emptyList())
+        }
     }
 
-    override fun metrics(items: List<TrainingBundle>): List<MetricUiModel> {
-        val routes = items.flatMap { it.climbing?.routes.orEmpty() }
-        val attempts = routes.sumOf { it.repeatCount.toLong() }
-        val completedRoutes = routes.filter { it.isCompleted }
-        val completed = completedRoutes.sumOf { it.repeatCount.toLong() }
+    private fun fromItems(items: List<TrainingBundle>): SportAggregate {
+        val buckets = items.flatMap { it.climbing?.routes.orEmpty() }.map { r ->
+            ClimbingBucket(r.workoutType, r.gradingSystem, r.gradeCode, r.speedCourse,
+                r.gradeCode != null && Catalog.find(r.gradingSystem, r.routeDifficulty)?.code == r.gradeCode,
+                1L, r.repeatCount.toLong(), if (r.isCompleted) r.repeatCount.toLong() else 0L)
+        }
+        return result(items.size, buckets)
+    }
+
+    override fun highlights(items: List<TrainingBundle>) = fromItems(items).highlights
+    override fun metrics(items: List<TrainingBundle>) = fromItems(items).metrics
+
+    private fun result(trainings: Int, buckets: List<ClimbingBucket>): SportAggregate {
+        val attempts = buckets.sumOf { it.attempts }
+        val completed = buckets.sumOf { it.completed }
         val percent = if (attempts == 0L) 0 else completed * 100 / attempts
-        return buildList {
-            add(MetricUiModel("Тренировки", items.size.toString()))
-            add(MetricUiModel("Трассы", attempts.toString()))
+        val metrics = buildList {
+            add(MetricUiModel("Тренировки", trainings.toString()))
+            add(MetricUiModel("Записи трасс", buckets.sumOf { it.rowCount }.toString()))
+            add(MetricUiModel("Попытки (с повторами)", attempts.toString()))
             add(MetricUiModel("Успешно пройдено", "$completed ($percent%)"))
+            ClimbingWorkoutType.entries.forEach { type ->
+                val groups = buckets.filter { it.workoutType == type }
+                if (groups.isNotEmpty()) add(MetricUiModel(
+                    "${type.title} · успешно / попытки", "${groups.sumOf { it.completed }} / ${groups.sumOf { it.attempts }}"))
+            }
             listOf(ClimbingWorkoutType.DIFFICULTY, ClimbingWorkoutType.BOULDERING).forEach { type ->
                 val system = Catalog.systemFor(type)
-                val codes = completedRoutes.filter {
-                    it.workoutType == type && it.gradingSystem == system && it.speedCourse == null &&
-                        it.gradeCode != null && Catalog.find(system, it.routeDifficulty)?.code == it.gradeCode
-                }.mapNotNull { it.gradeCode }
-                Catalog.hardest(system, codes)?.let { grade ->
-                    add(MetricUiModel("Максимум · ${type.title} (${Catalog.title(system)})", grade.label))
+                val confirmed = buckets.filter { it.workoutType == type && it.gradingSystem == system &&
+                    it.speedCourse == null && it.gradeMatches && Catalog.find(system, it.gradeCode.orEmpty()) != null }
+                val hardest = Catalog.hardest(system, confirmed.filter { it.completed > 0 }.mapNotNull { it.gradeCode })
+                add(MetricUiModel("Максимум · ${type.title} (${Catalog.title(system)})", hardest?.label ?: "Нет успешных"))
+                confirmed.groupBy { it.gradeCode }.entries.sortedBy { Catalog.find(system, it.key!!)?.rank }.forEach { (code, groups) ->
+                    add(MetricUiModel("${type.title} · ${Catalog.find(system, code!!)?.label} · успешно / попытки",
+                        "${groups.sumOf { it.completed }} / ${groups.sumOf { it.attempts }}"))
                 }
             }
-            ClimbingWorkoutType.supported.forEach { type ->
-                val count = routes.filter { it.workoutType == type }.sumOf { it.repeatCount.toLong() }
-                if (count > 0) add(MetricUiModel(type.title, count.toString()))
+            SpeedCourse.entries.forEach { course ->
+                val groups = buckets.filter { it.workoutType == ClimbingWorkoutType.SPEED && it.speedCourse == course.code && it.gradingSystem == Catalog.NONE }
+                if (groups.isNotEmpty()) add(MetricUiModel("Скорость · ${course.title} · успешно / попытки",
+                    "${groups.sumOf { it.completed }} / ${groups.sumOf { it.attempts }}"))
             }
-            val legacy = routes.filter { it.gradingSystem == Catalog.LEGACY }.sumOf { it.repeatCount.toLong() }
+            val legacy = buckets.filter { it.gradingSystem == Catalog.LEGACY }.sumOf { it.attempts }
             if (legacy > 0) add(MetricUiModel("Исторические категории без сравнения", legacy.toString()))
         }
+        return SportAggregate(metrics, listOf("$completed из $attempts попыток успешны"))
     }
 
     override fun details(bundle: TrainingBundle): List<String> = bundle.climbing?.routes.orEmpty().map {

@@ -14,7 +14,7 @@ Upgrading to the current database schema (version 7) preserves local keys, UUIDs
 
 On «Расписание» (Schedule), press the add button and select «Записать результат» (Record result). Choose a sport, date and sports center that offers that sport. Enter `YYYY-MM-DD` (years 0001–9999) or use «Выбрать дату» (Choose date). New results cannot use a future date: use a plan instead. Imported history may contain a future date; editing may retain that original date or correct it to today/the past, but cannot replace it with another future date.
 
-For football, enter team goals scored/conceded, personal goals and assists. Zero results are valid. Optionally enter distance in kilometers, players per team and game duration in minutes; optional fields may be left empty. Distance accepts a decimal point or comma, up to 16 significant digits and 6 decimal places. Negative values are invalid; players and duration must be positive when supplied.
+For football, enter team goals scored/conceded, personal goals and assists. Zero results are valid. Optionally enter distance in kilometers, players per team and game duration in minutes; optional fields may be left empty. Distance accepts a decimal point or comma: up to 16 significant digits, 6 decimal places after removing trailing zeros, and 22 digits in the integer part. Equivalent decimal representations retain the same numeric value. Negative values are invalid; players and duration must be positive when supplied.
 
 Personal goals and assists, each considered separately, cannot exceed the team's goals scored. A football record cannot contain climbing routes, and a climbing record cannot contain football metrics. The common record and all sport details are saved together: an error does not leave an incomplete workout. Two identical workouts on the same day can be recorded manually; each has its own stable identifier within the database.
 
@@ -50,9 +50,17 @@ Links and exceptions are included in JSON 6. Older plans with a recurrence paren
 
 ## Statistics
 
-«Статистика» (Statistics) displays the total workout count and monthly groups. Open a sport to see its metrics and workout list; expand a workout card for details.
+«Статистика» (Statistics) shows saved completed workouts, counts by sport and monthly groups. Plans and canceled events are excluded from results. Only the current local profile is counted, even when other profiles' histories are stored separately.
 
-Football: games, wins/draws/losses, total team score, personal goals and assists; supplied distances are summed, and duration is averaged over supplied values. Climbing: attempts including historical repeats, successful ascents, success percentage and discipline breakdown. The highest successfully completed grade is computed separately for lead (French) and boulder (Fontainebleau), using confirmed grades only. No highest difficulty is shown for speed. Unconfirmed historical attempts have a separate counter. Period and center filters are not available yet.
+Press «Фильтры» (Filters): choose «Всё время» (All time), «Этот месяц» (This month), «Этот год» (This year), or uncheck All time and enter both dates as `YYYY-MM-DD` (0001–9999). Both boundaries are included; invalid dates or a start after the end are not applied. Choose «Все центры» (All centers) or one center, including an archived center. Press «Применить» (Apply); «Отмена» (Cancel) leaves the selection unchanged, and «Сбросить» (Reset) restores all time/all centers. The active selection is shown above the metrics and shared by overview, sport totals and history. It survives rotation and system process restoration; it is UI state, not part of the JSON backup.
+
+Months run from newest to oldest, including months without workouts. In a selected period, the first and last month count only dates within the boundaries. For all time, the range extends from the first to the last matching workout; an empty database has no monthly cards. An explicit period still shows empty months with zero counts.
+
+Open a sport for totals and workout history. History uses 20-record pages, newest dates first, with stable ordering for equal dates. «Предыдущая» (Previous)/«Следующая» (Next) switch pages; the caption shows the visible range and total matching records. Expand a card for details, editing or deletion. Database changes recalculate totals and the page; an empty final page falls back to the last available page. Changing filters returns to the first page. Totals cover the whole selection, not just the visible page.
+
+Football: games, wins/draws/losses, total team score, personal goals and assists; total and average distance, total and average duration, average team size. Each optional metric has a count of games with supplied values out of all matching games. Missing values are not zeros and do not enter the average denominator; an entered distance of `0` does. If nothing was supplied, «Нет данных» (No data) is shown. Decimal totals and averages are rounded to two decimal places without trailing zeros; distances are summed exactly before display rounding.
+
+Climbing: workout count, «Записи трасс» (Route records: rows, not a guaranteed count of unique real routes), «Попытки (с повторами)» (Attempts including repeats), successful ascents and integer success percentage. Discipline, confirmed grade and speed-course breakdowns are labeled «успешно / попытки» (successful / attempts) and include repeats. Highest successful grades are computed separately for lead (French) and boulder (Fontainebleau); «Нет успешных» (No successful ascents) appears when none qualify. A failed harder attempt does not raise the maximum. Speed has no highest difficulty. Unconfirmed historical attempts contribute to overall results and a separate counter, but not to confirmed-grade breakdowns or maxima.
 
 ## Sports centers
 
@@ -98,7 +106,7 @@ Check workout counts, details and calendar after transfer. New backups cannot be
 
 ## Known limitations
 
-Historical-scale confirmation and advanced filters are planned, not available features. Other scales, such as V-scale or UIAA, cannot yet be selected for new routes. Compatibility with your multi-year history and applicability of the selected scales to your gyms require anonymized examples and confirmation. No external connection is required to transfer files.
+Historical-scale confirmation is not available yet. Filters cover a period and one center; multi-center comparisons and charts are not provided. Other scales, such as V-scale or UIAA, cannot yet be selected for new routes. Compatibility with your multi-year history and applicability of the selected scales to your gyms require anonymized examples and confirmation. No external connection is required to transfer files.
 
 ## Build and verification for developers
 

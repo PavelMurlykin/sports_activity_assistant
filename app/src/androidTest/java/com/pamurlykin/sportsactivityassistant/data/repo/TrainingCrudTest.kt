@@ -74,7 +74,7 @@ class TrainingCrudTest {
             val kept = after.climbing!!.routes.first { it.publicId == retained.publicId }
             assertEquals(retained.id, kept.id); assertEquals(4, kept.repeatCount); assertFalse(kept.isCompleted)
             val stats = repo.observeSportStatistics(sport.id).first()!!
-            assertEquals("6", stats.metrics.first { it.label == "Трассы" }.value)
+            assertEquals("6", stats.metrics.first { it.label == "Попытки (с повторами)" }.value)
             repo.deleteCompletedTraining(repo.loadTrainingForEdit(id))
             assertNull(database.trainingDao().getTrainingBundle(id))
             assertEquals(0, count(database, "climbing_routes")); assertEquals(0, count(database, "climbing_trainings"))
