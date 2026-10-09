@@ -77,8 +77,8 @@ class ImportSafetyTest {
 
     @Test fun refusesUnknownFieldsMissingOrFutureVersionAndDuplicateIdentity() {
         val raw = BackupCodec.encode(document())
-        assertTrue(runCatching { ImportParser.parse(raw.replace("\"schemaVersion\": 5", "\"schemaVersion\": 999").toByteArray()) }.isFailure)
-        assertTrue(runCatching { ImportParser.parse(raw.replace("\"schemaVersion\": 5,", "").toByteArray()) }.isFailure)
+        assertTrue(runCatching { ImportParser.parse(raw.replace("\"schemaVersion\": 6", "\"schemaVersion\": 999").toByteArray()) }.isFailure)
+        assertTrue(runCatching { ImportParser.parse(raw.replace("\"schemaVersion\": 6,", "").toByteArray()) }.isFailure)
         assertTrue(runCatching { ImportParser.parse(raw.replace("\"schemaVersion\"", "\"unknown\"").toByteArray()) }.isFailure)
         assertTrue(BackupValidation.errors(parse(document().copy(trainings = document().trainings + document().trainings))).isNotEmpty())
     }

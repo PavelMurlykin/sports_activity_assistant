@@ -29,12 +29,15 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.ensureActive
 
 class MainViewModel(
     private val repository: AppRepository,
+    private val currentDate: () -> LocalDate = { LocalDate.now() },
 ) : ViewModel() {
-    private val today = LocalDate.now()
-    private val visibleMonth = MutableStateFlow(YearMonth.now())
+    private var today = currentDate()
+    private val visibleMonth = MutableStateFlow(YearMonth.from(today))
     private val selectedDate = MutableStateFlow(today)
     private val _scheduleState = MutableStateFlow<ScheduleMonthUiModel?>(null)
     private val _dataOperationState = MutableStateFlow(DataOperationUiState())
@@ -67,9 +70,28 @@ class MainViewModel(
 
     init {
         refreshSchedule()
+        viewModelScope.launch {
+            while (kotlinx.coroutines.currentCoroutineContext().isActive) {
+                kotlinx.coroutines.delay(30_000)
+                refreshToday()
+            }
+        }
+    }
+
+    /** Also called on resume: handles midnight, device date and time-zone changes. */
+    fun refreshToday() {
+        val next = currentDate()
+        if (next == today) return
+        if (selectedDate.value == today && visibleMonth.value == YearMonth.from(today)) {
+            selectedDate.value = next
+            visibleMonth.value = YearMonth.from(next)
+        }
+        today = next
+        refreshSchedule()
     }
 
     fun previousMonth() {
+        if (visibleMonth.value == YearMonth.of(1, 1)) return
         val newMonth = visibleMonth.value.minusMonths(1)
         visibleMonth.value = newMonth
         selectedDate.value = normalizeSelectedDate(selectedDate.value, newMonth)
@@ -77,6 +99,7 @@ class MainViewModel(
     }
 
     fun nextMonth() {
+        if (visibleMonth.value == YearMonth.of(9999, 12)) return
         val newMonth = visibleMonth.value.plusMonths(1)
         visibleMonth.value = newMonth
         selectedDate.value = normalizeSelectedDate(selectedDate.value, newMonth)
@@ -84,6 +107,7 @@ class MainViewModel(
     }
 
     fun selectDate(date: LocalDate) {
+        if (date.year !in 1..9999) return
         selectedDate.value = date
         if (YearMonth.from(date) != visibleMonth.value) {
             visibleMonth.value = YearMonth.from(date)
@@ -91,15 +115,29 @@ class MainViewModel(
         refreshSchedule()
     }
 
-    fun addPlannedTraining(input: AddPlannedTrainingInput) {
-        viewModelScope.launch {
-            runCatching { repository.addPlannedTraining(repository.localProfileId(), input) }
-                .onFailure { showError(it) }
-                .getOrNull() ?: return@launch
-            visibleMonth.value = YearMonth.from(input.date)
-            selectedDate.value = input.date
-            refreshSchedule()
+    suspend fun addPlannedTraining(input: AddPlannedTrainingInput, requestId: String) {
+        trainingWrite(requestId) {
+            repository.addPlannedTraining(repository.localProfileId(), input, requestId)
+            selectDate(input.date)
         }
+    }
+
+    suspend fun loadPlan(key: String, scope: com.pamurlykin.sportsactivityassistant.data.model.PlanScope) =
+        repository.loadPlan(key, scope)
+
+    suspend fun updatePlan(snapshot: com.pamurlykin.sportsactivityassistant.data.model.PlanSnapshot,
+        scope: com.pamurlykin.sportsactivityassistant.data.model.PlanScope, input: AddPlannedTrainingInput, requestId: String) {
+        trainingWrite(requestId) { repository.updatePlan(snapshot, scope, input); selectDate(input.date) }
+    }
+
+    suspend fun cancelPlan(snapshot: com.pamurlykin.sportsactivityassistant.data.model.PlanSnapshot,
+        scope: com.pamurlykin.sportsactivityassistant.data.model.PlanScope, requestId: String) {
+        trainingWrite(requestId) { repository.cancelPlan(snapshot, scope) }
+    }
+
+    suspend fun completePlan(snapshot: com.pamurlykin.sportsactivityassistant.data.model.PlanSnapshot,
+        input: AddCompletedTrainingInput, requestId: String) {
+        trainingWrite(requestId) { repository.completePlan(snapshot, input, requestId); selectDate(input.date) }
     }
 
     /** Runs independently of a dialog's composition; a rotation only detaches its waiter. */
@@ -279,14 +317,15 @@ class MainViewModel(
         scheduleJob?.cancel()
         val month = visibleMonth.value
         val date = normalizeSelectedDate(selectedDate.value, month)
+        if (_scheduleState.value?.month != month || _scheduleState.value?.selectedDate != date) _scheduleState.value = null
         scheduleJob = viewModelScope.launch {
-            val next = repository.getScheduleMonth(
-                userId = repository.localProfileId(),
-                month = month,
-                selectedDate = date,
-                today = LocalDate.now(),
-            )
-            _scheduleState.value = next
+            try {
+                repository.observeScheduleMonth(repository.localProfileId(), month, date, today).collect { next ->
+                    kotlinx.coroutines.currentCoroutineContext().ensureActive()
+                    if (month == visibleMonth.value && date == selectedDate.value) _scheduleState.value = next
+                }
+            } catch (e: CancellationException) { throw e }
+            catch (e: Exception) { showError(e) }
         }
     }
 

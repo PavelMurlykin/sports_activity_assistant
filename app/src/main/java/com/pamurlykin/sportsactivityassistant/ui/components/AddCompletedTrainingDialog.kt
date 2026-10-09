@@ -28,6 +28,7 @@ fun AddCompletedTrainingDialog(
     onSaveCenter: (suspend (SaveSportsCenterInput) -> Long)? = null,
     initial: AddCompletedTrainingInput? = null,
     onSaved: () -> Unit = {},
+    fromPlan: Boolean = false,
 ) {
     var selectedSportId by rememberSaveable { mutableIntStateOf(initial?.sportId ?: sports.firstOrNull()?.id ?: 0) }
     var selectedComplexId by rememberSaveable { mutableLongStateOf(initial?.complexId ?: 0L) }
@@ -44,18 +45,18 @@ fun AddCompletedTrainingDialog(
     }
     val selectedSport = sports.firstOrNull { it.id == selectedSportId }
     val dateResult = runCatching {
-        TrainingValidation.parseDate(dateText.trim()).also { TrainingValidation.completedDate(it, initial?.date) }
+        TrainingValidation.parseDate(dateText.trim()).also { TrainingValidation.completedDate(it, initial?.date.takeUnless { fromPlan }) }
     }
     val dateError = if (!attempted || dateResult.isSuccess) null else {
         if (runCatching { TrainingValidation.parseDate(dateText.trim()) }.isFailure) "Введите дату YYYY-MM-DD (год 0001–9999)"
         else dateResult.exceptionOrNull()?.message
     }
     holders.SaveableStateProvider(selectedSportId) {
-        val draft = SportEditors.find(selectedSport?.slug)?.rememberDraft(initial)
+        val draft = SportEditors.find(selectedSport?.slug)?.rememberDraft(initial.takeUnless { fromPlan })
         fun input(): AddCompletedTrainingInput {
             val date = dateResult.getOrElse { throw IllegalArgumentException(dateError ?: "Проверьте дату") }
             require(selectedSport != null && centers.any { center ->
-                center.id == selectedComplexId && (center.id == initial?.complexId ||
+                center.id == selectedComplexId && (!fromPlan && center.id == initial?.complexId ||
                     !center.isArchived && center.sports.any { it.id == selectedSportId })
             }) { "Выберите вид спорта и спортивный центр" }
             return requireNotNull(draft) { "Для этого вида спорта форма пока не настроена" }
@@ -85,14 +86,14 @@ fun AddCompletedTrainingDialog(
                 }) { Text(if (saving) "Сохранение…" else "Сохранить") }
             },
             dismissButton = { TextButton(enabled = !saving, onClick = onDismiss) { Text("Отмена") } },
-            title = { Text(if (initial == null) "Записать тренировку" else "Изменить тренировку") },
+            title = { Text(if (fromPlan) "Результат по плану" else if (initial == null) "Записать тренировку" else "Изменить тренировку") },
             text = {
                 Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     TrainingCenterSelector(sports, centers, selectedSportId, selectedComplexId,
                         { selectedSportId = it }, { selectedComplexId = it }, onSaveCenter,
-                        enabled = !saving, sportLocked = initial != null, retainedCenterId = initial?.complexId,
+                        enabled = !saving, sportLocked = initial != null, retainedCenterId = initial?.complexId.takeUnless { fromPlan },
                         onCreateCenter = { creatingCenter = true })
-                    if (initial != null) Text("Вид спорта менять нельзя. Прежний центр можно оставить, даже если он в архиве.",
+                    if (initial != null) Text(if (fromPlan) "Вид спорта из плана. Укажите фактическую дату и доступный центр; будущий результат записать нельзя." else "Вид спорта менять нельзя. Прежний центр можно оставить, даже если он в архиве.",
                         style = MaterialTheme.typography.bodySmall)
                     OutlinedTextField(dateText, { dateText = it }, Modifier.fillMaxWidth().testTag("training-date"),
                         enabled = !saving, label = { Text("Дата") },
@@ -119,7 +120,7 @@ fun AddCompletedTrainingDialog(
             selectableDates = object : SelectableDates {
                 override fun isSelectableDate(utcTimeMillis: Long): Boolean {
                     val date = Instant.ofEpochMilli(utcTimeMillis).atZone(ZoneOffset.UTC).toLocalDate()
-                    return date <= LocalDate.now() || date == initial?.date
+                    return date <= LocalDate.now() || !fromPlan && date == initial?.date
                 }
             },
         )

@@ -70,12 +70,26 @@ object BackupValidation {
         } }
         d.plannedTrainings.forEachIndexed { i, plan -> check("plannedTrainings[$i]") {
             uuid(plan.publicId); timestamp(plan.createdAt); refs(plan.profilePublicId, plan.centerPublicId, plan.sportSlug); TrainingValidation.parseDate(plan.date)
-            require(plan.status in setOf("planned", "canceled")) { "status: неизвестное значение" }
+            require(plan.status in (if (source.sourceVersion >= 6) setOf("planned", "canceled", "completed") else setOf("planned", "canceled"))) { "status: неизвестное значение" }
             plan.recurrenceRulePublicId?.let { id ->
                 val rule = requireNotNull(rules[id]) { "recurrenceRulePublicId: серия не найдена" }
-                require(rule.profilePublicId == plan.profilePublicId && rule.sportSlug == plan.sportSlug && rule.centerPublicId == plan.centerPublicId) { "Ссылка на серию противоречит общим атрибутам плана" }
+                require(rule.profilePublicId == plan.profilePublicId && (source.sourceVersion >= 6 ||
+                    rule.sportSlug == plan.sportSlug && rule.centerPublicId == plan.centerPublicId)) { "Ссылка на серию противоречит общим атрибутам плана" }
             }
         } }
+        check("plannedTrainings.links") {
+            distinct(d.plannedTrainings.mapNotNull { it.completedTrainingPublicId })
+            distinct(d.plannedTrainings.filter { it.occurrenceDate != null }.map { it.recurrenceRulePublicId to it.occurrenceDate })
+            val trainings = d.trainings.associateBy { it.publicId }
+            d.plannedTrainings.forEach { plan ->
+                require((plan.status == "completed") == (plan.completedTrainingPublicId != null)) { "Завершённый план должен иметь ссылку на результат" }
+                plan.occurrenceDate?.let { TrainingValidation.parseDate(it); require(plan.recurrenceRulePublicId != null) { "Исходная дата допустима только в серии" } }
+                plan.completedTrainingPublicId?.let { id ->
+                    val t = requireNotNull(trainings[id]) { "Связанный результат отсутствует в файле" }
+                    require(t.profilePublicId == plan.profilePublicId && t.sportSlug == plan.sportSlug) { "Связанный результат принадлежит другому профилю или спорту" }
+                }
+            }
+        }
         d.favorites.forEachIndexed { i, item -> check("favorites[$i]") {
             require(item.profilePublicId in profiles && item.centerPublicId in centers) { "Отсутствующая ссылка" }; timestamp(item.createdAt)
         } }

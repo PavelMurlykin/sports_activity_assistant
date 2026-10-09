@@ -45,7 +45,7 @@ class LocalIdentityMigrationTest {
         }).close()
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val database = Room.databaseBuilder(context, AppDatabase::class.java, name)
-            .addMigrations(AppDatabase.MIGRATION_1_2, AppDatabase.MIGRATION_2_3, AppDatabase.MIGRATION_3_4, AppDatabase.MIGRATION_4_5, AppDatabase.MIGRATION_5_6).build()
+            .addMigrations(AppDatabase.MIGRATION_1_2, AppDatabase.MIGRATION_2_3, AppDatabase.MIGRATION_3_4, AppDatabase.MIGRATION_4_5, AppDatabase.MIGRATION_5_6, AppDatabase.MIGRATION_6_7).build()
         try {
             val users = database.referenceDao().getUsers()
             assertEquals(listOf(7L, 8L), users.map { it.id })
@@ -89,14 +89,14 @@ class LocalIdentityMigrationTest {
         }
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val database = Room.databaseBuilder(context, AppDatabase::class.java, name)
-            .addMigrations(AppDatabase.MIGRATION_1_2, AppDatabase.MIGRATION_2_3, AppDatabase.MIGRATION_3_4, AppDatabase.MIGRATION_4_5, AppDatabase.MIGRATION_5_6).build()
+            .addMigrations(AppDatabase.MIGRATION_1_2, AppDatabase.MIGRATION_2_3, AppDatabase.MIGRATION_3_4, AppDatabase.MIGRATION_4_5, AppDatabase.MIGRATION_5_6, AppDatabase.MIGRATION_6_7).build()
         try {
             assertEquals(1L, database.referenceDao().getUsers().single().id)
             database.openHelper.writableDatabase.query("PRAGMA foreign_keys").use {
                 assertTrue(it.moveToFirst()); assertEquals(1, it.getInt(0))
             }
         } finally { database.close() }
-        helper.runMigrationsAndValidate(name, 6, true, AppDatabase.MIGRATION_2_3, AppDatabase.MIGRATION_3_4, AppDatabase.MIGRATION_4_5, AppDatabase.MIGRATION_5_6).close()
+        helper.runMigrationsAndValidate(name, 7, true, AppDatabase.MIGRATION_2_3, AppDatabase.MIGRATION_3_4, AppDatabase.MIGRATION_4_5, AppDatabase.MIGRATION_5_6, AppDatabase.MIGRATION_6_7).close()
         context.deleteDatabase(name)
     }
 
@@ -147,7 +147,7 @@ class LocalIdentityMigrationTest {
             version = 1
             close()
         }
-        helper.runMigrationsAndValidate(name, 6, true, AppDatabase.MIGRATION_1_2, AppDatabase.MIGRATION_2_3, AppDatabase.MIGRATION_3_4, AppDatabase.MIGRATION_4_5, AppDatabase.MIGRATION_5_6).use { db ->
+        helper.runMigrationsAndValidate(name, 7, true, AppDatabase.MIGRATION_1_2, AppDatabase.MIGRATION_2_3, AppDatabase.MIGRATION_3_4, AppDatabase.MIGRATION_4_5, AppDatabase.MIGRATION_5_6, AppDatabase.MIGRATION_6_7).use { db ->
             db.query("SELECT repeat_count, is_completed FROM climbing_routes").use {
                 assertTrue(it.moveToFirst()); assertEquals(4, it.getInt(0)); assertEquals(1, it.getInt(1))
             }

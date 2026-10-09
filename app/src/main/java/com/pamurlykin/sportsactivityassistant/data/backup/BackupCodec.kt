@@ -19,17 +19,40 @@ object BackupCodec {
     }
 
     fun encode(document: BackupDocument): String {
-        val encoded = json.encodeToJsonElement(BackupDocument.serializer(), document).jsonObject
-        if (document.schemaVersion >= 5) return json.encodeToString(encoded)
-        require(document.centers.none { it.isArchived }) { "Архивные центры требуют JSON 5" }
-        // Old schema writers never introduce a field that those readers do not understand.
-        return json.encodeToString(kotlinx.serialization.json.JsonObject(encoded + ("centers" to
-            kotlinx.serialization.json.JsonArray((encoded.getValue("centers") as kotlinx.serialization.json.JsonArray)
-                .map { kotlinx.serialization.json.JsonObject(it.jsonObject - "isArchived") }))))
+        var encoded = json.encodeToJsonElement(BackupDocument.serializer(), document).jsonObject
+        if (document.schemaVersion < 6) {
+            require(document.recurrenceRules.none { it.isCanceled } && document.plannedTrainings.all {
+                it.occurrenceDate == null && it.completedTrainingPublicId == null && it.status != "completed"
+            }) { "Исключения и связи с результатами требуют JSON 6" }
+            fun strip(key: String, fields: Set<String>) = kotlinx.serialization.json.JsonArray(
+                (encoded.getValue(key) as kotlinx.serialization.json.JsonArray).map {
+                    kotlinx.serialization.json.JsonObject(it.jsonObject - fields)
+                })
+            encoded = kotlinx.serialization.json.JsonObject(encoded +
+                ("recurrenceRules" to strip("recurrenceRules", setOf("isCanceled"))) +
+                ("plannedTrainings" to strip("plannedTrainings", setOf("occurrenceDate", "completedTrainingPublicId"))))
+        }
+        if (document.schemaVersion < 5) {
+            require(document.centers.none { it.isArchived }) { "Архивные центры требуют JSON 5" }
+            encoded = kotlinx.serialization.json.JsonObject(encoded + ("centers" to
+                kotlinx.serialization.json.JsonArray((encoded.getValue("centers") as kotlinx.serialization.json.JsonArray)
+                    .map { kotlinx.serialization.json.JsonObject(it.jsonObject - "isArchived") })))
+        }
+        return json.encodeToString(encoded)
     }
 
     fun decode(raw: String): BackupDocument {
         val version = sourceVersion(raw)
+        if (version < 6) {
+            val root = json.parseToJsonElement(raw).jsonObject
+            fun noFields(key: String, fields: Set<String>) = root[key]?.let { list ->
+                (list as kotlinx.serialization.json.JsonArray).all { item -> fields.none { it in item.jsonObject } }
+            } != false
+            require(noFields("recurrenceRules", setOf("isCanceled")) &&
+                noFields("plannedTrainings", setOf("occurrenceDate", "completedTrainingPublicId"))) {
+                "Метаданные календаря доступны только в JSON 6"
+            }
+        }
         if (version < 5) {
             require(json.parseToJsonElement(raw).jsonObject["centers"]?.let { centers ->
                 (centers as kotlinx.serialization.json.JsonArray).all { "isArchived" !in it.jsonObject }
@@ -41,7 +64,7 @@ object BackupCodec {
         }
         if (document.schemaVersion >= 3) {
             require(document.trainings.flatMap { it.climbingRoutes }.all { it.gradingSystem != null }) {
-                "В копии версии 3–5 должна быть указана шкала каждой трассы"
+                "В копии версии 3–6 должна быть указана шкала каждой трассы"
             }
             return document
         }

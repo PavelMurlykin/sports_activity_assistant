@@ -30,7 +30,7 @@ class CentersArchiveMigrationTest {
             close()
         }
         helper.runMigrationsAndValidate(name, 6, true, AppDatabase.MIGRATION_5_6).close()
-        val db = Room.databaseBuilder(context, AppDatabase::class.java, name).build()
+        val db = Room.databaseBuilder(context, AppDatabase::class.java, name).addMigrations(AppDatabase.MIGRATION_6_7).build()
         try {
             val centers = db.referenceDao().getAllComplexes()
             assertEquals(listOf(42L, 43L), centers.map { it.id })
@@ -47,7 +47,7 @@ class CentersArchiveMigrationTest {
             assertEquals(centers.first(), db.referenceDao().getComplex(42))
             db.openHelper.writableDatabase.query("PRAGMA foreign_key_check").use { assertFalse(it.moveToFirst()) }
         } finally { db.close() }
-        val reopened = Room.databaseBuilder(context, AppDatabase::class.java, name).build()
+        val reopened = Room.databaseBuilder(context, AppDatabase::class.java, name).addMigrations(AppDatabase.MIGRATION_6_7).build()
         try {
             assertTrue(reopened.referenceDao().getComplex(43)!!.isArchived)
             assertEquals(2, reopened.trainingDao().getAllTrainingBundles().size)

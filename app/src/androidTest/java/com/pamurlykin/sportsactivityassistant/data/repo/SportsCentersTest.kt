@@ -114,7 +114,7 @@ class SportsCentersTest {
             repo.setSportsCenterArchived(id, true)
             val backup = repo.createBackup()
             val doc = BackupCodec.decode(backup)
-            assertEquals(5, doc.schemaVersion); assertTrue(doc.centers.first { it.name == "Закрытая Арена" }.isArchived)
+            assertEquals(6, doc.schemaVersion); assertTrue(doc.centers.first { it.name == "Закрытая Арена" }.isArchived)
             db { target, restore ->
                 val result = restore.importData(backup.toByteArray(), restore.localProfileId())
                 assertEquals(1, result.importedTrainings); assertEquals(1, result.importedPlans); assertEquals(1, result.importedRules)

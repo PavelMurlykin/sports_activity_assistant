@@ -90,7 +90,7 @@ class SportsCentersUiTest {
     @Test fun plannedFormUsesNewSportCenterAndCannotSaveStaleArchivedSelection() {
         val live = mutableStateOf(listOf(center(7, football), center(8, climbing)))
         var saved: AddPlannedTrainingInput? = null
-        compose.setContent { MaterialTheme { AddPlannedTrainingDialog(sports, live.value, {}, { saved = it }) } }
+        compose.setContent { MaterialTheme { AddPlannedTrainingDialog(sports, live.value, {}, { input, _ -> saved = input }) } }
         compose.onNodeWithTag("training-sport").performClick()
         compose.onNodeWithText("Скалолазание").performClick()
         compose.onNodeWithText("Центр Скалолазание").assertExists()

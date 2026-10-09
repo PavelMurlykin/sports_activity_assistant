@@ -67,7 +67,7 @@ fun TrainingActionDialog(id: Long, deleting: Boolean, viewModel: MainViewModel, 
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("${sports.sports.firstOrNull { it.id == sportId }?.title.orEmpty()} · ${snapshot.input.date}")
                     Text(centers.firstOrNull { it.id == centerId }?.fullTitle.orEmpty())
-                    Text("Результат и вся его спортивная статистика будут удалены. Центр, планы и серии останутся. Отменить удаление нельзя; восстановление возможно из прежней копии файла.")
+                    Text("Результат и вся его спортивная статистика будут удалены. Центр, планы и серии останутся. Связанный план снова будет запланирован, а в отменённой серии — отменён. Отменить удаление нельзя; восстановление возможно из прежней копии файла.")
                     error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
                 }
             },

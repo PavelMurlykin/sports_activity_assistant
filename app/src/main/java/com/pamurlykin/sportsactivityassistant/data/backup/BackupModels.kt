@@ -20,7 +20,7 @@ data class BackupDocument(
         trainings.sumOf { it.climbingRoutes.size.toLong() } + plannedTrainings.size + recurrenceRules.size + favorites.size + aliases.size
 
     companion object {
-        const val CURRENT_SCHEMA_VERSION = 5
+        const val CURRENT_SCHEMA_VERSION = 6
     }
 }
 
@@ -93,6 +93,8 @@ data class PlannedTrainingBackup(
     val profilePublicId: String? = null,
     val createdAt: String? = null,
     val recurrenceRulePublicId: String? = null,
+    val occurrenceDate: String? = null,
+    val completedTrainingPublicId: String? = null,
 )
 
 @Serializable
@@ -108,6 +110,7 @@ data class RecurrenceRuleBackup(
     val profilePublicId: String? = null,
     val createdAt: String? = null,
     val frequency: String = "weekly",
+    val isCanceled: Boolean = false,
 )
 
 @Serializable

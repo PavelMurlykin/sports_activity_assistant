@@ -261,6 +261,7 @@ data class RecurrenceRuleEntity(
     @ColumnInfo(name = "sports_complex_id") val sportsComplexId: Long,
     @ColumnInfo(name = "start_date") val startDate: LocalDate,
     @ColumnInfo(name = "end_date") val endDate: LocalDate?,
+    @ColumnInfo(name = "is_canceled", defaultValue = "0") val isCanceled: Boolean = false,
     val frequency: RecurrenceFrequency,
     @ColumnInfo(name = "interval_weeks") val intervalWeeks: Int,
     @ColumnInfo(name = "created_at") val createdAt: Instant = Instant.now(),
@@ -289,6 +290,12 @@ data class RecurrenceRuleEntity(
             onDelete = ForeignKey.RESTRICT,
         ),
         ForeignKey(
+            entity = TrainingEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["completed_training_id"],
+            onDelete = ForeignKey.SET_NULL,
+        ),
+        ForeignKey(
             entity = RecurrenceRuleEntity::class,
             parentColumns = ["id"],
             childColumns = ["recurrence_rule_id"],
@@ -301,6 +308,8 @@ data class RecurrenceRuleEntity(
         Index(value = ["sports_complex_id"]),
         Index(value = ["planned_date"]),
         Index(value = ["recurrence_rule_id"]),
+        Index(value = ["recurrence_rule_id", "occurrence_date"], unique = true),
+        Index(value = ["completed_training_id"], unique = true),
         Index(value = ["public_id"], unique = true),
     ],
 )
@@ -311,6 +320,8 @@ data class PlannedTrainingEntity(
     @ColumnInfo(name = "sports_complex_id") val sportsComplexId: Long,
     @ColumnInfo(name = "planned_date") val plannedDate: LocalDate,
     @ColumnInfo(name = "recurrence_rule_id") val recurrenceRuleId: Long? = null,
+    @ColumnInfo(name = "occurrence_date") val occurrenceDate: LocalDate? = null,
+    @ColumnInfo(name = "completed_training_id") val completedTrainingId: Long? = null,
     val status: PlannedTrainingStatus = PlannedTrainingStatus.PLANNED,
     @ColumnInfo(name = "created_at") val createdAt: Instant = Instant.now(),
     @ColumnInfo(name = "public_id", defaultValue = "''") val publicId: String = UUID.randomUUID().toString(),

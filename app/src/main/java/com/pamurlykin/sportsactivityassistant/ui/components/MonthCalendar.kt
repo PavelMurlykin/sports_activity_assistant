@@ -23,6 +23,10 @@ import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -57,7 +61,7 @@ fun MonthCalendar(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                CalendarNavigationButton(onClick = onPreviousMonth, icon = Icons.Rounded.ChevronLeft)
+                CalendarNavigationButton(onClick = onPreviousMonth, icon = Icons.Rounded.ChevronLeft, label = "Предыдущий месяц")
                 Text(
                     text = state.month.month.getDisplayName(TextStyle.FULL_STANDALONE, Locale.forLanguageTag("ru")).replaceFirstChar { it.uppercase() } + " " + state.month.year,
                     style = MaterialTheme.typography.headlineSmall,
@@ -66,7 +70,7 @@ fun MonthCalendar(
                     modifier = Modifier.weight(1f),
                     textAlign = TextAlign.Center,
                 )
-                CalendarNavigationButton(onClick = onNextMonth, icon = Icons.Rounded.ChevronRight)
+                CalendarNavigationButton(onClick = onNextMonth, icon = Icons.Rounded.ChevronRight, label = "Следующий месяц")
             }
 
             Row(
@@ -84,6 +88,7 @@ fun MonthCalendar(
                 }
             }
 
+            Text("✓ Состоялась · ○ План · × Отменена", style = MaterialTheme.typography.labelSmall)
             state.days.chunked(7).forEach { week ->
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -107,16 +112,17 @@ fun MonthCalendar(
 private fun CalendarNavigationButton(
     onClick: () -> Unit,
     icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
 ) {
     Box(
         modifier = Modifier
-            .size(36.dp)
+            .size(48.dp)
             .clip(RoundedCornerShape(14.dp))
             .background(MaterialTheme.colorScheme.surfaceVariant)
-            .clickable(onClick = onClick),
+            .clickable(role = Role.Button, onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
-        Icon(imageVector = icon, contentDescription = null, tint = Pine)
+        Icon(imageVector = icon, contentDescription = label, tint = Pine)
     }
 }
 
@@ -139,8 +145,16 @@ private fun CalendarDayCell(
             .clip(RoundedCornerShape(20.dp))
             .background(if (isSelected) Pine.copy(alpha = 0.09f) else MaterialTheme.colorScheme.surface)
             .border(1.dp, borderColor, RoundedCornerShape(20.dp))
-            .clickable(onClick = onClick)
-            .padding(horizontal = 8.dp, vertical = 8.dp),
+            .semantics(mergeDescendants = true) {
+                selected = isSelected
+                contentDescription = buildString {
+                    append(day.date.toString())
+                    if (day.isToday) append(", сегодня")
+                    day.events.forEach { append(", ${it.sportTitle}: ${it.state.label()}") }
+                }
+            }
+            .clickable(role = Role.Button, onClick = onClick)
+            .padding(horizontal = 4.dp, vertical = 8.dp),
         verticalArrangement = Arrangement.SpaceBetween,
     ) {
         Text(
@@ -156,7 +170,7 @@ private fun CalendarDayCell(
             day.events.take(2).forEach { event ->
                 Box(
                     modifier = Modifier
-                        .size(20.dp)
+                        .size(14.dp)
                         .clip(RoundedCornerShape(10.dp))
                         .background(
                             if (event.state == ScheduleEventState.COMPLETED) {
@@ -167,7 +181,11 @@ private fun CalendarDayCell(
                         ),
                     contentAlignment = Alignment.Center,
                 ) {
-                    SportBadge(slug = event.sportSlug, size = 16.dp)
+                    Text(when (event.state) {
+                        ScheduleEventState.COMPLETED -> "✓"
+                        ScheduleEventState.PLANNED -> "○"
+                        ScheduleEventState.CANCELED -> "×"
+                    }, style = MaterialTheme.typography.labelMedium)
                 }
             }
             if (day.events.size > 2) {
@@ -179,4 +197,10 @@ private fun CalendarDayCell(
             }
         }
     }
+}
+
+private fun ScheduleEventState.label() = when (this) {
+    ScheduleEventState.COMPLETED -> "состоялась"
+    ScheduleEventState.PLANNED -> "запланирована"
+    ScheduleEventState.CANCELED -> "отменена"
 }

@@ -81,6 +81,24 @@ class BackupCodecTest {
         assertTrue(runCatching { BackupCodec.decode(BackupCodec.encode(current).replace("\"schemaVersion\": 5", "\"schemaVersion\": 4")) }.isFailure)
     }
 
+    @Test fun calendarMetadataRequiresVersion6AndCannotBeDowngradedSilently() {
+        val plan = PlannedTrainingBackup("2020-02-29","football","Арена", status = "completed",
+            recurrenceRulePublicId = "rule", occurrenceDate = "2020-02-29", completedTrainingPublicId = "result")
+        val rule = RecurrenceRuleBackup("2020-02-29", sportSlug = "football", centerName = "Арена", isCanceled = true)
+        val current = climbingDocument(6,emptyList()).copy(plannedTrainings = listOf(plan), recurrenceRules = listOf(rule))
+        assertEquals(current,BackupCodec.decode(BackupCodec.encode(current)))
+        assertTrue(runCatching { BackupCodec.encode(current.copy(schemaVersion = 5)) }.isFailure)
+        assertTrue(runCatching { BackupCodec.decode(BackupCodec.encode(current).replace("\"schemaVersion\": 6","\"schemaVersion\": 5")) }.isFailure)
+    }
+
+    @Test fun version5PlansDefaultToUnlinkedAndSeriesToActive() {
+        val old = climbingDocument(5,emptyList()).copy(plannedTrainings = listOf(PlannedTrainingBackup("2020-02-29","football","Арена")),
+            recurrenceRules = listOf(RecurrenceRuleBackup("2020-02-29",sportSlug = "football",centerName = "Арена")))
+        val encoded = BackupCodec.encode(old)
+        assertFalse(encoded.contains("occurrenceDate")); assertFalse(encoded.contains("completedTrainingPublicId")); assertFalse(encoded.contains("isCanceled"))
+        assertEquals(old,BackupCodec.decode(encoded))
+    }
+
     @Test
     fun decodesWindows1251CsvText() {
         val text = "Футбол;Москва"

@@ -25,6 +25,9 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.mutableLongStateOf
+import com.pamurlykin.sportsactivityassistant.ui.components.PlanAction
+import com.pamurlykin.sportsactivityassistant.ui.components.PlanActionDialog
+import com.pamurlykin.sportsactivityassistant.data.model.ScheduleEventState
 import com.pamurlykin.sportsactivityassistant.ui.components.TrainingActions
 import com.pamurlykin.sportsactivityassistant.ui.components.TrainingActionDialog
 import androidx.compose.runtime.remember
@@ -51,6 +54,13 @@ fun ScheduleScreen(
     var dialog by rememberSaveable { mutableStateOf<TrainingDialog?>(null) }
     var actionId by rememberSaveable { mutableLongStateOf(0) }
     var deleting by rememberSaveable { mutableStateOf(false) }
+    var planKey by rememberSaveable { mutableStateOf<String?>(null) }
+    var planRecurring by rememberSaveable { mutableStateOf(false) }
+    var planAction by rememberSaveable { mutableStateOf(PlanAction.EDIT) }
+    planKey?.let { androidx.compose.runtime.key(it, planAction) {
+        PlanActionDialog(it, planRecurring, planAction, viewModel) { planKey = null }
+    } }
+    androidx.lifecycle.compose.LifecycleEventEffect(androidx.lifecycle.Lifecycle.Event.ON_RESUME) { viewModel.refreshToday() }
     if (actionId != 0L) TrainingActionDialog(actionId, deleting, viewModel) { actionId = 0 }
 
     LaunchedEffect(operationState.message, operationState.inProgress) {
@@ -76,10 +86,9 @@ fun ScheduleScreen(
             centers = centers,
             onSaveCenter = viewModel::saveSportsCenter,
             onDismiss = { dialog = null },
-            onSave = {
-                viewModel.addPlannedTraining(it)
-                dialog = null
-            },
+            initialDate = scheduleState?.selectedDate ?: java.time.LocalDate.now(),
+            onSave = { input, requestId -> viewModel.addPlannedTraining(input, requestId) },
+            onSaved = { dialog = null },
         )
     }
     if (dialog == TrainingDialog.COMPLETED) {
@@ -174,6 +183,14 @@ fun ScheduleScreen(
                                         { deleting = false; actionId = event.id.removePrefix("completed-").toLong() },
                                         { deleting = true; actionId = event.id.removePrefix("completed-").toLong() })
                                 }
+                                event.planKey?.let { target ->
+                                    TextButton(onClick = { planKey = target; planRecurring = event.isRecurring; planAction = PlanAction.EDIT }) { Text("Изменить план") }
+                                    if (event.state == ScheduleEventState.PLANNED) {
+                                        TextButton(onClick = { planKey = target; planRecurring = event.isRecurring; planAction = PlanAction.COMPLETE }) { Text("Записать результат по плану") }
+                                        TextButton(onClick = { planKey = target; planRecurring = event.isRecurring; planAction = PlanAction.CANCEL }) { Text("Отменить тренировку") }
+                                    }
+                                }
+                                if (event.linkedPlan) Text("Результат связан с планом", style = MaterialTheme.typography.bodySmall)
                                 event.details.forEach { detail ->
                                     Text(
                                         text = detail,
@@ -188,8 +205,10 @@ fun ScheduleScreen(
                                 Text(
                                     text = if (event.state == com.pamurlykin.sportsactivityassistant.data.model.ScheduleEventState.COMPLETED) {
                                         "Состоявшаяся тренировка"
+                                    } else if (event.state == ScheduleEventState.CANCELED) {
+                                        "Отменена" + if (event.isRecurring) " · серия" else ""
                                     } else if (event.isRecurring) {
-                                        "Запланирована, повторяется каждую неделю"
+                                        "Запланирована · серия"
                                     } else {
                                         "Запланирована"
                                     },

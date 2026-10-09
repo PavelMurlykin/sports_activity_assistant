@@ -17,6 +17,7 @@ class DataExchange(private val db: AppDatabase) {
         val users = refs.getUsers().associateBy { it.id }
         val sports = refs.getSports().associateBy { it.id }
         val centers = refs.getComplexesWithSports().associateBy { it.complex.id }
+        val trainings = db.trainingDao().getAllTrainingBundles().associateBy { it.training.id }
         val rules = db.planningDao().getAllRecurrenceRules().associateBy { it.id }
         fun center(id: Long) = requireNotNull(centers[id]).complex
         fun profile(id: Long) = requireNotNull(users[id]).publicId
@@ -40,13 +41,14 @@ class DataExchange(private val db: AppDatabase) {
                 val c = center(item.sportsComplexId)
                 RecurrenceRuleBackup(item.startDate.toString(), item.endDate?.toString(), requireNotNull(sports[item.sportId]).slug,
                     c.name, c.city, item.intervalWeeks, item.publicId, c.publicId, profile(item.userId),
-                    item.createdAt.toString(), item.frequency.storageValue)
+                    item.createdAt.toString(), item.frequency.storageValue, item.isCanceled)
             },
             plannedTrainings = db.planningDao().getAllPlannedTrainings().map { item ->
                 val c = center(item.sportsComplexId)
                 PlannedTrainingBackup(item.plannedDate.toString(), requireNotNull(sports[item.sportId]).slug, c.name, c.city,
                     item.status.storageValue, item.publicId, c.publicId, profile(item.userId), item.createdAt.toString(),
-                    item.recurrenceRuleId?.let { requireNotNull(rules[it]).publicId })
+                    item.recurrenceRuleId?.let { requireNotNull(rules[it]).publicId },
+                    item.occurrenceDate?.toString(), item.completedTrainingId?.let { requireNotNull(trainings[it]).training.publicId })
             },
             favorites = refs.getFavoriteComplexes().map { FavoriteBackup(profile(it.userId), center(it.sportsComplexId).publicId, it.createdAt.toString()) },
             aliases = refs.getImportAliases().map { AliasBackup(it.kind, it.sourceKey, it.targetPublicId) },
@@ -212,10 +214,23 @@ class DataExchange(private val db: AppDatabase) {
             if (conflict && item.publicId !in c.keepLocalIds) errors += "План ${item.publicId.take(8)}: конфликт UUID — подтвердите сохранение локальной записи"
             // A preserved conflicting rule cannot be used as the parent of incompatible incoming plans.
             item.recurrenceRulePublicId?.let { parent -> localRules[parent]?.let { rule ->
-                if (rule.profilePublicId != mapped.profilePublicId || rule.centerPublicId != mapped.centerPublicId || rule.sportSlug != mapped.sportSlug)
+                if (rule.profilePublicId != mapped.profilePublicId || source.sourceVersion < 6 && (rule.centerPublicId != mapped.centerPublicId || rule.sportSlug != mapped.sportSlug))
                     errors += "План ${item.publicId.take(8)}: сохранённая локальная серия несовместима с планом"
             } }
-            records += ImportRecordPreview(item.publicId, "План · ${item.date} · ${item.centerName}", "plan", local != null, conflict, false)
+            item.completedTrainingPublicId?.let { resultId ->
+                val localResult = localTrainings[resultId]
+                val incoming = d.trainings.firstOrNull { it.publicId == resultId }
+                val target = localResult ?: incoming?.takeUnless { it.publicId in c.skipTrainingIds }
+                    ?.let { it.copy(profilePublicId = profileMap[it.profilePublicId]) }
+                if (target == null || target.profilePublicId != mapped.profilePublicId || target.sportSlug != mapped.sportSlug)
+                    errors += "План ${item.publicId.take(8)}: связанный результат исключён или несовместим"
+            }
+            val slot = current.plannedTrainings.firstOrNull { p -> p.publicId != item.publicId &&
+                (item.occurrenceDate != null && p.recurrenceRulePublicId == item.recurrenceRulePublicId && (p.occurrenceDate ?: p.date) == item.occurrenceDate ||
+                    item.completedTrainingPublicId != null && p.completedTrainingPublicId == item.completedTrainingPublicId) }
+            if (slot != null && item.publicId !in c.keepLocalIds)
+                errors += "План ${item.publicId.take(8)}: событие или результат уже связан с другим локальным планом — сохраните локальную запись"
+            records += ImportRecordPreview(item.publicId, "План · ${item.date} · ${item.centerName}", "plan", local != null || slot != null, conflict || slot != null, false)
         }
         val newAliases = mutableMapOf<Pair<String, String>, String>()
         fun alias(kind: String, key: String, target: String) {
@@ -299,18 +314,21 @@ class DataExchange(private val db: AppDatabase) {
                 val item = RecurrenceRuleEntity(userId = profile(r.profilePublicId), sportId = sports.getValue(r.sportSlug).id,
                     sportsComplexId = center(r.centerPublicId), startDate = TrainingValidation.parseDate(r.startDate),
                     endDate = r.endDate?.let(TrainingValidation::parseDate), frequency = RecurrenceFrequency.fromStorage(r.frequency),
-                    intervalWeeks = r.intervalWeeks, createdAt = time(r.createdAt), publicId = r.publicId!!)
+                    intervalWeeks = r.intervalWeeks, isCanceled = r.isCanceled, createdAt = time(r.createdAt), publicId = r.publicId!!)
                 rules[item.publicId] = item.copy(id = db.planningDao().insertRecurrenceRule(item)); importedRules++
             }
         }
+        val results = db.trainingDao().getAllTrainingBundles().associateBy { it.training.publicId }
         val plans = db.planningDao().getAllPlannedTrainings().map { it.publicId }.toSet()
         var importedPlans = 0
         d.plannedTrainings.filter { it.profilePublicId in plan.profiles }.forEach { p ->
-            if (p.publicId !in plans) {
+            if (p.publicId !in plans && p.publicId !in plan.preview.choices.keepLocalIds) {
                 db.planningDao().insertPlannedTraining(PlannedTrainingEntity(userId = profile(p.profilePublicId),
                     sportId = sports.getValue(p.sportSlug).id, sportsComplexId = center(p.centerPublicId),
                     plannedDate = TrainingValidation.parseDate(p.date), recurrenceRuleId = p.recurrenceRulePublicId?.let { rules.getValue(it).id },
-                    status = PlannedTrainingStatus.fromStorage(p.status), createdAt = time(p.createdAt), publicId = p.publicId!!))
+                    status = PlannedTrainingStatus.fromStorage(p.status),
+                    occurrenceDate = p.occurrenceDate?.let(TrainingValidation::parseDate),
+                    completedTrainingId = p.completedTrainingPublicId?.let { results.getValue(it).training.id }, createdAt = time(p.createdAt), publicId = p.publicId!!))
                 importedPlans++
             }
         }

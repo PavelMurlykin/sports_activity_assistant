@@ -39,6 +39,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.emitAll
+import com.pamurlykin.sportsactivityassistant.data.model.*
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import com.pamurlykin.sportsactivityassistant.data.seed.LocalSeed
@@ -204,16 +205,22 @@ class AppRepository(private val database: AppDatabase) {
         if (database.trainingDao().getTrainingBundle(snapshot.id) == null) return@readyTransaction
         val bundle = ownedTraining(snapshot.id)
         require(editSnapshot(bundle).revision == snapshot.revision) { "Запись изменилась. Откройте подтверждение удаления заново." }
+        database.planningDao().getPlanForResult(snapshot.id)?.let { plan ->
+            val ruleCanceled = plan.recurrenceRuleId?.let { database.planningDao().getRule(it)?.isCanceled } == true
+            database.planningDao().updatePlan(plan.copy(completedTrainingId = null,
+                status = if (ruleCanceled) PlannedTrainingStatus.CANCELED else PlannedTrainingStatus.PLANNED))
+        }
         check(database.trainingDao().deleteTraining(snapshot.id) == 1) { "Тренировка уже удалена" }
     }
 
     suspend fun getScheduleMonth(userId: Long, month: YearMonth, selectedDate: LocalDate, today: LocalDate): ScheduleMonthUiModel = readyTransaction {
-        val gridStart = month.atDay(1).with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
-        val gridEnd = month.atEndOfMonth().with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY))
+        val gridDates = ScheduleDates.grid(month)
+        val gridStart = gridDates.first()
+        val gridEnd = gridDates.last()
         val sportsById = database.referenceDao().getSports().associateBy { it.id }
         val complexesById = database.referenceDao().getAllComplexes().associateBy { it.id }
         val completed = database.trainingDao().getTrainingBundlesBetween(userId, gridStart, gridEnd)
-        val planned = database.planningDao().getPlannedTrainingsBetween(userId, gridStart, gridEnd)
+        val planned = database.planningDao().getAllPlannedTrainings().filter { it.userId == userId }
         val recurring = database.planningDao().getRecurrenceRulesOverlapping(userId, gridStart, gridEnd)
         val eventsByDate = mutableMapOf<LocalDate, MutableList<ScheduleEventUiModel>>()
 
@@ -222,29 +229,41 @@ class AppRepository(private val database: AppDatabase) {
                 id = "completed-${bundle.training.id}", date = bundle.training.trainingDate,
                 sportId = bundle.sport.id, sportSlug = bundle.sport.slug, sportTitle = bundle.sport.title,
                 complexName = bundle.complex.name, state = ScheduleEventState.COMPLETED,
-                isRecurring = false, details = mapTrainingBundle(bundle).details,
+                isRecurring = planned.any { it.completedTrainingId == bundle.training.id && it.recurrenceRuleId != null },
+                details = mapTrainingBundle(bundle).details,
+                linkedPlan = planned.any { it.completedTrainingId == bundle.training.id },
             )
         }
-        planned.forEach { item ->
+        planned.filter { it.plannedDate in gridStart..gridEnd && it.completedTrainingId == null }.forEach { item ->
             val sport = sportsById[item.sportId] ?: return@forEach
             val center = complexesById[item.sportsComplexId] ?: return@forEach
             eventsByDate.getOrPut(item.plannedDate, ::mutableListOf) += ScheduleEventUiModel(
                 "planned-${item.id}", item.plannedDate, sport.id, sport.slug, sport.title,
-                center.name, ScheduleEventState.PLANNED, item.recurrenceRuleId != null,
+                center.name, if (item.status == PlannedTrainingStatus.CANCELED ||
+                    item.recurrenceRuleId?.let { database.planningDao().getRule(it)?.isCanceled } == true)
+                    ScheduleEventState.CANCELED else ScheduleEventState.PLANNED,
+                item.recurrenceRuleId != null,
+                details = if (item.occurrenceDate != null && item.occurrenceDate != item.plannedDate)
+                    listOf("Перенесена с ${item.occurrenceDate}") else emptyList(),
+                planKey = "planned-${item.id}",
             )
         }
         recurring.forEach { rule ->
             val sport = sportsById[rule.sportId] ?: return@forEach
             val center = complexesById[rule.sportsComplexId] ?: return@forEach
-            expandRecurringDates(rule, gridStart, gridEnd).forEach { date ->
+            (if (rule.frequency == RecurrenceFrequency.WEEKLY)
+                ScheduleDates.expand(rule.startDate, rule.endDate, rule.intervalWeeks, gridStart, gridEnd) else emptyList()).forEach { date ->
+                if (planned.any { it.recurrenceRuleId == rule.id && (it.occurrenceDate ?: it.plannedDate) == date }) return@forEach
                 eventsByDate.getOrPut(date, ::mutableListOf) += ScheduleEventUiModel(
                     "rule-${rule.id}-$date", date, sport.id, sport.slug, sport.title,
-                    center.name, ScheduleEventState.PLANNED, true,
+                    center.name, if (rule.isCanceled) ScheduleEventState.CANCELED else ScheduleEventState.PLANNED, true,
+                    details = listOf("Интервал: ${rule.intervalWeeks} нед."),
+                    planKey = "rule-${rule.id}-$date",
                 )
             }
         }
         val comparator = compareBy<ScheduleEventUiModel>({ it.state }, { it.sportTitle }, { it.complexName })
-        val days = generateSequence(gridStart) { it.plusDays(1).takeIf { next -> next <= gridEnd } }.map { date ->
+        val days = gridDates.map { date ->
             ScheduleDayUiModel(
                 date, date.month == month.month, date == today,
                 eventsByDate[date].orEmpty().sortedWith(comparator),
@@ -256,29 +275,28 @@ class AppRepository(private val database: AppDatabase) {
         )
     }
 
-    suspend fun addPlannedTraining(userId: Long, input: AddPlannedTrainingInput) = readyTransaction {
-        val sport = requireNotNull(database.referenceDao().getSport(input.sportId)) { "Вид спорта не найден" }
-        SportModules.require(sport.slug)
-        require(database.referenceDao().getComplexesForSport(sport.id).any { it.id == input.complexId }) { "Выбранный спорт недоступен в этом центре" }
-        require(database.referenceDao().getUsers().any { it.id == userId }) { "Локальный профиль не найден" }
-        TrainingValidation.recurrence(input.date, input.endDate, input.intervalWeeks)
-        if (input.repeatWeekly) {
-            database.planningDao().insertRecurrenceRule(
-                RecurrenceRuleEntity(
-                    userId = userId, sportId = input.sportId, sportsComplexId = input.complexId,
-                    startDate = input.date, endDate = input.endDate, frequency = RecurrenceFrequency.WEEKLY,
-                    intervalWeeks = input.intervalWeeks,
-                ),
-            )
-        } else {
-            database.planningDao().insertPlannedTraining(
-                PlannedTrainingEntity(
-                    userId = userId, sportId = input.sportId, sportsComplexId = input.complexId,
-                    plannedDate = input.date, status = PlannedTrainingStatus.PLANNED,
-                ),
-            )
-        }
-    }
+    fun observeScheduleMonth(userId: Long, month: YearMonth, selectedDate: LocalDate, today: LocalDate): Flow<ScheduleMonthUiModel> =
+        readyFlow { combine(database.planningDao().observeChanges(), database.trainingDao().observeAllTrainingBundles(),
+            database.referenceDao().observeComplexesWithSports(), database.referenceDao().observeSports()) { _, _, _, _ ->
+                getScheduleMonth(userId, month, selectedDate, today)
+            } }
+
+    suspend fun addPlannedTraining(userId: Long, input: AddPlannedTrainingInput, requestId: String = java.util.UUID.randomUUID().toString()): Long =
+        readyTransaction { PlanningStore(database, userId).create(input, requestId) }
+
+    suspend fun loadPlan(key: String, scope: PlanScope = PlanScope.EVENT) =
+        readyTransaction { PlanningStore(database, localProfileId()).load(key, scope) }
+
+    suspend fun updatePlan(snapshot: PlanSnapshot, scope: PlanScope, input: AddPlannedTrainingInput) =
+        readyTransaction { PlanningStore(database, localProfileId()).update(snapshot, scope, input) }
+
+    suspend fun cancelPlan(snapshot: PlanSnapshot, scope: PlanScope) =
+        readyTransaction { PlanningStore(database, localProfileId()).cancel(snapshot, scope) }
+
+    suspend fun completePlan(snapshot: PlanSnapshot, input: AddCompletedTrainingInput, requestId: String): Long =
+        readyTransaction { PlanningStore(database, localProfileId()).complete(snapshot, input, requestId) {
+            addCompletedTraining(localProfileId(), input, requestId)
+        } }
 
     suspend fun createBackup(): String = withContext(Dispatchers.IO) {
         readyTransaction {
@@ -320,22 +338,4 @@ class AppRepository(private val database: AppDatabase) {
         SportModules.find(bundle.sport.slug)?.details(bundle)
             ?: listOf("Историческая запись: этот вид спорта не поддерживается текущей версией")
 
-    private fun expandRecurringDates(rule: RecurrenceRuleEntity, rangeStart: LocalDate, rangeEnd: LocalDate): List<LocalDate> {
-        if (rule.frequency != RecurrenceFrequency.WEEKLY) return emptyList()
-        val hardEnd = minOf(rangeEnd, rule.endDate ?: rangeEnd)
-        if (hardEnd < rangeStart) return emptyList()
-        val stepDays = 7L * rule.intervalWeeks.coerceAtLeast(1)
-        var cursor = rule.startDate
-        if (cursor < rangeStart) {
-            val difference = java.time.temporal.ChronoUnit.DAYS.between(cursor, rangeStart)
-            cursor = cursor.plusDays((difference / stepDays) * stepDays)
-            while (cursor < rangeStart) cursor = cursor.plusDays(stepDays)
-        }
-        return buildList {
-            while (cursor <= hardEnd) {
-                add(cursor)
-                cursor = cursor.plusDays(stepDays)
-            }
-        }
-    }
 }

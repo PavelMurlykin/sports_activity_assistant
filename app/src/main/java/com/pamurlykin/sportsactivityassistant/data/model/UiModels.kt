@@ -31,7 +31,8 @@ enum class RecurrenceFrequency(val storageValue: String) {
 
 enum class PlannedTrainingStatus(val storageValue: String) {
     PLANNED("planned"),
-    CANCELED("canceled");
+    CANCELED("canceled"),
+    COMPLETED("completed");
 
     companion object {
         fun fromStorage(value: String): PlannedTrainingStatus {
@@ -43,6 +44,7 @@ enum class PlannedTrainingStatus(val storageValue: String) {
 enum class ScheduleEventState {
     COMPLETED,
     PLANNED,
+    CANCELED,
 }
 
 data class SportSummaryUiModel(
@@ -105,6 +107,8 @@ data class ScheduleEventUiModel(
     val state: ScheduleEventState,
     val isRecurring: Boolean,
     val details: List<String> = emptyList(),
+    val planKey: String? = null,
+    val linkedPlan: Boolean = false,
 )
 
 data class ScheduleDayUiModel(

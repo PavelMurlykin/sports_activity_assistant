@@ -90,7 +90,7 @@ fun DataManagementScreen(viewModel: MainViewModel) {
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
                         Text("Импорт", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                        Text("JSON версий 1–5 и футбольный CSV: перед применением — проверка, выбор профиля и центров. Совпадения UUID пропускаются; одинаковые тренировки с разными UUID сохраняются. Лимит файла — 16 МиБ.")
+                        Text("JSON версий 1–6 и футбольный CSV: перед применением — проверка, выбор профиля и центров. Совпадения UUID пропускаются; одинаковые тренировки с разными UUID сохраняются. Лимит файла — 16 МиБ.")
                         OutlinedButton(
                             onClick = {
                                 if (viewModel.beginImportSelection()) try {
