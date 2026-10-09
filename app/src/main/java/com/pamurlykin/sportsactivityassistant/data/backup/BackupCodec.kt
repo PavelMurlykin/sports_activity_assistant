@@ -12,8 +12,9 @@ import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
-import kotlinx.serialization.json.int
+import kotlinx.serialization.json.intOrNull
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 
 object BackupCodec {
     private val json = Json {
@@ -84,11 +85,15 @@ object BackupCodec {
     }
 
     fun sourceVersion(raw: String): Int {
-        val value = requireNotNull(json.parseToJsonElement(raw).jsonObject["schemaVersion"]) {
+        val root = json.parseToJsonElement(raw)
+        require(root is JsonObject) { AppText.get(R.string.import_invalid_json) }
+        val value = requireNotNull(root["schemaVersion"]) {
             AppText.get(R.string.backup_codec_json_pole_schemaversion_obyazatelno)
-        }.jsonPrimitive
-        require(!value.isString) { AppText.get(R.string.backup_codec_json_schemaversion_dolzhno_byt_tselym) }
-        val version = value.int
+        }
+        require(value is JsonPrimitive && !value.isString && value.intOrNull != null) {
+            AppText.get(R.string.backup_codec_json_schemaversion_dolzhno_byt_tselym)
+        }
+        val version = requireNotNull(value.intOrNull)
         require(version in 1..BackupDocument.CURRENT_SCHEMA_VERSION) { AppText.get(R.string.backup_codec_versiya_rezervnoy_kopii_ne_podderzhivaetsya, version) }
         return version
     }

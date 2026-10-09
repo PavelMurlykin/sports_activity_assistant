@@ -114,6 +114,8 @@ Press «Применить импорт» (Apply import) after reviewing. Until 
 
 Unknown JSON versions/fields, unsupported sports, mixed sport details, invalid scale/grade, date, number, status, frequency or missing reference cause an error without partial writes. Explicitly historical unknown disciplines and original categories are retained without highest-grade comparisons. Data from an inconsistent old database is exported without silent removal, but validation may reject reimport; retain the original and do not manually alter your only copy.
 
+Damaged JSON or unsupported fields produce «Файл JSON повреждён…» (JSON file is damaged…) with a suggestion to choose a verified JSON 1–6 backup. The error message does not display file contents. Existing history is unchanged; do not clear the database to retry.
+
 Check workout counts, details and calendar after transfer. New backups cannot be imported into older app builds. A [format and limitations reference](backup-format.md) is included in the project.
 
 ## Known limitations
@@ -129,3 +131,5 @@ Install a JDK and Android SDK as described in README, then configure `JAVA_HOME`
 ```
 
 The first build may download tools and libraries. Once the cache is populated, repeat the command with `--offline`; the app itself needs no network. `verifyOfflinePolicy` rejects network permissions in merged debug/release manifests and enabled automatic backup. `connectedDebugAndroidTest` requires a running emulator or test device. The release APK is not yet signed with a distribution key; use the debug APK for installation.
+
+Run instrumentation tests only in a separate empty test AVD: the runner installs and uninstalls the app, so personal history on the selected device may be lost. With several emulators, set `$env:ANDROID_SERIAL='emulator-5556'` (the actual serial from `adb devices`). Check the XML report for test counts and zero errors/skips, not just `BUILD SUCCESSFUL`: an APK installation failure may not change Gradle's exit code. Never run these tests on a physical device containing your only copy of history.

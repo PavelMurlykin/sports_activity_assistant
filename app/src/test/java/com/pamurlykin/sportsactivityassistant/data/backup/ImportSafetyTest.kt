@@ -83,6 +83,26 @@ class ImportSafetyTest : com.pamurlykin.sportsactivityassistant.ResourceTextTest
         assertTrue(BackupValidation.errors(parse(document().copy(trainings = document().trainings + document().trainings))).isNotEmpty())
     }
 
+    @Test fun damagedAndUnknownFieldJsonHasActionableMessageWithoutFileContents() {
+        val privateText = "PRIVATE_HISTORY_NOT_FOR_ERROR_UI"
+        listOf("{\"schemaVersion\":6,\"trainings\":[\"$privateText\"",
+            BackupCodec.encode(document()).replace("\"schemaVersion\": 6", "\"schemaVersion\": 6, \"$privateText\": 1")).forEach { raw ->
+            val error = runCatching { ImportParser.parse(raw.toByteArray()) }.exceptionOrNull()!!
+            assertTrue(error.message!!,error.message!!.startsWith("Файл JSON повреждён"))
+            assertTrue(error.message!!.contains("Данные на устройстве не изменены"))
+            assertFalse(error.message!!.contains(privateText))
+            assertNotNull(error.cause)
+        }
+    }
+
+    @Test fun malformedVersionTypesAreRejectedWithLocalizedMessage() {
+        listOf("true", "null", "{}", "[]", "6.1", "999999999999999999999", "\"6\"").forEach { version ->
+            val error = runCatching { ImportParser.parse("{\"schemaVersion\":$version}".toByteArray()) }.exceptionOrNull()!!
+            assertEquals("JSON: schemaVersion должно быть целым числом, не строкой",error.message)
+        }
+        assertTrue(runCatching { ImportParser.parse("[]".toByteArray()) }.exceptionOrNull()!!.message!!.startsWith("Файл JSON повреждён"))
+    }
+
     @Test fun recurrenceAndManualDatesUseTheSameBoundaries() {
         val date = LocalDate.parse("2026-10-07")
         TrainingValidation.recurrence(date, date, 1)

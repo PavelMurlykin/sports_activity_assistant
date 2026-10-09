@@ -6,6 +6,7 @@ import com.pamurlykin.sportsactivityassistant.text.AppText
 
 import java.security.MessageDigest
 import java.util.UUID
+import kotlinx.serialization.SerializationException
 
 object ImportParser {
     fun parse(bytes: ByteArray): ParsedImport {
@@ -30,8 +31,12 @@ object ImportParser {
                 AppText.get(R.string.import_parser_futbolnyy_csv), 0, trainings.mapIndexed { index, item -> item.publicId!! to AppText.get(R.string.import_parser_stroka, rows[index].sourceLine) }.toMap(),
                 rows.map { id("profile:${it.sourceUserId}") to AppText.get(R.string.import_parser_user_id_tolko_pole_fayla, it.sourceUserId) }.toMap(), csv = true)
         }
-        val version = BackupCodec.sourceVersion(raw)
-        val decoded = BackupCodec.decode(raw)
+        val (version, decoded) = try {
+            BackupCodec.sourceVersion(raw) to BackupCodec.decode(raw)
+        } catch (error: SerializationException) {
+            // Decoder diagnostics can contain personal file contents. Keep them out of the UI.
+            throw IllegalArgumentException(AppText.get(R.string.import_invalid_json), error)
+        }
         if (version >= 4) return ParsedImport(decoded, "JSON ${version}", version,
             decoded.trainings.mapIndexedNotNull { index, item -> item.publicId?.let { it to "trainings[${index}]" } }.toMap(),
             decoded.profiles.map { it.publicId to (it.displayName ?: AppText.get(R.string.import_parser_lokalnyy_profil, it.publicId.take(8))) }.toMap())
