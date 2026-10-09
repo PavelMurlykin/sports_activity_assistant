@@ -19,7 +19,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.LaunchedEffect
 import com.pamurlykin.sportsactivityassistant.ui.components.ImportPreviewContent
@@ -33,10 +33,10 @@ import java.time.LocalDate
 @Composable
 fun DataManagementScreen(viewModel: MainViewModel) {
     val context = LocalContext.current
-    val state by viewModel.dataOperationState.collectAsState()
-    val busy by viewModel.fileBusy.collectAsState()
-    val ready by viewModel.exportReady.collectAsState()
-    val preview by viewModel.importPreview.collectAsState()
+    val state by viewModel.dataOperationState.collectAsStateWithLifecycle()
+    val busy by viewModel.fileBusy.collectAsStateWithLifecycle()
+    val ready by viewModel.exportReady.collectAsStateWithLifecycle()
+    val preview by viewModel.importPreview.collectAsStateWithLifecycle()
     val resolver = context.applicationContext.contentResolver
     val exportLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
         viewModel.exportSelected(resolver, uri)

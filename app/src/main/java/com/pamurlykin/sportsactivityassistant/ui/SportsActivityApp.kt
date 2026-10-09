@@ -13,6 +13,8 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.res.stringResource
+import com.pamurlykin.sportsactivityassistant.R
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -46,10 +48,10 @@ fun SportsActivityApp(
             if (showBottomBar) {
                 NavigationBar {
                     val items = listOf(
-                        Triple(Destination.Schedule.route, "Расписание", Icons.Rounded.CalendarMonth),
-                        Triple(Destination.Statistics.route, "Статистика", Icons.Rounded.QueryStats),
-                        Triple(Destination.SportsCenters.route, "Центры", Icons.Rounded.LocationOn),
-                        Triple(Destination.DataManagement.route, "Данные", Icons.Rounded.Storage),
+                        Triple(Destination.Schedule.route, stringResource(R.string.nav_schedule), Icons.Rounded.CalendarMonth),
+                        Triple(Destination.Statistics.route, stringResource(R.string.nav_statistics), Icons.Rounded.QueryStats),
+                        Triple(Destination.SportsCenters.route, stringResource(R.string.nav_centers), Icons.Rounded.LocationOn),
+                        Triple(Destination.DataManagement.route, stringResource(R.string.nav_data), Icons.Rounded.Storage),
                     )
                     items.forEach { (route, label, icon) ->
                         val selected = currentDestination?.hierarchy?.any { it.route == route } == true

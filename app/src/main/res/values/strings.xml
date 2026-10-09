@@ -1,4 +1,33 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Sports Activity Assistant</string>
+    <string name="nav_schedule">Расписание</string>
+    <string name="nav_statistics">Статистика</string>
+    <string name="nav_centers">Центры</string>
+    <string name="nav_data">Данные</string>
+    <string name="loading_data">Загрузка данных…</string>
+    <string name="read_failed">Не удалось загрузить данные</string>
+    <string name="read_retry_help">Сохранённые записи не изменены. Повторите загрузку. Если ошибка сохраняется, закройте и снова откройте приложение.</string>
+    <string name="retry">Повторить</string>
+    <string name="add_workout">Добавить тренировку</string>
+    <string name="add_center">Добавить спортивный центр</string>
+    <string name="previous_month">Предыдущий месяц</string>
+    <string name="next_month">Следующий месяц</string>
+    <string name="calendar_legend">✓ Состоялась · ○ План · × Отменена</string>
+    <string name="calendar_today">сегодня</string>
+    <string name="calendar_completed">состоялась</string>
+    <string name="calendar_planned">запланирована</string>
+    <string name="calendar_canceled">отменена</string>
+    <string name="calendar_event">%1$s: %2$s</string>
+    <string name="calendar_more_events">+%1$d</string>
+    <string name="back_to_statistics">Назад к общей статистике</string>
+    <string name="expand_training">Показать детали тренировки</string>
+    <string name="collapse_training">Скрыть детали тренировки</string>
+    <string name="open_sport">Открыть статистику: %1$s</string>
+    <string name="load_workout_failed">Не удалось открыть тренировку. Повторите загрузку или закройте окно.</string>
+    <string name="load_plan_failed">Не удалось открыть план. Повторите загрузку или закройте окно.</string>
+    <string name="close">Закрыть</string>
+    <string-array name="calendar_weekdays">
+        <item>Пн</item><item>Вт</item><item>Ср</item><item>Чт</item><item>Пт</item><item>Сб</item><item>Вс</item>
+    </string-array>
 </resources>

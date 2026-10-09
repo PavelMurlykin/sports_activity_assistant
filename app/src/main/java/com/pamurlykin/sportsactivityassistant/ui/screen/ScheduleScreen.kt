@@ -15,13 +15,10 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.mutableLongStateOf
@@ -30,27 +27,33 @@ import com.pamurlykin.sportsactivityassistant.ui.components.PlanActionDialog
 import com.pamurlykin.sportsactivityassistant.data.model.ScheduleEventState
 import com.pamurlykin.sportsactivityassistant.ui.components.TrainingActions
 import com.pamurlykin.sportsactivityassistant.ui.components.TrainingActionDialog
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.pamurlykin.sportsactivityassistant.ui.components.AddCompletedTrainingDialog
 import com.pamurlykin.sportsactivityassistant.ui.components.AddPlannedTrainingDialog
 import com.pamurlykin.sportsactivityassistant.ui.components.MonthCalendar
+import com.pamurlykin.sportsactivityassistant.ui.components.ReadStateNotice
+import androidx.compose.material3.Icon
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Add
+import androidx.compose.ui.res.stringResource
+import com.pamurlykin.sportsactivityassistant.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ScheduleScreen(
     viewModel: MainViewModel,
 ) {
-    val scheduleState by viewModel.scheduleState.collectAsState()
-    val statisticsState by viewModel.statisticsState.collectAsState()
-    val centers by viewModel.sportsCenters.collectAsState()
-    val operationState by viewModel.dataOperationState.collectAsState()
-    val snackbarHostState = remember { SnackbarHostState() }
+    val readState by viewModel.scheduleReadState.collectAsStateWithLifecycle()
+    val scheduleState = readState.data
+    val statisticsRead by viewModel.statisticsReadState.collectAsStateWithLifecycle()
+    val centersRead by viewModel.centersReadState.collectAsStateWithLifecycle()
+    val statisticsState by viewModel.statisticsState.collectAsStateWithLifecycle()
+    val centers by viewModel.sportsCenters.collectAsStateWithLifecycle()
     var dialog by rememberSaveable { mutableStateOf<TrainingDialog?>(null) }
     var actionId by rememberSaveable { mutableLongStateOf(0) }
     var deleting by rememberSaveable { mutableStateOf(false) }
@@ -62,14 +65,6 @@ fun ScheduleScreen(
     } }
     androidx.lifecycle.compose.LifecycleEventEffect(androidx.lifecycle.Lifecycle.Event.ON_RESUME) { viewModel.refreshToday() }
     if (actionId != 0L) TrainingActionDialog(actionId, deleting, viewModel) { actionId = 0 }
-
-    LaunchedEffect(operationState.message, operationState.inProgress) {
-        val message = operationState.message
-        if (message != null && !operationState.inProgress) {
-            snackbarHostState.showSnackbar(message)
-            viewModel.clearDataMessage()
-        }
-    }
 
     if (dialog == TrainingDialog.CHOICE) {
         AlertDialog(
@@ -104,12 +99,11 @@ fun ScheduleScreen(
     }
 
     Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = {
                     Column {
-                        Text("Расписание", fontWeight = FontWeight.Bold)
+                        Text(stringResource(R.string.nav_schedule), fontWeight = FontWeight.Bold)
                         Text(
                             "Календарь завершённых и запланированных тренировок",
                             style = MaterialTheme.typography.bodySmall,
@@ -120,12 +114,19 @@ fun ScheduleScreen(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = { dialog = TrainingDialog.CHOICE }) {
-                Text("+")
+            if (!readState.loading && !readState.failed && statisticsRead.data != null && centersRead.data != null) {
+                FloatingActionButton(onClick = { dialog = TrainingDialog.CHOICE }) {
+                    Icon(Icons.Rounded.Add, contentDescription = stringResource(R.string.add_workout))
+                }
             }
         },
     ) { innerPadding ->
-        scheduleState?.let { state ->
+        if (readState.data == null || statisticsRead.failed || centersRead.failed) {
+            Column(Modifier.fillMaxSize().padding(innerPadding).padding(16.dp)) {
+                ReadStateNotice(readState.failed || statisticsRead.failed || centersRead.failed, viewModel::retryReads)
+            }
+        }
+        scheduleState?.takeUnless { statisticsRead.failed || centersRead.failed }?.let { state ->
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = innerPadding.calculateTopPadding() + 12.dp, bottom = innerPadding.calculateBottomPadding() + 92.dp),

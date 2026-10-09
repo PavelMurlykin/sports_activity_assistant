@@ -1,6 +1,9 @@
 package com.pamurlykin.sportsactivityassistant.ui.components
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -10,6 +13,8 @@ import com.pamurlykin.sportsactivityassistant.data.model.TrainingEditSnapshot
 import com.pamurlykin.sportsactivityassistant.ui.screen.MainViewModel
 import kotlinx.coroutines.CancellationException
 import java.util.UUID
+import androidx.compose.ui.res.stringResource
+import com.pamurlykin.sportsactivityassistant.R
 
 @Composable
 fun TrainingActions(sportSlug: String, onEdit: () -> Unit, onDelete: () -> Unit) {
@@ -22,15 +27,19 @@ fun TrainingActions(sportSlug: String, onEdit: () -> Unit, onDelete: () -> Unit)
 /** The original revision survives restoration along with the form, preventing stale overwrites. */
 @Composable
 fun TrainingActionDialog(id: Long, deleting: Boolean, viewModel: MainViewModel, onDismiss: () -> Unit) {
-    val sports by viewModel.statisticsState.collectAsState()
-    val centers by viewModel.sportsCenters.collectAsState()
+    val sports by viewModel.statisticsState.collectAsStateWithLifecycle()
+    val centers by viewModel.sportsCenters.collectAsStateWithLifecycle()
+    val statisticsRead by viewModel.statisticsReadState.collectAsStateWithLifecycle()
+    val centersRead by viewModel.centersReadState.collectAsStateWithLifecycle()
+    val loadFailureText = stringResource(R.string.load_workout_failed)
+    var loadAttempt by rememberSaveable(id) { mutableIntStateOf(0) }
     var revision by rememberSaveable(id) { mutableStateOf<String?>(null) }
     var sportId by rememberSaveable(id) { mutableIntStateOf(0) }
     var centerId by rememberSaveable(id) { mutableLongStateOf(0) }
     var error by rememberSaveable(id) { mutableStateOf<String?>(null) }
     var deletingNow by rememberSaveable(id) { mutableStateOf(false) }
     val requestId = rememberSaveable(id) { UUID.randomUUID().toString() }
-    LaunchedEffect(id) {
+    LaunchedEffect(id, loadAttempt) {
         if (revision == null) {
             try {
                 val snapshot = viewModel.loadTrainingForEdit(id)
@@ -38,14 +47,18 @@ fun TrainingActionDialog(id: Long, deleting: Boolean, viewModel: MainViewModel, 
                 centerId = snapshot.input.complexId
                 revision = snapshot.revision
             } catch (e: CancellationException) { throw e }
-            catch (e: Exception) { error = e.message ?: "Не удалось открыть тренировку" }
+            catch (e: Exception) { error = loadFailureText }
         }
     }
     val snapshot = revision?.let { TrainingEditSnapshot.restore(id, sportId, centerId, it) }
     if (snapshot == null || sports.sports.isEmpty() || centers.isEmpty()) {
         AlertDialog(onDismissRequest = onDismiss, title = { Text("Тренировка") },
-            text = { Text(error ?: "Загрузка…") },
-            confirmButton = { TextButton(onClick = onDismiss) { Text("Закрыть") } })
+            text = { Column(Modifier.verticalScroll(rememberScrollState())) {
+                ReadStateNotice(error != null || statisticsRead.failed || centersRead.failed, {
+                    error = null; loadAttempt++; viewModel.retryReads()
+                }, failureMessage = error)
+            } },
+            confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.close)) } })
     } else if (!deleting) {
         AddCompletedTrainingDialog(sports.sports, snapshot.input.date, centers, onDismiss,
             onSave = { input, token -> viewModel.saveCompletedTraining(input, token, snapshot) },
@@ -64,7 +77,7 @@ fun TrainingActionDialog(id: Long, deleting: Boolean, viewModel: MainViewModel, 
         AlertDialog(onDismissRequest = { if (!deletingNow) onDismiss() },
             title = { Text("Удалить тренировку?") },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("${sports.sports.firstOrNull { it.id == sportId }?.title.orEmpty()} · ${snapshot.input.date}")
                     Text(centers.firstOrNull { it.id == centerId }?.fullTitle.orEmpty())
                     Text("Результат и вся его спортивная статистика будут удалены. Центр, планы и серии останутся. Связанный план снова будет запланирован, а в отменённой серии — отменён. Отменить удаление нельзя; восстановление возможно из прежней копии файла.")

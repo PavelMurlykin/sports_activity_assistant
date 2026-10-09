@@ -14,10 +14,9 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewmodel.CreationExtras
 import com.pamurlykin.sportsactivityassistant.data.model.StatisticsFilter
-import com.pamurlykin.sportsactivityassistant.data.model.TrainingPageUiModel
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -52,9 +51,14 @@ class MainViewModel(
         this(repository, SavedStateHandle(), currentDate)
 
     private var today = currentDate()
-    private val visibleMonth = MutableStateFlow(YearMonth.from(today))
-    private val selectedDate = MutableStateFlow(today)
+    private val selectedDate = MutableStateFlow(runCatching {
+        savedState.get<String>("scheduleDate")?.let(LocalDate::parse)?.takeIf { it.year in 1..9999 }
+    }.getOrNull() ?: today)
+    private val visibleMonth = MutableStateFlow(YearMonth.from(selectedDate.value))
     private val _scheduleState = MutableStateFlow<ScheduleMonthUiModel?>(null)
+    private val _scheduleReadState = MutableStateFlow(ReadState<ScheduleMonthUiModel>())
+    val scheduleReadState = _scheduleReadState.asStateFlow()
+    private val readRevision = MutableStateFlow(0L)
     private val _dataOperationState = MutableStateFlow(DataOperationUiState())
 
     private val _importPreview = MutableStateFlow<ImportPreview?>(null)
@@ -67,6 +71,7 @@ class MainViewModel(
     private var pendingExport: ByteArray? = null
     private var phase = "idle"
     private var previewJob: Job? = null
+    private var fileJob: Job? = null
     private var scheduleJob: Job? = null
     private val trainingWrites = mutableMapOf<String, Deferred<Unit>>()
 
@@ -86,14 +91,21 @@ class MainViewModel(
         _statisticsFilter.value = filter
     }
 
-    val statisticsState: StateFlow<StatisticsOverviewUiModel> = statisticsFilter.flatMapLatest {
-        repository.observeStatisticsOverview(it)
+    val statisticsReadState = readRevision.flatMapLatest {
+        statisticsFilter.flatMapLatest { filter -> repository.observeStatisticsOverview(filter).readStates() }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ReadState())
+    // Keep reference options while a form is open; screen content uses explicit read states.
+    val statisticsState: StateFlow<StatisticsOverviewUiModel> = statisticsReadState.mapNotNull {
+        it.data
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),
         initialValue = StatisticsOverviewUiModel(totalTrainings = 0, sports = emptyList()),
     )
-    val sportsCenters = repository.observeSportsCenters().stateIn(
+    val centersReadState = readRevision.flatMapLatest {
+        repository.observeSportsCenters().readStates()
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ReadState())
+    val sportsCenters = centersReadState.mapNotNull { it.data }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),
         initialValue = emptyList(),
@@ -109,6 +121,12 @@ class MainViewModel(
         }
     }
 
+    /** Restarts failed collectors; no mutation, import or file operation is retried here. */
+    fun retryReads() {
+        readRevision.value += 1
+        refreshSchedule()
+    }
+
     /** Also called on resume: handles midnight, device date and time-zone changes. */
     fun refreshToday() {
         val next = currentDate()
@@ -116,6 +134,7 @@ class MainViewModel(
         if (selectedDate.value == today && visibleMonth.value == YearMonth.from(today)) {
             selectedDate.value = next
             visibleMonth.value = YearMonth.from(next)
+            savedState["scheduleDate"] = next.toString()
         }
         today = next
         refreshSchedule()
@@ -126,6 +145,7 @@ class MainViewModel(
         val newMonth = visibleMonth.value.minusMonths(1)
         visibleMonth.value = newMonth
         selectedDate.value = normalizeSelectedDate(selectedDate.value, newMonth)
+        savedState["scheduleDate"] = selectedDate.value.toString()
         refreshSchedule()
     }
 
@@ -134,12 +154,14 @@ class MainViewModel(
         val newMonth = visibleMonth.value.plusMonths(1)
         visibleMonth.value = newMonth
         selectedDate.value = normalizeSelectedDate(selectedDate.value, newMonth)
+        savedState["scheduleDate"] = selectedDate.value.toString()
         refreshSchedule()
     }
 
     fun selectDate(date: LocalDate) {
         if (date.year !in 1..9999) return
         selectedDate.value = date
+        savedState["scheduleDate"] = date.toString()
         if (YearMonth.from(date) != visibleMonth.value) {
             visibleMonth.value = YearMonth.from(date)
         }
@@ -185,9 +207,7 @@ class MainViewModel(
         trainingWrite(requestId) {
             if (snapshot == null) repository.addCompletedTraining(repository.localProfileId(), input, requestId)
             else repository.updateCompletedTraining(snapshot, input)
-            visibleMonth.value = YearMonth.from(input.date)
-            selectedDate.value = input.date
-            refreshSchedule()
+            selectDate(input.date)
         }
     }
 
@@ -211,14 +231,18 @@ class MainViewModel(
         return repository.getComplexOptionsForSport(sportId)
     }
 
-    fun trainingsPageForSport(sportId: Int, page: Int) = statisticsFilter.flatMapLatest { filter ->
-        repository.observeTrainingPage(sportId, filter, page).map<TrainingPageUiModel, TrainingPageUiModel?> { it }
-            .onStart { emit(null) }
+    fun trainingPageReadStates(sportId: Int, page: Int) = readRevision.flatMapLatest {
+        statisticsFilter.flatMapLatest { filter -> repository.observeTrainingPage(sportId, filter, page).readStates() }
     }
 
-    fun statisticsForSport(sportId: Int) = statisticsFilter.flatMapLatest { filter ->
-        repository.observeSportStatistics(sportId, filter).onStart { emit(null) }
+    fun sportStatisticsReadStates(sportId: Int) = readRevision.flatMapLatest {
+        statisticsFilter.flatMapLatest { filter ->
+            repository.observeSportStatistics(sportId, filter).map { requireNotNull(it) }.readStates()
+        }
     }
+
+    fun trainingsPageForSport(sportId: Int, page: Int) = trainingPageReadStates(sportId, page).map { it.data }
+    fun statisticsForSport(sportId: Int) = sportStatisticsReadStates(sportId).map { it.data }
 
     private fun beginFile(nextPhase: String): Boolean {
         if (_fileBusy.value) return false
@@ -237,12 +261,17 @@ class MainViewModel(
         }
         if (uri == null) { cancelFile(); return }
         phase = "reading"
-        viewModelScope.launch {
+        fileJob = viewModelScope.launch {
             try {
                 val bytes = withContext(Dispatchers.IO) { LocalFiles.read(resolver, uri) }
                 val source = repository.prepareImport(bytes)
+                kotlinx.coroutines.currentCoroutineContext().ensureActive()
+                if (phase != "reading") return@launch
                 pendingImport = source
-                _importPreview.value = repository.previewImport(source)
+                val next = repository.previewImport(source)
+                kotlinx.coroutines.currentCoroutineContext().ensureActive()
+                if (phase != "reading") return@launch
+                _importPreview.value = next
                 phase = "preview"
                 _dataOperationState.value = DataOperationUiState()
             } catch (e: CancellationException) { throw e }
@@ -258,11 +287,17 @@ class MainViewModel(
         _dataOperationState.value = DataOperationUiState(inProgress = true, message = "Проверка выбора…")
         previewJob = viewModelScope.launch {
             try {
-                _importPreview.value = repository.previewImport(source, choices)
+                val next = repository.previewImport(source, choices)
+                kotlinx.coroutines.currentCoroutineContext().ensureActive()
+                if (pendingImport !== source || phase != "previewing") return@launch
+                _importPreview.value = next
                 phase = "preview"
                 _dataOperationState.value = DataOperationUiState()
             } catch (e: CancellationException) { throw e }
-            catch (e: Exception) { phase = "preview"; showError(e) }
+            catch (e: Exception) {
+                kotlinx.coroutines.currentCoroutineContext().ensureActive()
+                if (pendingImport === source && phase == "previewing") { phase = "preview"; showError(e) }
+            }
         }
     }
 
@@ -272,7 +307,7 @@ class MainViewModel(
         val preview = _importPreview.value?.takeIf { it.canApply } ?: return
         phase = "applying"
         _dataOperationState.value = DataOperationUiState(inProgress = true, message = "Применение импорта…")
-        viewModelScope.launch {
+        fileJob = viewModelScope.launch {
             try {
                 val r = repository.applyImport(source, preview.choices)
                 finishFile()
@@ -284,7 +319,9 @@ class MainViewModel(
             } catch (e: CancellationException) { throw e }
             catch (e: Exception) {
                 phase = "preview"
-                _importPreview.value = repository.previewImport(source, preview.choices)
+                try { _importPreview.value = repository.previewImport(source, preview.choices) }
+                catch (canceled: CancellationException) { throw canceled }
+                catch (_: Exception) { finishFile() }
                 showError(e)
             }
         }
@@ -292,9 +329,11 @@ class MainViewModel(
 
     fun prepareExport() {
         if (!beginFile("exportPreparing")) return
-        viewModelScope.launch {
+        fileJob = viewModelScope.launch {
             try {
                 val bytes = repository.createBackup().toByteArray(Charsets.UTF_8)
+                kotlinx.coroutines.currentCoroutineContext().ensureActive()
+                if (phase != "exportPreparing") return@launch
                 require(bytes.size <= ImportFiles.MAX_BYTES) { "Копия превышает поддерживаемый лимит 16 МиБ" }
                 pendingExport = bytes
                 phase = "exportSelection"
@@ -314,7 +353,7 @@ class MainViewModel(
             return
         }
         phase = "writing"
-        viewModelScope.launch {
+        fileJob = viewModelScope.launch {
             try {
                 withContext(Dispatchers.IO) { LocalFiles.writeVerified(resolver, uri, bytes) }
                 finishFile()
@@ -327,6 +366,8 @@ class MainViewModel(
     fun cancelFile() {
         if (phase == "applying" || phase == "writing") return
         previewJob?.cancel()
+        fileJob?.cancel()
+        fileJob = null
         pendingImport = null; pendingExport = null
         _importPreview.value = null; _exportReady.value = false
         _fileBusy.value = false
@@ -336,6 +377,7 @@ class MainViewModel(
 
     private fun finishFile() {
         phase = "finished"
+        fileJob = null
         cancelFile()
     }
 
@@ -354,14 +396,23 @@ class MainViewModel(
         val month = visibleMonth.value
         val date = normalizeSelectedDate(selectedDate.value, month)
         if (_scheduleState.value?.month != month || _scheduleState.value?.selectedDate != date) _scheduleState.value = null
+        _scheduleReadState.value = ReadState(data = _scheduleState.value)
         scheduleJob = viewModelScope.launch {
             try {
                 repository.observeScheduleMonth(repository.localProfileId(), month, date, today).collect { next ->
                     kotlinx.coroutines.currentCoroutineContext().ensureActive()
-                    if (month == visibleMonth.value && date == selectedDate.value) _scheduleState.value = next
+                    if (month == visibleMonth.value && date == selectedDate.value) {
+                        _scheduleState.value = next
+                        _scheduleReadState.value = ReadState(data = next)
+                    }
                 }
             } catch (e: CancellationException) { throw e }
-            catch (e: Exception) { showError(e) }
+            catch (e: Exception) {
+                if (month == visibleMonth.value && date == selectedDate.value) {
+                    _scheduleState.value = null
+                    _scheduleReadState.value = ReadState(failed = true)
+                }
+            }
         }
     }
 

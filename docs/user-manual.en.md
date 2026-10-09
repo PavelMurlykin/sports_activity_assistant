@@ -10,6 +10,14 @@ Before uninstalling the app or clearing its data, save a backup: both actions re
 
 Upgrading to the current database schema (version 7) preserves local keys, UUIDs, workouts, historical route repeat counts, centers, plans and their relationships. Inherited external profile identifiers are removed; an existing local name is retained. Reference initialization completes before data reads and writes without overwriting existing records. Broken references abort the migration; the database is not automatically recreated.
 
+## Loading, errors and accessible actions
+
+Reading the calendar, statistics and directory shows «Загрузка данных…» (Loading data). A read failure is not an empty history: an error offers «Повторить» (Retry). Retry reads the data again; it does not save a workout or start an import. If it still fails, close and reopen the app; do not clear its data or uninstall without a verified backup. A failed result/plan opening can be retried or the window closed. File-operation messages stay on «Данные» (Data) and are not dismissed by switching to the calendar; field-validation errors remain in their form.
+
+Add buttons have accessible names «Добавить тренировку» (Add workout) and «Добавить спортивный центр» (Add sports center); they appear after the required reference data loads. Sport cards and result expansion are identified as actions. On a narrow screen, the calendar grid scrolls horizontally: swipe across it to reveal the remaining weekdays; pages and forms scroll vertically. Cell height accommodates increased font size. The selected calendar date survives rotation and system process restoration, but is not included in the JSON backup.
+
+The interface is still Russian. This English manual describes the same workflows and does not promise full English localization. Full manual TalkBack verification and testing every form with enlarged fonts are not yet complete.
+
 ## Recording a workout
 
 On «Расписание» (Schedule), press the add button and select «Записать результат» (Record result). Choose a sport, date and sports center that offers that sport. Enter `YYYY-MM-DD` (years 0001–9999) or use «Выбрать дату» (Choose date). New results cannot use a future date: use a plan instead. Imported history may contain a future date; editing may retain that original date or correct it to today/the past, but cannot replace it with another future date.

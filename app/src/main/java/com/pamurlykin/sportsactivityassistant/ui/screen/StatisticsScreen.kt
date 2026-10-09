@@ -27,14 +27,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.ui.text.style.TextAlign
 import com.pamurlykin.sportsactivityassistant.ui.components.StatisticsFilters
 import com.pamurlykin.sportsactivityassistant.data.model.TrainingPageUiModel
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -51,6 +50,11 @@ import java.time.format.TextStyle
 import java.util.Locale
 import com.pamurlykin.sportsactivityassistant.data.model.TrainingSessionUiModel
 import com.pamurlykin.sportsactivityassistant.ui.components.SportBadge
+import com.pamurlykin.sportsactivityassistant.ui.components.ReadStateNotice
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import com.pamurlykin.sportsactivityassistant.R
+import com.pamurlykin.sportsactivityassistant.data.model.StatisticsOverviewUiModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -58,14 +62,16 @@ fun StatisticsScreen(
     viewModel: MainViewModel,
     onOpenSport: (Int) -> Unit,
 ) {
-    val statisticsState by viewModel.statisticsState.collectAsState()
-    val filter by viewModel.statisticsFilter.collectAsState()
-    val centers by viewModel.sportsCenters.collectAsState()
+    val readState by viewModel.statisticsReadState.collectAsStateWithLifecycle()
+    val statisticsState = readState.data ?: StatisticsOverviewUiModel(0, emptyList())
+    val filter by viewModel.statisticsFilter.collectAsStateWithLifecycle()
+    val centersRead by viewModel.centersReadState.collectAsStateWithLifecycle()
+    val centers = centersRead.data.orEmpty()
 
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("Статистика") },
+                title = { Text(stringResource(R.string.nav_statistics)) },
             )
         },
     ) { innerPadding ->
@@ -75,8 +81,10 @@ fun StatisticsScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             item { StatisticsFilters(filter, centers, viewModel::setStatisticsFilter) }
-            if (statisticsState.filter != filter || statisticsState.sports.isEmpty()) {
-                item { CircularProgressIndicator() }
+            if (readState.failed || centersRead.failed) {
+                item { ReadStateNotice(true, viewModel::retryReads) }
+            } else if (readState.loading || centersRead.loading || statisticsState.filter != filter) {
+                item { ReadStateNotice(false, viewModel::retryReads) }
             } else {
                 item {
                     Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
@@ -101,9 +109,10 @@ fun StatisticsScreen(
                 }
 
                 items(statisticsState.sports, key = { it.id }) { sport ->
+                    val openLabel = stringResource(R.string.open_sport, sport.title)
                     Card(
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                        modifier = Modifier.clickable { onOpenSport(sport.id) },
+                        modifier = Modifier.clickable(role = Role.Button, onClickLabel = openLabel) { onOpenSport(sport.id) },
                     ) {
                         Row(
                             modifier = Modifier
@@ -167,13 +176,16 @@ fun StatisticsDetailScreen(
     viewModel: MainViewModel,
     onBack: () -> Unit,
 ) {
-    val filter by viewModel.statisticsFilter.collectAsState()
-    val centers by viewModel.sportsCenters.collectAsState()
+    val filter by viewModel.statisticsFilter.collectAsStateWithLifecycle()
+    val centersRead by viewModel.centersReadState.collectAsStateWithLifecycle()
+    val centers = centersRead.data.orEmpty()
     var pageIndex by rememberSaveable(sportId, filter) { mutableIntStateOf(0) }
-    val trainingPage by remember(viewModel, sportId, pageIndex) { viewModel.trainingsPageForSport(sportId, pageIndex) }.collectAsState(initial = null)
+    val pageRead by remember(viewModel, sportId, pageIndex) { viewModel.trainingPageReadStates(sportId, pageIndex) }.collectAsStateWithLifecycle(initialValue = ReadState())
+    val trainingPage = pageRead.data
     LaunchedEffect(trainingPage?.page) { trainingPage?.let { pageIndex = it.page } }
     val trainings = trainingPage?.takeIf { it.filter == filter }?.items.orEmpty()
-    val sportStatistics by remember(viewModel, sportId) { viewModel.statisticsForSport(sportId) }.collectAsState(initial = null)
+    val statisticsRead by remember(viewModel, sportId) { viewModel.sportStatisticsReadStates(sportId) }.collectAsStateWithLifecycle(initialValue = ReadState())
+    val sportStatistics = statisticsRead.data
     val listState = rememberLazyListState()
     var scrollToTrainings by remember { mutableStateOf(false) }
     var previousFilter by remember { mutableStateOf(filter) }
@@ -197,7 +209,7 @@ fun StatisticsDetailScreen(
             CenterAlignedTopAppBar(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(imageVector = Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Назад к общей статистике")
+                        Icon(imageVector = Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = stringResource(R.string.back_to_statistics))
                     }
                 },
                 title = {
@@ -220,6 +232,11 @@ fun StatisticsDetailScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             item { StatisticsFilters(filter, centers, viewModel::setStatisticsFilter) }
+            if (statisticsRead.failed || centersRead.failed) {
+                item { ReadStateNotice(true, viewModel::retryReads) }
+            } else if (statisticsRead.loading || centersRead.loading) {
+                item { ReadStateNotice(false, viewModel::retryReads) }
+            }
             sportStatistics?.takeIf { it.filter == filter }?.let { statistics ->
                 item {
                     Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
@@ -242,8 +259,10 @@ fun StatisticsDetailScreen(
                     Text("Тренировки", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
                 }
             }
-            if (trainingPage == null || trainingPage?.filter != filter) {
-                item { CircularProgressIndicator() }
+            if (pageRead.failed) {
+                item { ReadStateNotice(true, viewModel::retryReads) }
+            } else if (trainingPage == null || trainingPage.filter != filter) {
+                item { ReadStateNotice(false, viewModel::retryReads) }
             } else if (trainings.isEmpty()) {
                 item {
                     Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
@@ -254,13 +273,13 @@ fun StatisticsDetailScreen(
                     }
                 }
             } else {
-                item { TrainingPageControls(trainingPage!!, { scrollToTrainings = true; pageIndex = it }) }
+                item { TrainingPageControls(trainingPage, { scrollToTrainings = true; pageIndex = it }) }
                 items(trainings, key = { it.id }) { item ->
                     ExpandableTrainingCard(item = item,
                         onEdit = { deleting = false; actionId = item.id },
                         onDelete = { deleting = true; actionId = item.id })
                 }
-                item { TrainingPageControls(trainingPage!!, { pageIndex = it }) }
+                item { TrainingPageControls(trainingPage, { pageIndex = it }) }
             }
         }
     }
@@ -281,6 +300,7 @@ private fun TrainingPageControls(page: TrainingPageUiModel, onPage: (Int) -> Uni
 @Composable
 private fun ExpandableTrainingCard(item: TrainingSessionUiModel, onEdit: () -> Unit, onDelete: () -> Unit) {
     var expanded by rememberSaveable(item.id) { mutableStateOf(false) }
+    val expandLabel = stringResource(if (expanded) R.string.collapse_training else R.string.expand_training)
     Card(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         modifier = Modifier.animateContentSize(),
@@ -288,7 +308,7 @@ private fun ExpandableTrainingCard(item: TrainingSessionUiModel, onEdit: () -> U
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable { expanded = !expanded }
+                .clickable(role = Role.Button, onClickLabel = expandLabel) { expanded = !expanded }
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {

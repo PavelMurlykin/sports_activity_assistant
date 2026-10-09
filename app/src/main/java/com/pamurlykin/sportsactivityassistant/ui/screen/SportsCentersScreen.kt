@@ -1,6 +1,7 @@
 package com.pamurlykin.sportsactivityassistant.ui.screen
 
 import androidx.compose.foundation.layout.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
@@ -13,12 +14,19 @@ import com.pamurlykin.sportsactivityassistant.data.model.SportsCenterUiModel
 import com.pamurlykin.sportsactivityassistant.ui.components.SportsCenterDialog
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Add
+import androidx.compose.ui.res.stringResource
+import com.pamurlykin.sportsactivityassistant.R
+import com.pamurlykin.sportsactivityassistant.ui.components.ReadStateNotice
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SportsCentersScreen(viewModel: MainViewModel) {
-    val centers by viewModel.sportsCenters.collectAsState()
-    val statistics by viewModel.statisticsState.collectAsState()
+    val centersRead by viewModel.centersReadState.collectAsStateWithLifecycle()
+    val centers = centersRead.data.orEmpty()
+    val statisticsRead by viewModel.statisticsReadState.collectAsStateWithLifecycle()
+    val statistics by viewModel.statisticsState.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     var editedId by rememberSaveable { mutableStateOf<Long?>(null) }
@@ -63,7 +71,13 @@ fun SportsCentersScreen(viewModel: MainViewModel) {
             Text("Спортивные центры", fontWeight = FontWeight.Bold)
             Text("Места и доступные виды спорта", style = MaterialTheme.typography.bodySmall)
         } }) },
-        floatingActionButton = { FloatingActionButton(onClick = { editedId = null; showDialog = true }) { Text("+") } },
+        floatingActionButton = {
+            if (centersRead.data != null && statisticsRead.data != null) {
+                FloatingActionButton(onClick = { editedId = null; showDialog = true }) {
+                    Icon(Icons.Rounded.Add, contentDescription = stringResource(R.string.add_center))
+                }
+            }
+        },
     ) { padding ->
         LazyColumn(
             Modifier.fillMaxSize(),
@@ -76,7 +90,9 @@ fun SportsCentersScreen(viewModel: MainViewModel) {
                 FilterChip(showArchive, { showArchive = true }, label = { Text("Архив") })
             } }
             val visible = centers.filter { it.isArchived == showArchive }
-            if (visible.isEmpty()) item { Text(if (showArchive) "Архив пуст" else "Добавьте спортивный центр") }
+            if (centersRead.failed || statisticsRead.failed) item { ReadStateNotice(true, viewModel::retryReads) }
+            else if (centersRead.loading || statisticsRead.loading) item { ReadStateNotice(false, viewModel::retryReads) }
+            else if (visible.isEmpty()) item { Text(if (showArchive) "Архив пуст" else "Добавьте спортивный центр") }
             items(visible, key = { it.id }) { center ->
                 Card(Modifier.fillMaxWidth()) {
                     Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {

@@ -1,6 +1,12 @@
 package com.pamurlykin.sportsactivityassistant.ui.components
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import com.pamurlykin.sportsactivityassistant.R
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -19,8 +25,12 @@ fun PlanActionDialog(key: String, recurring: Boolean, action: PlanAction, viewMo
     var error by rememberSaveable { mutableStateOf<String?>(null) }
     var saving by rememberSaveable { mutableStateOf(false) }
     val requestId = rememberSaveable { UUID.randomUUID().toString() }
-    val statistics by viewModel.statisticsState.collectAsState()
-    val centers by viewModel.sportsCenters.collectAsState()
+    val statistics by viewModel.statisticsState.collectAsStateWithLifecycle()
+    val centers by viewModel.sportsCenters.collectAsStateWithLifecycle()
+    val statisticsRead by viewModel.statisticsReadState.collectAsStateWithLifecycle()
+    val centersRead by viewModel.centersReadState.collectAsStateWithLifecycle()
+    val loadFailureText = stringResource(R.string.load_plan_failed)
+    var loadAttempt by rememberSaveable { mutableIntStateOf(0) }
     if (scope == null) {
         AlertDialog(onDismissRequest = onDismiss, title = { Text("Повторяющаяся тренировка") },
             text = { Text(if (action == PlanAction.EDIT)
@@ -29,22 +39,26 @@ fun PlanActionDialog(key: String, recurring: Boolean, action: PlanAction, viewMo
             confirmButton = { TextButton(onClick = { scope = PlanScope.EVENT }) { Text("Только это событие") } },
             dismissButton = { Column {
                 TextButton(onClick = { scope = PlanScope.SERIES }) { Text("Вся серия") }
-                TextButton(onClick = onDismiss) { Text("Закрыть") }
+                TextButton(onClick = onDismiss) { Text(stringResource(R.string.close)) }
             } })
         return
     }
-    LaunchedEffect(key, scope) {
+    LaunchedEffect(key, scope, loadAttempt) {
         if (encoded == null && error == null) {
             try { encoded = Json.encodeToString(PlanSnapshot.serializer(), viewModel.loadPlan(key, requireNotNull(scope))) }
             catch (e: CancellationException) { throw e }
-            catch (e: Exception) { error = e.message }
+            catch (e: Exception) { error = loadFailureText }
         }
     }
     val snapshot = encoded?.let { Json.decodeFromString(PlanSnapshot.serializer(), it) }
-    if (snapshot == null) {
+    if (snapshot == null || statistics.sports.isEmpty() || centers.isEmpty()) {
         AlertDialog(onDismissRequest = onDismiss, title = { Text("План тренировки") },
-            text = { Text(error ?: "Загрузка…") },
-            confirmButton = { TextButton(onClick = onDismiss) { Text("Закрыть") } })
+            text = { Column(Modifier.verticalScroll(rememberScrollState())) {
+                ReadStateNotice(error != null || statisticsRead.failed || centersRead.failed, {
+                    error = null; loadAttempt++; viewModel.retryReads()
+                }, failureMessage = error)
+            } },
+            confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.close)) } })
         return
     }
     when (action) {
@@ -67,7 +81,7 @@ fun PlanActionDialog(key: String, recurring: Boolean, action: PlanAction, viewMo
             }
             AlertDialog(onDismissRequest = { if (!saving) onDismiss() },
                 title = { Text(if (scope == PlanScope.SERIES) "Отменить всю серию?" else "Отменить тренировку?") },
-                text = { Column {
+                text = { Column(Modifier.verticalScroll(rememberScrollState())) {
                     Text(if (scope == PlanScope.SERIES) "Все незавершённые события серии, включая переносы, будут отмечены отменёнными. Результаты и индивидуальные исключения сохранятся."
                         else "Событие ${snapshot.date} останется в календаре с отметкой «Отменена». Результаты не удаляются.")
                     error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
