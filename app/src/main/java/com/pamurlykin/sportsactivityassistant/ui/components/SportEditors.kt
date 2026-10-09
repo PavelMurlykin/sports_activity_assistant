@@ -1,5 +1,9 @@
 package com.pamurlykin.sportsactivityassistant.ui.components
 
+import com.pamurlykin.sportsactivityassistant.R
+
+import com.pamurlykin.sportsactivityassistant.text.AppText
+
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
@@ -65,18 +69,18 @@ private object FootballEditor : SportEditor {
         val parsed = FootballFormValues.parse(values)
         return object : SportDraft {
             @Composable override fun Content(enabled: Boolean) {
-                Text("Футбольная статистика", style = MaterialTheme.typography.titleMedium)
-                val labels = listOf("Голов забито", "Голов пропущено", "Личные голы", "Голевые передачи",
-                    "Дистанция, км (необязательно)", "Игроков в команде (необязательно)", "Время игры, мин (необязательно)")
+                Text(AppText.get(R.string.sport_editors_futbolnaya_statistika), style = MaterialTheme.typography.titleMedium)
+                val labels = listOf(AppText.get(R.string.sport_editors_golov_zabito), AppText.get(R.string.sport_editors_golov_propuscheno), AppText.get(R.string.football_module_lichnye_goly), AppText.get(R.string.football_module_golevye_peredachi),
+                    AppText.get(R.string.sport_editors_distantsiya_km_neobyazatelno), AppText.get(R.string.sport_editors_igrokov_v_komande_neobyazatelno), AppText.get(R.string.sport_editors_vremya_igry_min_neobyazatelno))
                 labels.forEachIndexed { index, label ->
                     NumberField(values[index], { text ->
                         values = values.mapIndexed { i, value -> if (i == index) text else value }
-                    }, label, "football-$index", if (attempted) parsed.errors[index] else null, enabled, index == 4)
+                    }, label, "football-${index}", if (attempted) parsed.errors[index] else null, enabled, index == 4)
                 }
             }
             override fun input(sportId: Int, complexId: Long, date: LocalDate): AddCompletedTrainingInput {
                 attempted = true
-                require(parsed.errors.isEmpty()) { "Исправьте отмеченные поля футбольной статистики" }
+                require(parsed.errors.isEmpty()) { AppText.get(R.string.sport_editors_ispravte_otmechennye_polya_futbolnoy_statistiki) }
                 return AddCompletedTrainingInput(sportId, complexId, date, football = requireNotNull(parsed.input))
                     .also { SportModules.require("football").validate(it) }
             }
@@ -117,7 +121,7 @@ private object ClimbingEditor : SportEditor {
                 attempted = true
                 val result = AddCompletedTrainingInput(sportId, complexId, date, climbingRoutes = routes.map { draft ->
                     val route = draft.route
-                    val count = requireNotNull(draft.repeatText.trim().toIntOrNull()) { "Количество попыток должно быть целым числом" }
+                    val count = requireNotNull(draft.repeatText.trim().toIntOrNull()) { AppText.get(R.string.sport_editors_kolichestvo_popytok_dolzhno_byt_tselym) }
                     ClimbingRouteInput(ClimbingWorkoutType.fromStorage(route.workoutType), route.routeDifficulty,
                         route.completed, count, requireNotNull(route.gradingSystem), route.gradeCode,
                         route.speedCourse, route.legacyWorkoutType, route.publicId)
@@ -143,7 +147,7 @@ private fun NumberField(
 
 @Composable
 private fun ClimbingFields(routes: List<RouteDraft>, onChange: (List<RouteDraft>) -> Unit, attempted: Boolean, enabled: Boolean) {
-    Text("Трассы", style = MaterialTheme.typography.titleMedium)
+    Text(AppText.get(R.string.sport_editors_trassy), style = MaterialTheme.typography.titleMedium)
     routes.forEachIndexed { index, draft ->
         key(draft.route.publicId) {
             val route = draft.route
@@ -152,13 +156,14 @@ private fun ClimbingFields(routes: List<RouteDraft>, onChange: (List<RouteDraft>
             val historical = route.gradingSystem == ClimbingDifficultyCatalog.LEGACY
             Card(Modifier.fillMaxWidth()) {
                 Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Трасса ${index + 1}", style = MaterialTheme.typography.titleSmall)
+                    Text(AppText.get(R.string.sport_editors_trassa, index + 1), style = MaterialTheme.typography.titleSmall)
                     if (historical) {
-                        Text("${route.workoutType} · ${route.routeDifficulty.ifEmpty { "без категории" }}")
-                        Text("Историческая категория: шкала не подтверждена. Обозначение сохраняется без изменения.",
+                        Text(AppText.get(R.string.details_pair, route.workoutType,
+                            route.routeDifficulty.ifEmpty { AppText.get(R.string.climbing_module_bez_kategorii) }))
+                        Text(AppText.get(R.string.sport_editors_istoricheskaya_kategoriya_shkala_ne_podtverzhdena),
                             style = MaterialTheme.typography.bodySmall)
                     } else {
-                        DropdownSelector("Тип", type.title, ClimbingWorkoutType.supported, { it.title }, { next ->
+                        DropdownSelector(AppText.get(R.string.sport_editors_tip), type.title, ClimbingWorkoutType.supported, { it.title }, { next ->
                             val difficulty = when (next) {
                                 ClimbingWorkoutType.DIFFICULTY -> "6a"
                                 ClimbingWorkoutType.BOULDERING -> "6A"
@@ -167,41 +172,41 @@ private fun ClimbingFields(routes: List<RouteDraft>, onChange: (List<RouteDraft>
                             val system = ClimbingDifficultyCatalog.systemFor(next)
                             update(draft.copy(route = route.copy(workoutType = next.storageValue, routeDifficulty = difficulty,
                                 gradingSystem = system, gradeCode = ClimbingDifficultyCatalog.find(system, difficulty)?.code, speedCourse = null)))
-                        }, Modifier.testTag("route-$index-type"), enabled)
+                        }, Modifier.testTag("route-${index}-type"), enabled)
                         if (type == ClimbingWorkoutType.SPEED) {
-                            DropdownSelector("Трасса скорости",
-                                SpeedCourse.entries.firstOrNull { it.code == route.speedCourse }?.title ?: "Выберите трассу",
+                            DropdownSelector(AppText.get(R.string.sport_editors_trassa_skorosti),
+                                SpeedCourse.entries.firstOrNull { it.code == route.speedCourse }?.title ?: AppText.get(R.string.sport_editors_vyberite_trassu),
                                 SpeedCourse.entries, { it.title }, { update(draft.copy(route = route.copy(speedCourse = it.code))) },
-                                Modifier.testTag("route-$index-course"), enabled)
-                            if (attempted && route.speedCourse == null) Text("Выберите трассу скорости", color = MaterialTheme.colorScheme.error)
-                            Text("Категория сложности не применяется. Эталонная трасса должна соответствовать стандарту 15 м.",
+                                Modifier.testTag("route-${index}-course"), enabled)
+                            if (attempted && route.speedCourse == null) Text(AppText.get(R.string.climbing_module_vyberite_trassu_skorosti), color = MaterialTheme.colorScheme.error)
+                            Text(AppText.get(R.string.sport_editors_kategoriya_slozhnosti_ne_primenyaetsya_etalonnaya),
                                 style = MaterialTheme.typography.bodySmall)
                         } else {
                             val system = ClimbingDifficultyCatalog.systemFor(type)
-                            DropdownSelector("Сложность (${ClimbingDifficultyCatalog.title(system)})", route.routeDifficulty,
+                            DropdownSelector(AppText.get(R.string.sport_editors_slozhnost, ClimbingDifficultyCatalog.title(system)), route.routeDifficulty,
                                 ClimbingDifficultyCatalog.grades(system), { it.label },
                                 { update(draft.copy(route = route.copy(routeDifficulty = it.label, gradeCode = it.code))) },
-                                Modifier.testTag("route-$index-grade"), enabled)
+                                Modifier.testTag("route-${index}-grade"), enabled)
                         }
                     }
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         FilterChip(route.completed, { update(draft.copy(route = route.copy(completed = true))) },
-                            enabled = enabled, label = { Text("Пройдена") })
+                            enabled = enabled, label = { Text(AppText.get(R.string.sport_editors_proydena)) })
                         FilterChip(!route.completed, { update(draft.copy(route = route.copy(completed = false))) },
-                            enabled = enabled, label = { Text("Не пройдена") })
+                            enabled = enabled, label = { Text(AppText.get(R.string.sport_editors_ne_proydena)) })
                     }
                     val countError = if (attempted && (draft.repeatText.trim().toIntOrNull() ?: 0) <= 0)
-                        "Введите положительное целое число" else null
+                        AppText.get(R.string.sport_editors_vvedite_polozhitelnoe_tseloe_chislo) else null
                     NumberField(draft.repeatText, { update(draft.copy(repeatText = it)) },
-                        "Количество попыток с этим результатом", "route-$index-repeat", countError, enabled)
-                    Text("Все попытки этой строки имеют одинаковый результат. Для разных результатов добавьте отдельные строки.",
+                        AppText.get(R.string.sport_editors_kolichestvo_popytok_s_etim_rezultatom), "route-${index}-repeat", countError, enabled)
+                    Text(AppText.get(R.string.sport_editors_vse_popytki_etoy_stroki_imeyut),
                         style = MaterialTheme.typography.bodySmall)
                     if (routes.size > 1) TextButton(enabled = enabled, onClick = {
                         onChange(routes.filterIndexed { i, _ -> i != index })
-                    }) { Text("Удалить трассу") }
+                    }) { Text(AppText.get(R.string.sport_editors_udalit_trassu)) }
                 }
             }
         }
     }
-    TextButton(enabled = enabled, onClick = { onChange(routes + RouteDraft.fresh()) }) { Text("+ Добавить трассу") }
+    TextButton(enabled = enabled, onClick = { onChange(routes + RouteDraft.fresh()) }) { Text(AppText.get(R.string.sport_editors_dobavit_trassu)) }
 }

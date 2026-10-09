@@ -1,5 +1,9 @@
 package com.pamurlykin.sportsactivityassistant.data.model
 
+import com.pamurlykin.sportsactivityassistant.R
+
+import com.pamurlykin.sportsactivityassistant.text.AppText
+
 import java.util.Locale
 
 data class ClimbingGrade(val code: String, val label: String, val rank: Int)
@@ -34,16 +38,16 @@ object ClimbingDifficultyCatalog {
     }
 
     fun title(system: String): String = when (system) {
-        FRENCH -> "Французская"
-        FONTAINEBLEAU -> "Fontainebleau"
-        NONE -> "Без категории"
-        else -> "Историческая — шкала не подтверждена"
+        FRENCH -> AppText.get(R.string.climbing_difficulty_catalog_frantsuzskaya)
+        FONTAINEBLEAU -> AppText.get(R.string.grading_fontainebleau)
+        NONE -> AppText.get(R.string.climbing_difficulty_catalog_bez_kategorii)
+        else -> AppText.get(R.string.climbing_difficulty_catalog_istoricheskaya_shkala_ne_podtverzhdena)
     }
 
     private fun letterGrades(numbers: IntRange): List<String> = buildList {
         numbers.forEach { number -> listOf("a", "b", "c").forEach { letter ->
-            add("$number$letter")
-            add("$number$letter+")
+            add("${number}${letter}")
+            add("${number}${letter}+")
         } }
     }
 
@@ -52,7 +56,9 @@ object ClimbingDifficultyCatalog {
     }
 }
 
-enum class SpeedCourse(val code: String, val title: String) {
-    STANDARD_15M("standard_15m", "Эталонная 15 м"),
-    OTHER("other", "Иная трасса");
+enum class SpeedCourse(val code: String, private val titleResource: Int) {
+    STANDARD_15M("standard_15m", R.string.climbing_difficulty_catalog_etalonnaya_15_m),
+    OTHER("other", R.string.climbing_difficulty_catalog_inaya_trassa);
+
+    val title: String get() = AppText.get(titleResource)
 }

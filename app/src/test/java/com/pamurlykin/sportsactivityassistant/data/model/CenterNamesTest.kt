@@ -4,7 +4,7 @@ import org.junit.Assert.*
 import org.junit.Test
 import java.util.Locale
 
-class CenterNamesTest {
+class CenterNamesTest : com.pamurlykin.sportsactivityassistant.ResourceTextTest() {
     @Test fun whitespaceCaseAndMissingCityShareOneKey() {
         assertEquals(CenterNames.key("  Большая\tАрена  ", null), CenterNames.key("большая\u00a0  арена", "  "))
         assertEquals("Большая Арена", CenterNames.clean("  Большая\n\u00a0Арена  "))

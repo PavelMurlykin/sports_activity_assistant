@@ -1,5 +1,9 @@
 package com.pamurlykin.sportsactivityassistant.data.backup
 
+import com.pamurlykin.sportsactivityassistant.R
+
+import com.pamurlykin.sportsactivityassistant.text.AppText
+
 import com.pamurlykin.sportsactivityassistant.data.AppDatabase
 import com.pamurlykin.sportsactivityassistant.data.entity.*
 import com.pamurlykin.sportsactivityassistant.data.model.PlannedTrainingStatus
@@ -81,7 +85,7 @@ class DataExchange(private val db: AppDatabase) {
         val errors = BackupValidation.errors(source).toMutableList()
         val warnings = mutableListOf<String>()
         val profileOptions = d.profiles.map { ImportProfileOption(it.publicId, source.profileLabels[it.publicId] ?: it.publicId) }
-        val centerOptions = localCenters.map { ImportCenterOption(it.publicId, listOfNotNull(it.name, it.city).joinToString(", ") + if (it.isArchived) " · архив" else "") }
+        val centerOptions = localCenters.map { ImportCenterOption(it.publicId, listOfNotNull(it.name, it.city).joinToString(", ") + if (it.isArchived) AppText.get(R.string.data_exchange_arhiv) else "") }
         fun result(c: ImportChoices, centers: List<ImportCenterPreview> = emptyList(), records: List<ImportRecordPreview> = emptyList(),
                    profiles: Map<String, String> = emptyMap(), mappings: Map<String, String> = emptyMap(),
                    adoptProfile: String? = null, adoptCenters: Map<String, Long> = emptyMap()): Plan {
@@ -93,7 +97,7 @@ class DataExchange(private val db: AppDatabase) {
         }
         if (errors.isNotEmpty()) return result(initial)
         if (!initial.preserveAllProfiles && initial.selectedProfile !in d.profiles.map { it.publicId })
-            errors += "Выберите один профиль для текущей статистики или явно сохраните все профили отдельно"
+            errors += AppText.get(R.string.data_exchange_vyberite_odin_profil_dlya_tekuschey)
         val selectedProfiles = d.profiles.filter { initial.preserveAllProfiles || it.publicId == initial.selectedProfile }
         val primary = if (initial.preserveAllProfiles) d.primaryProfilePublicId else initial.selectedProfile
         val freshProfile = users.size == 1 && active.displayName == null && current.trainings.isEmpty() &&
@@ -102,16 +106,16 @@ class DataExchange(private val db: AppDatabase) {
         val profileMap = selectedProfiles.associate { p ->
             val fixed = localAliases["profile" to p.publicId] ?: usersById[p.publicId]?.publicId
             if (!initial.preserveAllProfiles && fixed != null && fixed != active.publicId)
-                errors += "Профиль ${p.publicId.take(8)} уже сохранён отдельно; выберите сохранение всех профилей"
+                errors += AppText.get(R.string.data_exchange_profil_uzhe_sohranyon_otdelno_vyberite, p.publicId.take(8))
             p.publicId to (fixed ?: if (p.publicId == primary) adoptProfile ?: active.publicId else p.publicId)
         }
         if (initial.preserveAllProfiles && profileMap.values.distinct().size != profileMap.size)
-            errors += "Профили ранее сопоставлены с одной личной историей; их нельзя автоматически разделить. Импортируйте выбранный профиль отдельно."
+            errors += AppText.get(R.string.data_exchange_profili_ranee_sopostavleny_s_odnoy)
         if (d.profiles.size > 1) warnings += if (initial.preserveAllProfiles)
-            "Основной профиль — текущая личная статистика; остальные сохраняются отдельно в копии, без смешивания. Переключение профилей пока не предусмотрено."
-            else "Будут импортированы только записи выбранного профиля; остальные не удаляются из файла."
-        if (source.sourceVersion in 1..3) warnings += "Старый JSON не сохранял владельцев и связь разового плана с серией. Отсутствующие сведения нельзя восстановить."
-        if (source.sourceVersion < 4) warnings += "Идентификаторы старого файла зависят от его точных байтов и номера записи. Изменённый файл — другой источник. Совпадения содержания не удаляются автоматически."
+            AppText.get(R.string.data_exchange_osnovnoy_profil_tekuschaya_lichnaya)
+            else AppText.get(R.string.data_exchange_budut_importirovany_tolko_zapisi_vybrannogo)
+        if (source.sourceVersion in 1..3) warnings += AppText.get(R.string.data_exchange_staryy_json_ne_sohranyal_vladeltsev)
+        if (source.sourceVersion < 4) warnings += AppText.get(R.string.data_exchange_identifikatory_starogo_fayla_zavisyat_ot)
         val mappings = initial.centerMappings.toMutableMap()
         val centerPreviews = d.centers.map { c ->
             val id = c.publicId!!
@@ -119,12 +123,12 @@ class DataExchange(private val db: AppDatabase) {
             val byName = centersByName[centerKey(c.name, c.city)]?.singleOrNull()?.publicId
                 ?.takeIf { incomingNameCounts[centerKey(c.name, c.city)] == 1 }
             val suggestion = if (source.csv) centersByLegacyId[c.legacyId]?.publicId else byName
-            if (fixed != null && id in mappings && mappings[id] != fixed) errors += "Сопоставление центра «${c.name}» уже зафиксировано"
+            if (fixed != null && id in mappings && mappings[id] != fixed) errors += AppText.get(R.string.data_exchange_sopostavlenie_tsentra_uzhe_zafiksirovano, c.name)
             val resolved = fixed != null || id in mappings || !source.csv
             val target = fixed ?: if (id in mappings) mappings[id] else suggestion
             if (resolved) mappings[id] = target
-            if (!resolved) errors += "Подтвердите центр «${c.name}»: выберите существующий или создайте новый"
-            if (target != null && target !in centersById) errors += "Центр назначения «${c.name}» больше не существует"
+            if (!resolved) errors += AppText.get(R.string.data_exchange_podtverdite_tsentr_vyberite_suschestvuyuschiy, c.name)
+            if (target != null && target !in centersById) errors += AppText.get(R.string.data_exchange_tsentr_naznacheniya_bolshe_ne, c.name)
             ImportCenterPreview(id, listOfNotNull(c.name, c.city).joinToString(", "), target, resolved, fixed != null)
         }
         val newKeys = mutableSetOf<Pair<String, String>>()
@@ -132,10 +136,10 @@ class DataExchange(private val db: AppDatabase) {
         d.centers.filter { mappings[it.publicId] == null }.forEach { c ->
             val key = centerKey(c.name, c.city)
             if (c.city != null && !exactNonNullKeys.add(c.name to c.city))
-                errors += "Центр «${c.name}»: точное название и город уже заняты; сопоставьте центр явно"
+                errors += AppText.get(R.string.data_exchange_tsentr_tochnoe_nazvanie_i, c.name)
             if (!newKeys.add(key) || key in centersByName) {
-                if (source.sourceVersion >= 4) warnings += "Центр «${c.name}»: похожие исторические центры сохраняются отдельно по UUID; автоматического объединения нет."
-                else errors += "Центр «${c.name}» уже существует: сопоставьте его явно"
+                if (source.sourceVersion >= 4) warnings += AppText.get(R.string.data_exchange_tsentr_pohozhie_istoricheskie_tsentry, c.name)
+                else errors += AppText.get(R.string.data_exchange_tsentr_uzhe_suschestvuet_sopostavte, c.name)
             }
         }
         val usedCenterIds = (current.trainings.map { it.centerPublicId } + current.plannedTrainings.map { it.centerPublicId } +
@@ -157,7 +161,7 @@ class DataExchange(private val db: AppDatabase) {
             current.trainings.forEach { t -> put(t.publicId!!, "training"); t.climbingRoutes.forEach { put(it.publicId!!, "route:${t.publicId}") } }
             current.recurrenceRules.forEach { put(it.publicId!!, "rule") }; current.plannedTrainings.forEach { put(it.publicId!!, "plan") }
         }
-        fun collision(id: String, kind: String) { occupied[id]?.let { if (it != kind) errors += "UUID $id уже принадлежит другому объекту ($it)" } }
+        fun collision(id: String, kind: String) { occupied[id]?.let { if (it != kind) errors += AppText.get(R.string.data_exchange_uuid_uzhe_prinadlezhit_drugomu_obektu, id, it) } }
         selectedProfiles.forEach { collision(it.publicId, "profile") }; d.centers.forEach { collision(it.publicId!!, "center") }
         val records = mutableListOf<ImportRecordPreview>()
         val currentCenters = current.centers.associateBy { it.publicId }
@@ -167,19 +171,19 @@ class DataExchange(private val db: AppDatabase) {
             val conflict = local != null && (local.name != incoming.name || local.city != incoming.city ||
                 local.sportSlugs.toSet() != incoming.sportSlugs.toSet() ||
                 source.sourceVersion >= 5 && local.isArchived != incoming.isArchived || source.sourceVersion >= 4 && canonicalTime(local.createdAt) != canonicalTime(incoming.createdAt))
-            if (conflict && incoming.publicId !in c.keepLocalIds) errors += "Центр «${incoming.name}»: конфликт UUID — подтвердите сохранение локальной записи"
-            if (conflict) records += ImportRecordPreview(incoming.publicId!!, "Центр · ${incoming.name}", "center", true, true, false)
+            if (conflict && incoming.publicId !in c.keepLocalIds) errors += AppText.get(R.string.data_exchange_tsentr_konflikt_uuid, incoming.name)
+            if (conflict) records += ImportRecordPreview(incoming.publicId!!, AppText.get(R.string.data_exchange_tsentr, incoming.name), "center", true, true, false)
             val mapped = currentCenters[centerMap[incoming.publicId]]
             if (mapped != null && mapped.isArchived != incoming.isArchived)
-                warnings += "Центр «${mapped.name}»: сохраняется локальное состояние архива; импорт истории не открывает центр заново."
+                warnings += AppText.get(R.string.data_exchange_tsentr_sohranyaetsya_lokalnoe_sostoyanie, mapped.name)
             if (mapped != null && mapped.sportSlugs.toSet() != incoming.sportSlugs.toSet())
-                warnings += "Центр «${mapped.name}»: текущий список видов спорта сохраняется; исторические записи допустимы даже после исключения спорта из центра."
+                warnings += AppText.get(R.string.data_exchange_tsentr_tekuschiy_spisok_vidov, mapped.name)
         }
         selectedProfiles.forEach { incoming ->
             val local = currentProfiles[incoming.publicId]
             val conflict = local != null && source.sourceVersion >= 4 && (local.displayName != incoming.displayName || canonicalTime(local.createdAt) != canonicalTime(incoming.createdAt))
-            if (conflict && incoming.publicId !in c.keepLocalIds) errors += "Профиль ${incoming.publicId.take(8)}: конфликт UUID — подтвердите сохранение локальной записи"
-            if (conflict) records += ImportRecordPreview(incoming.publicId, "Профиль · ${incoming.displayName ?: incoming.publicId.take(8)}", "profile", true, true, false)
+            if (conflict && incoming.publicId !in c.keepLocalIds) errors += AppText.get(R.string.data_exchange_profil_konflikt_uuid, incoming.publicId.take(8))
+            if (conflict) records += ImportRecordPreview(incoming.publicId, AppText.get(R.string.data_exchange_profil, incoming.displayName ?: incoming.publicId.take(8)), "profile", true, true, false)
         }
         val localTrainings = current.trainings.associateBy { it.publicId }
         val signatures = current.trainings.map { trainingContent(it, includeIdentity = false, includeTime = false) }.toSet()
@@ -192,8 +196,8 @@ class DataExchange(private val db: AppDatabase) {
             val content = trainingContent(mapped, includeIdentity = false, includeTime = false)
             val conflict = local != null && trainingContent(local, true, source.sourceVersion >= 4) != trainingContent(mapped, true, source.sourceVersion >= 4)
             val possible = local == null && (content in signatures || !seenSignatures.add(content))
-            if (conflict && item.publicId !in c.keepLocalIds && item.publicId !in c.skipTrainingIds) errors += "${source.locations[item.publicId]}: конфликт UUID ${item.publicId.take(8)} — подтвердите сохранение локальной записи"
-            if (possible) warnings += "Есть возможные совпадения. По умолчанию сохраняются обе тренировки; исключение требует вашего выбора."
+            if (conflict && item.publicId !in c.keepLocalIds && item.publicId !in c.skipTrainingIds) errors += AppText.get(R.string.data_exchange_konflikt_uuid_podtverdite, source.locations[item.publicId], item.publicId.take(8))
+            if (possible) warnings += AppText.get(R.string.data_exchange_est_vozmozhnye_sovpadeniya_po_umolchaniyu)
             records += ImportRecordPreview(item.publicId, "${item.date} · ${item.centerName} · ${item.sportSlug}", "training", local != null, conflict, possible)
         }
         val localRules = current.recurrenceRules.associateBy { it.publicId }
@@ -202,8 +206,8 @@ class DataExchange(private val db: AppDatabase) {
             val mapped = item.copy(profilePublicId = profileMap[item.profilePublicId], centerPublicId = centerMap[item.centerPublicId])
             val local = localRules[item.publicId]
             val conflict = local != null && ruleContent(local, source.sourceVersion >= 4) != ruleContent(mapped, source.sourceVersion >= 4)
-            if (conflict && item.publicId !in c.keepLocalIds) errors += "Серия ${item.publicId.take(8)}: конфликт UUID — подтвердите сохранение локальной записи"
-            records += ImportRecordPreview(item.publicId, "Серия · ${item.startDate} · ${item.centerName}", "rule", local != null, conflict, false)
+            if (conflict && item.publicId !in c.keepLocalIds) errors += AppText.get(R.string.data_exchange_seriya_konflikt_uuid, item.publicId.take(8))
+            records += ImportRecordPreview(item.publicId, AppText.get(R.string.data_exchange_seriya, item.startDate, item.centerName), "rule", local != null, conflict, false)
         }
         val localPlans = current.plannedTrainings.associateBy { it.publicId }
         d.plannedTrainings.filter { it.profilePublicId in profileMap }.forEach { item ->
@@ -211,11 +215,11 @@ class DataExchange(private val db: AppDatabase) {
             val mapped = item.copy(profilePublicId = profileMap[item.profilePublicId], centerPublicId = centerMap[item.centerPublicId])
             val local = localPlans[item.publicId]
             val conflict = local != null && planContent(local, source.sourceVersion >= 4) != planContent(mapped, source.sourceVersion >= 4)
-            if (conflict && item.publicId !in c.keepLocalIds) errors += "План ${item.publicId.take(8)}: конфликт UUID — подтвердите сохранение локальной записи"
+            if (conflict && item.publicId !in c.keepLocalIds) errors += AppText.get(R.string.data_exchange_plan_konflikt_uuid, item.publicId.take(8))
             // A preserved conflicting rule cannot be used as the parent of incompatible incoming plans.
             item.recurrenceRulePublicId?.let { parent -> localRules[parent]?.let { rule ->
                 if (rule.profilePublicId != mapped.profilePublicId || source.sourceVersion < 6 && (rule.centerPublicId != mapped.centerPublicId || rule.sportSlug != mapped.sportSlug))
-                    errors += "План ${item.publicId.take(8)}: сохранённая локальная серия несовместима с планом"
+                    errors += AppText.get(R.string.data_exchange_plan_sohranyonnaya_lokalnaya_seriya, item.publicId.take(8))
             } }
             item.completedTrainingPublicId?.let { resultId ->
                 val localResult = localTrainings[resultId]
@@ -223,20 +227,20 @@ class DataExchange(private val db: AppDatabase) {
                 val target = localResult ?: incoming?.takeUnless { it.publicId in c.skipTrainingIds }
                     ?.let { it.copy(profilePublicId = profileMap[it.profilePublicId]) }
                 if (target == null || target.profilePublicId != mapped.profilePublicId || target.sportSlug != mapped.sportSlug)
-                    errors += "План ${item.publicId.take(8)}: связанный результат исключён или несовместим"
+                    errors += AppText.get(R.string.data_exchange_plan_svyazannyy_rezultat_isklyuchyon, item.publicId.take(8))
             }
             val slot = current.plannedTrainings.firstOrNull { p -> p.publicId != item.publicId &&
                 (item.occurrenceDate != null && p.recurrenceRulePublicId == item.recurrenceRulePublicId && (p.occurrenceDate ?: p.date) == item.occurrenceDate ||
                     item.completedTrainingPublicId != null && p.completedTrainingPublicId == item.completedTrainingPublicId) }
             if (slot != null && item.publicId !in c.keepLocalIds)
-                errors += "План ${item.publicId.take(8)}: событие или результат уже связан с другим локальным планом — сохраните локальную запись"
-            records += ImportRecordPreview(item.publicId, "План · ${item.date} · ${item.centerName}", "plan", local != null || slot != null, conflict || slot != null, false)
+                errors += AppText.get(R.string.data_exchange_plan_sobytie_ili_rezultat, item.publicId.take(8))
+            records += ImportRecordPreview(item.publicId, AppText.get(R.string.data_exchange_plan, item.date, item.centerName), "plan", local != null || slot != null, conflict || slot != null, false)
         }
         val newAliases = mutableMapOf<Pair<String, String>, String>()
         fun alias(kind: String, key: String, target: String) {
-            if (key in occupied && key != target) errors += "Сопоставление $kind/$key противоречит локальному UUID"
+            if (key in occupied && key != target) errors += AppText.get(R.string.data_exchange_sopostavlenie_protivorechit_lokalnomu_uuid, kind, key)
             val old = localAliases[kind to key] ?: newAliases[kind to key]
-            if (old != null && old != target) errors += "Сопоставление $kind/$key противоречит сохранённому"
+            if (old != null && old != target) errors += AppText.get(R.string.data_exchange_sopostavlenie_protivorechit_sohranyonnomu, kind, key)
             newAliases[kind to key] = target
         }
         profileMap.filter { it.key != it.value }.forEach { (key, value) -> alias("profile", key, value) }
@@ -246,7 +250,7 @@ class DataExchange(private val db: AppDatabase) {
             if (target != null) alias(item.kind, item.sourceKey, target)
         }
         val historical = d.trainings.filter { it.profilePublicId in profileMap }.flatMap { it.climbingRoutes }.filter { it.gradingSystem == "legacy" }.sumOf { it.repeatCount.toLong() }
-        if (historical > 0) warnings += "$historical исторических попыток: категории не участвуют в сравнимых максимумах"
+        if (historical > 0) warnings += AppText.get(R.string.data_exchange_istoricheskih_popytok_kategorii_ne, historical)
         return result(c, centerPreviews, records, profileMap, centerMap, adoptProfile, adopted)
     }
 

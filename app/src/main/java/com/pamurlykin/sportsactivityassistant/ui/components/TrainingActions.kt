@@ -1,5 +1,9 @@
 package com.pamurlykin.sportsactivityassistant.ui.components
 
+import kotlinx.coroutines.isActive
+
+import com.pamurlykin.sportsactivityassistant.text.AppText
+
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -19,8 +23,8 @@ import com.pamurlykin.sportsactivityassistant.R
 @Composable
 fun TrainingActions(sportSlug: String, onEdit: () -> Unit, onDelete: () -> Unit) {
     if (SportEditors.find(sportSlug) != null) FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        TextButton(onClick = onEdit) { Text("Изменить тренировку") }
-        TextButton(onClick = onDelete) { Text("Удалить тренировку") }
+        TextButton(onClick = onEdit) { Text(AppText.get(R.string.add_completed_training_dialog_izmenit_trenirovku)) }
+        TextButton(onClick = onDelete) { Text(AppText.get(R.string.training_actions_udalit_trenirovku)) }
     }
 }
 
@@ -52,8 +56,8 @@ fun TrainingActionDialog(id: Long, deleting: Boolean, viewModel: MainViewModel, 
     }
     val snapshot = revision?.let { TrainingEditSnapshot.restore(id, sportId, centerId, it) }
     if (snapshot == null || sports.sports.isEmpty() || centers.isEmpty()) {
-        AlertDialog(onDismissRequest = onDismiss, title = { Text("Тренировка") },
-            text = { Column(Modifier.verticalScroll(rememberScrollState())) {
+        AdaptiveAlertDialog(onDismissRequest = onDismiss, title = { Text(AppText.get(R.string.training_actions_trenirovka)) },
+            text = { Column(Modifier.dialogVerticalScroll(rememberScrollState())) {
                 ReadStateNotice(error != null || statisticsRead.failed || centersRead.failed, {
                     error = null; loadAttempt++; viewModel.retryReads()
                 }, failureMessage = error)
@@ -70,23 +74,23 @@ fun TrainingActionDialog(id: Long, deleting: Boolean, viewModel: MainViewModel, 
                     viewModel.deleteCompletedTraining(snapshot, requestId)
                     onDismiss()
                 } catch (e: CancellationException) { throw e }
-                catch (e: Exception) { error = e.message ?: "Не удалось удалить тренировку" }
-                finally { deletingNow = false }
+                catch (e: Exception) { error = e.message ?: AppText.get(R.string.training_actions_ne_udalos_udalit_trenirovku) }
+                finally { if (kotlinx.coroutines.currentCoroutineContext().isActive) deletingNow = false }
             }
         }
-        AlertDialog(onDismissRequest = { if (!deletingNow) onDismiss() },
-            title = { Text("Удалить тренировку?") },
+        AdaptiveAlertDialog(onDismissRequest = { if (!deletingNow) onDismiss() },
+            title = { Text(AppText.get(R.string.training_actions_udalit_trenirovku_2)) },
             text = {
-                Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("${sports.sports.firstOrNull { it.id == sportId }?.title.orEmpty()} · ${snapshot.input.date}")
+                Column(Modifier.dialogVerticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(AppText.get(R.string.details_pair, sports.sports.firstOrNull { it.id == sportId }?.title.orEmpty(), snapshot.input.date))
                     Text(centers.firstOrNull { it.id == centerId }?.fullTitle.orEmpty())
-                    Text("Результат и вся его спортивная статистика будут удалены. Центр, планы и серии останутся. Связанный план снова будет запланирован, а в отменённой серии — отменён. Отменить удаление нельзя; восстановление возможно из прежней копии файла.")
+                    Text(AppText.get(R.string.training_actions_rezultat_i_vsya_ego_sportivnaya))
                     error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
                 }
             },
             confirmButton = { TextButton(enabled = !deletingNow, onClick = { if (!deletingNow) deletingNow = true }) {
-                Text(if (deletingNow) "Удаление…" else "Удалить")
+                Text(if (deletingNow) AppText.get(R.string.training_actions_udalenie) else AppText.get(R.string.training_actions_udalit))
             } },
-            dismissButton = { TextButton(enabled = !deletingNow, onClick = onDismiss) { Text("Отмена") } })
+            dismissButton = { TextButton(enabled = !deletingNow, onClick = onDismiss) { Text(AppText.get(R.string.add_completed_training_dialog_otmena)) } })
     }
 }

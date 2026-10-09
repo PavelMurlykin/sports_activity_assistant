@@ -1,5 +1,9 @@
 package com.pamurlykin.sportsactivityassistant.data
 
+import com.pamurlykin.sportsactivityassistant.R
+
+import com.pamurlykin.sportsactivityassistant.text.AppText
+
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.pamurlykin.sportsactivityassistant.data.model.HistoricalClimbingGrades
@@ -21,7 +25,7 @@ internal class ClimbingGradesMigration : Migration(3, 4) {
         }
         // Original difficulty, discipline, result, repeats, UUIDs and relations are untouched.
         db.query("PRAGMA foreign_key_check").use {
-            check(!it.moveToFirst()) { "Нарушены связи исторических тренировок; обновление отменено" }
+            check(!it.moveToFirst()) { AppText.get(R.string.climbing_grades_migration_narusheny_svyazi_istoricheskih_trenirovok_obnovlenie) }
         }
     }
 }

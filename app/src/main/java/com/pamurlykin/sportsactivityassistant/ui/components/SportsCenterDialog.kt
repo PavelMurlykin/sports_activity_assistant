@@ -1,5 +1,11 @@
 package com.pamurlykin.sportsactivityassistant.ui.components
 
+import kotlinx.coroutines.isActive
+
+import com.pamurlykin.sportsactivityassistant.R
+
+import com.pamurlykin.sportsactivityassistant.text.AppText
+
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -11,7 +17,6 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.pamurlykin.sportsactivityassistant.data.model.*
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.launch
 
 @Composable
 fun SportsCenterDialog(
@@ -28,34 +33,37 @@ fun SportsCenterDialog(
         mutableStateOf((center?.sports?.map { it.id } ?: listOfNotNull(initialSportId)).toIntArray())
     }
     var error by rememberSaveable { mutableStateOf<String?>(null) }
-    var busy by remember { mutableStateOf(false) }
-    val scope = rememberCoroutineScope()
-    AlertDialog(
+    var busy by rememberSaveable { mutableStateOf(false) }
+    val requestId = rememberSaveable { java.util.UUID.randomUUID().toString() }
+    LaunchedEffect(busy) {
+        if (busy) {
+            try {
+                val id = onSave(SaveSportsCenterInput(center?.id, name, city, selectedIds.toSet(), requestId))
+                onSaved(id)
+            } catch (e: CancellationException) { throw e }
+            catch (e: Exception) { error = e.message ?: AppText.get(R.string.sports_center_dialog_ne_udalos_sohranit_tsentr) }
+            finally { if (kotlinx.coroutines.currentCoroutineContext().isActive) busy = false }
+        }
+    }
+    AdaptiveAlertDialog(
+        modifier = Modifier.imePadding(),
         onDismissRequest = { if (!busy) onDismiss() },
-        title = { Text(if (center == null) "Новый спортивный центр" else "Изменить центр") },
+        title = { Text(if (center == null) AppText.get(R.string.sports_center_dialog_novyy_sportivnyy_tsentr) else AppText.get(R.string.sports_center_dialog_izmenit_tsentr)) },
         confirmButton = {
             TextButton(enabled = !busy, onClick = {
                 if (busy) return@TextButton
                 busy = true
-                scope.launch {
-                    try {
-                        val id = onSave(SaveSportsCenterInput(center?.id, name, city, selectedIds.toSet()))
-                        onSaved(id)
-                    } catch (e: CancellationException) { throw e }
-                    catch (e: Exception) { error = e.message ?: "Не удалось сохранить центр" }
-                    finally { busy = false }
-                }
-            }) { Text(if (busy) "Сохранение…" else "Сохранить") }
+            }) { Text(if (busy) AppText.get(R.string.add_completed_training_dialog_sohranenie) else AppText.get(R.string.add_completed_training_dialog_sohranit)) }
         },
-        dismissButton = { TextButton(enabled = !busy, onClick = onDismiss) { Text("Отмена") } },
+        dismissButton = { TextButton(enabled = !busy, onClick = onDismiss) { Text(AppText.get(R.string.add_completed_training_dialog_otmena)) } },
         text = {
-            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Column(Modifier.dialogVerticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 OutlinedTextField(name, { name = it }, Modifier.fillMaxWidth().testTag("center-name"),
-                    enabled = !busy, label = { Text("Название") }, singleLine = false,
-                    supportingText = { Text("Не более 200 символов") })
+                    enabled = !busy, label = { Text(AppText.get(R.string.sports_center_dialog_nazvanie)) }, singleLine = false,
+                    supportingText = { Text(AppText.get(R.string.sports_center_dialog_ne_bolee_200_simvolov)) })
                 OutlinedTextField(city, { city = it }, Modifier.fillMaxWidth().testTag("center-city"),
-                    enabled = !busy, label = { Text("Город (необязательно)") }, singleLine = false)
-                Text("Доступные виды спорта", style = MaterialTheme.typography.labelLarge)
+                    enabled = !busy, label = { Text(AppText.get(R.string.sports_center_dialog_gorod_neobyazatelno)) }, singleLine = false)
+                Text(AppText.get(R.string.sports_center_dialog_dostupnye_vidy_sporta), style = MaterialTheme.typography.labelLarge)
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     sports.forEach { sport ->
                         FilterChip(selected = sport.id in selectedIds, enabled = !busy,
@@ -65,8 +73,8 @@ fun SportsCenterDialog(
                             }, label = { Text(sport.title) })
                     }
                 }
-                if (center != null) Text("Изменения действуют для новых записей. Прежние результаты и планы сохраняются.")
-                if (center?.isArchived == true) Text("Центр в архиве. Редактирование не возвращает его в активные.")
+                if (center != null) Text(AppText.get(R.string.sports_center_dialog_izmeneniya_deystvuyut_dlya_novyh_zapisey))
+                if (center?.isArchived == true) Text(AppText.get(R.string.sports_center_dialog_tsentr_v_arhive_redaktirovanie_ne))
                 error?.let { Text(it, Modifier.testTag("center-error"), color = MaterialTheme.colorScheme.error) }
             }
         },
@@ -96,17 +104,17 @@ fun TrainingCenterSelector(
         if (centers.isEmpty()) return@LaunchedEffect
         if (available.none { it.id == centerId }) onCenterSelected(available.firstOrNull()?.id ?: 0L)
     }
-    DropdownSelector("Вид спорта", sports.firstOrNull { it.id == sportId }?.title ?: "Выберите спорт",
+    DropdownSelector(AppText.get(R.string.sports_center_dialog_vid_sporta), sports.firstOrNull { it.id == sportId }?.title ?: AppText.get(R.string.sports_center_dialog_vyberite_sport),
         sports, { it.title }, { next ->
             if (centers.none { it.id == centerId && !it.isArchived && it.sports.any { sport -> sport.id == next.id } })
                 onCenterSelected(0L)
             onSportSelected(next.id)
         }, Modifier.testTag("training-sport"), enabled = enabled && !sportLocked)
-    DropdownSelector("Спортивный центр", available.firstOrNull { it.id == centerId }?.fullTitle ?: "Выберите центр",
+    DropdownSelector(AppText.get(R.string.sports_center_dialog_sportivnyy_tsentr), available.firstOrNull { it.id == centerId }?.fullTitle ?: AppText.get(R.string.sports_center_dialog_vyberite_tsentr),
         available, { it.fullTitle }, { onCenterSelected(it.id) }, Modifier.testTag("training-center"), enabled = enabled)
     if (available.isEmpty()) {
-        Text("Для этого вида спорта нет активных центров. Добавьте центр или верните подходящий из архива.")
-        if (onSaveCenter != null && sportId != 0) TextButton(enabled = enabled, onClick = { if (onCreateCenter != null) onCreateCenter() else creating = true }) { Text("Создать центр") }
+        Text(AppText.get(R.string.sports_center_dialog_dlya_etogo_vida_sporta_net))
+        if (onSaveCenter != null && sportId != 0) TextButton(enabled = enabled, onClick = { if (onCreateCenter != null) onCreateCenter() else creating = true }) { Text(AppText.get(R.string.sports_center_dialog_sozdat_tsentr)) }
     }
     if (creating && onSaveCenter != null) SportsCenterDialog(null, sports, { creating = false },
         onSaveCenter, { creating = false }, initialSportId = sportId)

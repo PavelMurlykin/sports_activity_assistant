@@ -5,7 +5,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-class BackupCodecTest {
+class BackupCodecTest : com.pamurlykin.sportsactivityassistant.ResourceTextTest() {
     private fun climbingDocument(version: Int, routes: List<ClimbingRouteBackup>) = BackupDocument(
         schemaVersion = version, exportedAt = "2026-10-07T00:00:00Z", sports = emptyList(), centers = emptyList(),
         trainings = listOf(TrainingBackup(date = "2026-10-07", sportSlug = "climbing", centerName = "Центр", climbingRoutes = routes)),

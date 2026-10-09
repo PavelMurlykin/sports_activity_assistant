@@ -1,5 +1,9 @@
 package com.pamurlykin.sportsactivityassistant.data
 
+import com.pamurlykin.sportsactivityassistant.R
+
+import com.pamurlykin.sportsactivityassistant.text.AppText
+
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import java.util.UUID
@@ -17,7 +21,7 @@ internal class LocalIdentityMigration : Migration(2, 3) {
         // Room validates the resulting schema against the exported v3 schema.
         val definitions = tables.associateWith { table ->
             db.query("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = ?", arrayOf(table)).use {
-                check(it.moveToFirst()) { "Missing predecessor table: $table" }
+                check(it.moveToFirst()) { "Missing predecessor table: ${table}" }
                 it.getString(0)
             }
         }
@@ -32,8 +36,8 @@ internal class LocalIdentityMigration : Migration(2, 3) {
         db.query("SELECT name, seq FROM sqlite_sequence").use {
             while (it.moveToNext()) sequences[it.getString(0)] = it.getLong(1)
         }
-        tables.forEach { db.execSQL("CREATE TEMP TABLE _migration3_$it AS SELECT * FROM $it") }
-        tables.asReversed().forEach { db.execSQL("DROP TABLE $it") }
+        tables.forEach { db.execSQL("CREATE TEMP TABLE _migration3_${it} AS SELECT * FROM ${it}") }
+        tables.asReversed().forEach { db.execSQL("DROP TABLE ${it}") }
         db.execSQL("CREATE TABLE users (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, display_name TEXT, created_at INTEGER NOT NULL)")
         db.execSQL(
             "INSERT INTO users(id, display_name, created_at) " +
@@ -41,18 +45,18 @@ internal class LocalIdentityMigration : Migration(2, 3) {
         )
         tables.filterNot { it == "users" }.forEach { table ->
             db.execSQL(requireNotNull(definitions[table]))
-            db.execSQL("INSERT INTO $table SELECT * FROM _migration3_$table")
+            db.execSQL("INSERT INTO ${table} SELECT * FROM _migration3_${table}")
         }
         indexes.forEach(db::execSQL)
         listOf("sports_complexes", "trainings", "climbing_routes", "recurrence_rules", "planned_trainings").forEach { table ->
-            db.execSQL("ALTER TABLE $table ADD COLUMN public_id TEXT NOT NULL DEFAULT ''")
+            db.execSQL("ALTER TABLE ${table} ADD COLUMN public_id TEXT NOT NULL DEFAULT ''")
             val ids = buildList {
-                db.query("SELECT id FROM $table").use { while (it.moveToNext()) add(it.getLong(0)) }
+                db.query("SELECT id FROM ${table}").use { while (it.moveToNext()) add(it.getLong(0)) }
             }
             ids.forEach { id ->
-                db.execSQL("UPDATE $table SET public_id = ? WHERE id = ?", arrayOf<Any>(UUID.randomUUID().toString(), id))
+                db.execSQL("UPDATE ${table} SET public_id = ? WHERE id = ?", arrayOf<Any>(UUID.randomUUID().toString(), id))
             }
-            db.execSQL("CREATE UNIQUE INDEX index_${table}_public_id ON $table(public_id)")
+            db.execSQL("CREATE UNIQUE INDEX index_${table}_public_id ON ${table}(public_id)")
         }
         // Preserve even deleted rows' high-water marks: an upgrade must not reassign local keys.
         sequences.filterKeys { it in tables }.forEach { (table, sequence) ->
@@ -60,10 +64,10 @@ internal class LocalIdentityMigration : Migration(2, 3) {
             db.execSQL("INSERT INTO sqlite_sequence(name, seq) VALUES (?, ?)", arrayOf<Any>(table, sequence))
         }
         checkForeignKeys(db)
-        tables.forEach { db.execSQL("DROP TABLE _migration3_$it") }
+        tables.forEach { db.execSQL("DROP TABLE _migration3_${it}") }
     }
 
     private fun checkForeignKeys(db: SupportSQLiteDatabase) {
-        db.query("PRAGMA foreign_key_check").use { check(!it.moveToFirst()) { "Нарушены связи в локальной базе; обновление отменено" } }
+        db.query("PRAGMA foreign_key_check").use { check(!it.moveToFirst()) { AppText.get(R.string.local_identity_migration_narusheny_svyazi_v_lokalnoy_baze) } }
     }
 }

@@ -8,7 +8,7 @@ import java.util.UUID
 import org.junit.Assert.*
 import org.junit.Test
 
-class ImportSafetyTest {
+class ImportSafetyTest : com.pamurlykin.sportsactivityassistant.ResourceTextTest() {
     private val header = "user_id;training_date;sports_complex_id;team_goals_scored;team_goals_conceded;user_goals_scored;user_assists"
     private val row = "1;2020-01-02;2;3;1;1;1"
     private fun id(key: String) = UUID.nameUUIDFromBytes(key.toByteArray()).toString()

@@ -1,5 +1,9 @@
 package com.pamurlykin.sportsactivityassistant.data
 
+import com.pamurlykin.sportsactivityassistant.R
+
+import com.pamurlykin.sportsactivityassistant.text.AppText
+
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import java.util.UUID
@@ -14,6 +18,6 @@ internal class ExchangeIdentityMigration : Migration(4, 5) {
         db.execSQL("CREATE UNIQUE INDEX index_users_public_id ON users(public_id)")
         db.execSQL("ALTER TABLE sports_complexes ADD COLUMN is_initial INTEGER NOT NULL DEFAULT 0")
         db.execSQL("CREATE TABLE IF NOT EXISTS import_aliases (kind TEXT NOT NULL, source_key TEXT NOT NULL, target_public_id TEXT NOT NULL, PRIMARY KEY(kind, source_key))")
-        db.query("PRAGMA foreign_key_check").use { check(!it.moveToFirst()) { "Нарушены связи базы; обновление отменено" } }
+        db.query("PRAGMA foreign_key_check").use { check(!it.moveToFirst()) { AppText.get(R.string.exchange_identity_migration_narusheny_svyazi_bazy_obnovlenie_otmeneno) } }
     }
 }

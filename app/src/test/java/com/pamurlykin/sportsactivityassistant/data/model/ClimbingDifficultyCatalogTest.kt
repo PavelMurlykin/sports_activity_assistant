@@ -4,7 +4,7 @@ import com.pamurlykin.sportsactivityassistant.data.model.ClimbingDifficultyCatal
 import org.junit.Assert.*
 import org.junit.Test
 
-class ClimbingDifficultyCatalogTest {
+class ClimbingDifficultyCatalogTest : com.pamurlykin.sportsactivityassistant.ResourceTextTest() {
     @Test fun catalogHasDistinctCodesDisplayAndRanges() {
         assertEquals("6a+", Catalog.find(Catalog.FRENCH, " 6A+ ")!!.code)
         assertEquals("6a+", Catalog.find(Catalog.FRENCH, "6A+")!!.label)

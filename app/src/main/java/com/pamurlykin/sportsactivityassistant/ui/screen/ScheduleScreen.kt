@@ -1,5 +1,9 @@
 ﻿package com.pamurlykin.sportsactivityassistant.ui.screen
 
+import com.pamurlykin.sportsactivityassistant.ui.components.AdaptiveAlertDialog
+
+import com.pamurlykin.sportsactivityassistant.text.AppText
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -10,7 +14,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.MaterialTheme
@@ -30,6 +33,8 @@ import com.pamurlykin.sportsactivityassistant.ui.components.TrainingActionDialog
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
+import android.content.res.Configuration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -67,12 +72,12 @@ fun ScheduleScreen(
     if (actionId != 0L) TrainingActionDialog(actionId, deleting, viewModel) { actionId = 0 }
 
     if (dialog == TrainingDialog.CHOICE) {
-        AlertDialog(
+        AdaptiveAlertDialog(
             onDismissRequest = { dialog = null },
-            title = { Text("Добавить тренировку") },
-            text = { Text("Запишите результат состоявшейся тренировки или добавьте будущую в план.") },
-            confirmButton = { TextButton(onClick = { dialog = TrainingDialog.COMPLETED }) { Text("Записать результат") } },
-            dismissButton = { TextButton(onClick = { dialog = TrainingDialog.PLANNED }) { Text("Запланировать") } },
+            title = { Text(AppText.get(R.string.schedule_screen_dobavit_trenirovku)) },
+            text = { Text(AppText.get(R.string.schedule_screen_zapishite_rezultat_sostoyavsheysya_trenirovki_ili)) },
+            confirmButton = { TextButton(onClick = { dialog = TrainingDialog.COMPLETED }) { Text(AppText.get(R.string.schedule_screen_zapisat_rezultat)) } },
+            dismissButton = { TextButton(onClick = { dialog = TrainingDialog.PLANNED }) { Text(AppText.get(R.string.schedule_screen_zaplanirovat)) } },
         )
     }
     if (dialog == TrainingDialog.PLANNED) {
@@ -104,8 +109,8 @@ fun ScheduleScreen(
                 title = {
                     Column {
                         Text(stringResource(R.string.nav_schedule), fontWeight = FontWeight.Bold)
-                        Text(
-                            "Календарь завершённых и запланированных тренировок",
+                        if (LocalConfiguration.current.orientation != Configuration.ORIENTATION_LANDSCAPE) Text(
+                            AppText.get(R.string.schedule_screen_kalendar_zavershyonnyh_i_zaplanirovannyh_trenirovok),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -149,7 +154,7 @@ fun ScheduleScreen(
                             fontWeight = FontWeight.SemiBold,
                         )
                         Text(
-                            text = if (state.selectedDayEvents.isEmpty()) "На выбранный день тренировок пока нет" else "Тренировки на выбранный день",
+                            text = if (state.selectedDayEvents.isEmpty()) AppText.get(R.string.schedule_screen_na_vybrannyy_den_trenirovok_poka) else AppText.get(R.string.schedule_screen_trenirovki_na_vybrannyy_den),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -159,8 +164,8 @@ fun ScheduleScreen(
                 if (state.selectedDayEvents.isEmpty()) {
                     item {
                         EmptyStateCard(
-                            title = "День свободен",
-                            body = "Добавьте разовую или повторяющуюся тренировку, и она сразу появится в календаре.",
+                            title = AppText.get(R.string.schedule_screen_den_svoboden),
+                            body = AppText.get(R.string.schedule_screen_dobavte_razovuyu_ili_povtoryayuschuyusya_trenirovku),
                         )
                     }
                 } else {
@@ -185,13 +190,13 @@ fun ScheduleScreen(
                                         { deleting = true; actionId = event.id.removePrefix("completed-").toLong() })
                                 }
                                 event.planKey?.let { target ->
-                                    TextButton(onClick = { planKey = target; planRecurring = event.isRecurring; planAction = PlanAction.EDIT }) { Text("Изменить план") }
+                                    TextButton(onClick = { planKey = target; planRecurring = event.isRecurring; planAction = PlanAction.EDIT }) { Text(AppText.get(R.string.schedule_screen_izmenit_plan)) }
                                     if (event.state == ScheduleEventState.PLANNED) {
-                                        TextButton(onClick = { planKey = target; planRecurring = event.isRecurring; planAction = PlanAction.COMPLETE }) { Text("Записать результат по плану") }
-                                        TextButton(onClick = { planKey = target; planRecurring = event.isRecurring; planAction = PlanAction.CANCEL }) { Text("Отменить тренировку") }
+                                        TextButton(onClick = { planKey = target; planRecurring = event.isRecurring; planAction = PlanAction.COMPLETE }) { Text(AppText.get(R.string.schedule_screen_zapisat_rezultat_po_planu)) }
+                                        TextButton(onClick = { planKey = target; planRecurring = event.isRecurring; planAction = PlanAction.CANCEL }) { Text(AppText.get(R.string.schedule_screen_otmenit_trenirovku)) }
                                     }
                                 }
-                                if (event.linkedPlan) Text("Результат связан с планом", style = MaterialTheme.typography.bodySmall)
+                                if (event.linkedPlan) Text(AppText.get(R.string.schedule_screen_rezultat_svyazan_s_planom), style = MaterialTheme.typography.bodySmall)
                                 event.details.forEach { detail ->
                                     Text(
                                         text = detail,
@@ -205,13 +210,13 @@ fun ScheduleScreen(
                                 )
                                 Text(
                                     text = if (event.state == com.pamurlykin.sportsactivityassistant.data.model.ScheduleEventState.COMPLETED) {
-                                        "Состоявшаяся тренировка"
+                                        AppText.get(R.string.schedule_screen_sostoyavshayasya_trenirovka)
                                     } else if (event.state == ScheduleEventState.CANCELED) {
-                                        "Отменена" + if (event.isRecurring) " · серия" else ""
+                                        AppText.get(R.string.schedule_screen_otmenena) + if (event.isRecurring) AppText.get(R.string.schedule_screen_seriya) else ""
                                     } else if (event.isRecurring) {
-                                        "Запланирована · серия"
+                                        AppText.get(R.string.schedule_screen_zaplanirovana_seriya)
                                     } else {
-                                        "Запланирована"
+                                        AppText.get(R.string.schedule_screen_zaplanirovana)
                                     },
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,

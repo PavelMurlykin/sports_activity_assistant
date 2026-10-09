@@ -1,5 +1,9 @@
 package com.pamurlykin.sportsactivityassistant.ui.screen
 
+import com.pamurlykin.sportsactivityassistant.R
+
+import com.pamurlykin.sportsactivityassistant.text.AppText
+
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -56,7 +60,7 @@ fun DataManagementScreen(viewModel: MainViewModel) {
         return
     }
 
-    Scaffold(topBar = { TopAppBar(title = { Text("Данные", fontWeight = FontWeight.Bold) }) }) { padding ->
+    Scaffold(topBar = { TopAppBar(title = { Text(AppText.get(R.string.data_management_screen_dannye), fontWeight = FontWeight.Bold) }) }) { padding ->
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(
@@ -72,14 +76,14 @@ fun DataManagementScreen(viewModel: MainViewModel) {
                         modifier = Modifier.fillMaxWidth().padding(18.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
-                        Text("Резервная копия", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                        Text("Данные хранятся только на устройстве. JSON содержит центры, тренировки, спортивную статистику и планы календаря. Автоматический системный бэкап отключён.")
-                        Text("Файл не зашифрован. Для работы без интернета выбирайте хранилище устройства в системном диалоге.")
+                        Text(AppText.get(R.string.data_management_screen_rezervnaya_kopiya), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                        Text(AppText.get(R.string.data_management_screen_dannye_hranyatsya_tolko_na_ustroystve))
+                        Text(AppText.get(R.string.data_management_screen_fayl_ne_zashifrovan_dlya_raboty))
                         Button(
                             onClick = viewModel::prepareExport,
                             enabled = !busy,
                             modifier = Modifier.fillMaxWidth(),
-                        ) { Text("Сохранить копию в файл") }
+                        ) { Text(AppText.get(R.string.data_management_screen_sohranit_kopiyu_v_fayl)) }
                     }
                 }
             }
@@ -89,8 +93,8 @@ fun DataManagementScreen(viewModel: MainViewModel) {
                         modifier = Modifier.fillMaxWidth().padding(18.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
-                        Text("Импорт", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                        Text("JSON версий 1–6 и футбольный CSV: перед применением — проверка, выбор профиля и центров. Совпадения UUID пропускаются; одинаковые тренировки с разными UUID сохраняются. Лимит файла — 16 МиБ.")
+                        Text(AppText.get(R.string.data_management_screen_import), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                        Text(AppText.get(R.string.data_management_screen_json_versiy_1_6_i_futbolnyy))
                         OutlinedButton(
                             onClick = {
                                 if (viewModel.beginImportSelection()) try {
@@ -99,7 +103,7 @@ fun DataManagementScreen(viewModel: MainViewModel) {
                             },
                             modifier = Modifier.fillMaxWidth(),
                             enabled = !busy,
-                        ) { Text("Выбрать файл") }
+                        ) { Text(AppText.get(R.string.data_management_screen_vybrat_fayl)) }
                     }
                 }
             }
@@ -115,7 +119,7 @@ fun DataManagementScreen(viewModel: MainViewModel) {
                                 message,
                                 color = if (state.isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
                             )
-                            OutlinedButton(onClick = viewModel::clearDataMessage, enabled = !state.inProgress) { Text("Закрыть") }
+                            OutlinedButton(onClick = viewModel::clearDataMessage, enabled = !state.inProgress) { Text(AppText.get(R.string.import_preview_content_zakryt)) }
                         }
                     }
                 }

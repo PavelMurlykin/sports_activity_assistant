@@ -1,5 +1,9 @@
 package com.pamurlykin.sportsactivityassistant.data.model
 
+import com.pamurlykin.sportsactivityassistant.R
+
+import com.pamurlykin.sportsactivityassistant.text.AppText
+
 import com.pamurlykin.sportsactivityassistant.data.sport.FootballModule
 
 data class FootballFormResult(val input: FootballTrainingInput?, val errors: Map<Int, String>)
@@ -11,7 +15,7 @@ object FootballFormValues {
         fun integer(index: Int, optional: Boolean = false): Int? {
             val text = values[index].trim()
             if (optional && text.isEmpty()) return null
-            return text.toIntOrNull().also { if (it == null) errors[index] = "Введите целое число" }
+            return text.toIntOrNull().also { if (it == null) errors[index] = AppText.get(R.string.football_form_values_vvedite_tseloe_chislo) }
         }
         val scored = integer(0); val conceded = integer(1)
         val goals = integer(2); val assists = integer(3)
@@ -19,7 +23,7 @@ object FootballFormValues {
         val kmText = values[4].trim().replace(',', '.')
         val km = if (kmText.isEmpty()) null else {
             val value = if (kmText.length <= 64) kmText.toBigDecimalOrNull() else null
-            if (value == null) errors[4] = "Введите дистанцию числом (до 64 символов)"
+            if (value == null) errors[4] = AppText.get(R.string.football_form_values_vvedite_distantsiyu_chislom_do_64)
             value
         }
         val input = if (errors.isEmpty()) FootballTrainingInput(

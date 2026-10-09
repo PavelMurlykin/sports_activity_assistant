@@ -27,6 +27,12 @@
     <string name="load_workout_failed">Не удалось открыть тренировку. Повторите загрузку или закройте окно.</string>
     <string name="load_plan_failed">Не удалось открыть план. Повторите загрузку или закройте окно.</string>
     <string name="close">Закрыть</string>
+    <string name="paging_index">%1$d / %2$d</string>
+    <string name="record_uuid">UUID %1$s</string>
+    <string name="details_pair">%1$s · %2$s</string>
+    <string name="date_interval">%1$s — %2$s</string>
+    <string name="selector_description">%1$s: %2$s</string>
+    <string name="grading_fontainebleau" translatable="false">Fontainebleau</string>
     <string-array name="calendar_weekdays">
         <item>Пн</item><item>Вт</item><item>Ср</item><item>Чт</item><item>Пт</item><item>Сб</item><item>Вс</item>
     </string-array>

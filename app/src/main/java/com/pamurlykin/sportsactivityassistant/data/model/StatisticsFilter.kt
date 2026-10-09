@@ -1,5 +1,9 @@
 package com.pamurlykin.sportsactivityassistant.data.model
 
+import com.pamurlykin.sportsactivityassistant.R
+
+import com.pamurlykin.sportsactivityassistant.text.AppText
+
 import java.time.LocalDate
 
 /** One inclusive selection shared by overview, sport aggregates and history pages. */
@@ -9,11 +13,11 @@ data class StatisticsFilter(
     val centerId: Long? = null,
 ) {
     init {
-        require((startDate == null) == (endDate == null)) { "Укажите обе границы периода" }
-        require(startDate == null || startDate.year in 1..9999) { "Год должен быть от 1 до 9999" }
-        require(endDate == null || endDate.year in 1..9999) { "Год должен быть от 1 до 9999" }
-        require(startDate == null || !startDate.isAfter(endDate)) { "Начало периода позже окончания" }
-        require(centerId == null || centerId > 0) { "Некорректный центр" }
+        require((startDate == null) == (endDate == null)) { AppText.get(R.string.statistics_filter_ukazhite_obe_granitsy_perioda) }
+        require(startDate == null || startDate.year in 1..9999) { AppText.get(R.string.statistics_filter_god_dolzhen_byt_ot_1) }
+        require(endDate == null || endDate.year in 1..9999) { AppText.get(R.string.statistics_filter_god_dolzhen_byt_ot_1) }
+        require(startDate == null || !startDate.isAfter(endDate)) { AppText.get(R.string.statistics_filter_nachalo_perioda_pozzhe_okonchaniya) }
+        require(centerId == null || centerId > 0) { AppText.get(R.string.statistics_filter_nekorrektnyy_tsentr) }
     }
 
     val firstDate: LocalDate get() = startDate ?: LocalDate.of(1, 1, 1)

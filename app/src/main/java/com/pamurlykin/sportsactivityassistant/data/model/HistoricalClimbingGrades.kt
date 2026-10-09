@@ -1,5 +1,9 @@
 package com.pamurlykin.sportsactivityassistant.data.model
 
+import com.pamurlykin.sportsactivityassistant.R
+
+import com.pamurlykin.sportsactivityassistant.text.AppText
+
 import java.util.Locale
 
 data class HistoricalGrade(val system: String, val code: String?)
@@ -8,8 +12,8 @@ data class HistoricalGrade(val system: String, val code: String?)
 object HistoricalClimbingGrades {
     private val unambiguousFrench = buildSet {
         for (number in 5..9) for (letter in listOf("a", "b", "c")) {
-            add("$number$letter")
-            if (number != 9 || letter != "c") add("$number$letter+")
+            add("${number}${letter}")
+            if (number != 9 || letter != "c") add("${number}${letter}+")
         }
     }
 

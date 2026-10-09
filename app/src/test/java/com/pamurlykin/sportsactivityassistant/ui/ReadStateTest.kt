@@ -10,7 +10,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Assert.*
 import org.junit.Test
 
-class ReadStateTest {
+class ReadStateTest : com.pamurlykin.sportsactivityassistant.ResourceTextTest() {
     @Test fun emptyDataIsAReadyStateNotAnErrorOrLoading() = runTest {
         val states = flowOf(emptyList<Int>()).readStates().toList()
         assertTrue(states.first().loading)

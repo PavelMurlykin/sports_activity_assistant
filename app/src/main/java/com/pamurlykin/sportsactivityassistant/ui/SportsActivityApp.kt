@@ -1,6 +1,7 @@
 ﻿package com.pamurlykin.sportsactivityassistant.ui
 
-import androidx.compose.foundation.layout.padding
+import android.content.res.Configuration
+import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.CalendarMonth
 import androidx.compose.material.icons.rounded.QueryStats
@@ -9,6 +10,8 @@ import androidx.compose.material.icons.rounded.Storage
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationRail
+import androidx.compose.material3.NavigationRailItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -16,6 +19,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.res.stringResource
 import com.pamurlykin.sportsactivityassistant.R
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavType
@@ -41,33 +46,45 @@ fun SportsActivityApp(
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = backStackEntry?.destination
     val showBottomBar = currentDestination?.hierarchy?.none { it.route == Destination.StatisticsDetails.route } != false
+    val landscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
+    val items = listOf(
+        Triple(Destination.Schedule.route, stringResource(R.string.nav_schedule), Icons.Rounded.CalendarMonth),
+        Triple(Destination.Statistics.route, stringResource(R.string.nav_statistics), Icons.Rounded.QueryStats),
+        Triple(Destination.SportsCenters.route, stringResource(R.string.nav_centers), Icons.Rounded.LocationOn),
+        Triple(Destination.DataManagement.route, stringResource(R.string.nav_data), Icons.Rounded.Storage),
+    )
+    fun navigate(route: String) {
+        navController.navigate(route) {
+            popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+            launchSingleTop = true
+            restoreState = true
+        }
+    }
 
+    Row(modifier) {
+    if (showBottomBar && landscape) NavigationRail(Modifier.fillMaxHeight()) {
+        items.forEach { (route, label, icon) ->
+            NavigationRailItem(
+                selected = currentDestination?.hierarchy?.any { it.route == route } == true,
+                onClick = { navigate(route) },
+                icon = { Icon(icon, contentDescription = label) },
+            )
+        }
+    }
     Scaffold(
-        modifier = modifier,
+        modifier = Modifier.weight(1f),
         bottomBar = {
-            if (showBottomBar) {
+            if (showBottomBar && !landscape) {
                 NavigationBar {
-                    val items = listOf(
-                        Triple(Destination.Schedule.route, stringResource(R.string.nav_schedule), Icons.Rounded.CalendarMonth),
-                        Triple(Destination.Statistics.route, stringResource(R.string.nav_statistics), Icons.Rounded.QueryStats),
-                        Triple(Destination.SportsCenters.route, stringResource(R.string.nav_centers), Icons.Rounded.LocationOn),
-                        Triple(Destination.DataManagement.route, stringResource(R.string.nav_data), Icons.Rounded.Storage),
-                    )
                     items.forEach { (route, label, icon) ->
                         val selected = currentDestination?.hierarchy?.any { it.route == route } == true
                         NavigationBarItem(
                             selected = selected,
                             onClick = {
-                                navController.navigate(route) {
-                                    popUpTo(navController.graph.findStartDestination().id) {
-                                        saveState = true
-                                    }
-                                    launchSingleTop = true
-                                    restoreState = true
-                                }
+                                navigate(route)
                             },
                             icon = { Icon(imageVector = icon, contentDescription = null) },
-                            label = { Text(label) },
+                            label = { Text(label, maxLines = 1, overflow = TextOverflow.Ellipsis) },
                         )
                     }
                 }
@@ -108,5 +125,6 @@ fun SportsActivityApp(
                 )
             }
         }
+    }
     }
 }

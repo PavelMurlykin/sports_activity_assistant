@@ -9,7 +9,7 @@ import java.time.YearMonth
 import org.junit.Assert.*
 import org.junit.Test
 
-class StatisticsSelectionTest {
+class StatisticsSelectionTest : com.pamurlykin.sportsactivityassistant.ResourceTextTest() {
     private val football = SportEntity(1, "football", "Футбол")
     private fun date(s: String) = LocalDate.parse(s)
 

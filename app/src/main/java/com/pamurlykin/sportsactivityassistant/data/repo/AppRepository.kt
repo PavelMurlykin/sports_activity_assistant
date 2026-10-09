@@ -1,5 +1,9 @@
 package com.pamurlykin.sportsactivityassistant.data.repo
 
+import com.pamurlykin.sportsactivityassistant.R
+
+import com.pamurlykin.sportsactivityassistant.text.AppText
+
 import androidx.room.withTransaction
 import com.pamurlykin.sportsactivityassistant.data.backup.*
 import com.pamurlykin.sportsactivityassistant.data.model.CenterNames
@@ -88,7 +92,7 @@ class AppRepository(private val database: AppDatabase) {
         observeTrainingPage(sportId).map { it.items }
 
     fun observeTrainingPage(sportId: Int, filter: StatisticsFilter = StatisticsFilter(), page: Int = 0): Flow<TrainingPageUiModel> {
-        require(page >= 0) { "Некорректная страница" }
+        require(page >= 0) { AppText.get(R.string.app_repository_nekorrektnaya_stranitsa) }
         return readyFlow { observeStatisticsChanges().map {
             readyTransaction {
                 val dao = database.trainingDao()
@@ -109,9 +113,9 @@ class AppRepository(private val database: AppDatabase) {
                     val module = SportModules.find(sport.slug)
                     val selection = StatisticsSelection(localProfileId(), sport.id, filter)
                     val metrics = module?.aggregate(database.trainingDao(), selection)?.metrics ?: listOf(
-                        MetricUiModel("Исторические тренировки", database.trainingDao().trainingCount(
+                        MetricUiModel(AppText.get(R.string.app_repository_istoricheskie_trenirovki), database.trainingDao().trainingCount(
                             selection.userId, sportId, filter.firstDate, filter.lastDate, filter.centerId).toString()),
-                        MetricUiModel("Статистика", "Вид спорта не поддерживается"),
+                        MetricUiModel(AppText.get(R.string.app_repository_statistika), AppText.get(R.string.app_repository_vid_sporta_ne_podderzhivaetsya)),
                     )
                     SportStatisticsUiModel(sport.id, sport.slug, sport.title, metrics, filter)
                 }
@@ -141,23 +145,34 @@ class AppRepository(private val database: AppDatabase) {
         val name = CenterNames.clean(input.name)
         val city = CenterNames.clean(input.city.orEmpty()).takeIf(String::isNotBlank)
         CenterNames.validate(name, city)
-        require(input.sportIds.isNotEmpty()) { "Выберите хотя бы один вид спорта" }
-        input.sportIds.forEach { id -> SportModules.require(requireNotNull(database.referenceDao().getSport(id)) { "Вид спорта не найден" }.slug) }
-        val existing = input.id?.let { requireNotNull(database.referenceDao().getComplex(it)) { "Спортивный центр не найден" } }
+        input.requestId?.let { requestId ->
+            require(java.util.UUID.fromString(requestId).toString() == requestId) { AppText.get(R.string.app_repository_nekorrektnyy_identifikator_zapisi) }
+            if (input.id == null) database.referenceDao().getComplexByPublicId(requestId)?.let { saved ->
+                val sports = database.referenceDao().getComplexSports().filter { it.sportsComplexId == saved.id }.map { it.sportId }.toSet()
+                require(saved.name == name && saved.city == city && sports == input.sportIds) {
+                    AppText.get(R.string.app_repository_identifikator_zapisi_uzhe_zanyat_drugim)
+                }
+                return@readyTransaction saved.id
+            }
+        }
+        require(input.sportIds.isNotEmpty()) { AppText.get(R.string.app_repository_vyberite_hotya_by_odin_vid) }
+        input.sportIds.forEach { id -> SportModules.require(requireNotNull(database.referenceDao().getSport(id)) { AppText.get(R.string.app_repository_vid_sporta_ne_nayden) }.slug) }
+        val existing = input.id?.let { requireNotNull(database.referenceDao().getComplex(it)) { AppText.get(R.string.app_repository_sportivnyy_tsentr_ne_nayden) } }
         val key = CenterNames.key(name, city)
         // An unchanged historical duplicate can still be edited; do not force a merge.
         val duplicates = database.referenceDao().getAllComplexes().filter { it.id != input.id && CenterNames.key(it.name, it.city) == key }
         require(duplicates.isEmpty() || existing != null && CenterNames.key(existing.name, existing.city) == key) {
-            "Центр с таким названием и городом уже есть, в том числе в архиве. Измените существующий центр."
+            AppText.get(R.string.app_repository_tsentr_s_takim_nazvaniem_i)
         }
-        val entity = (existing ?: SportsComplexEntity(name = name, city = city)).copy(
+        val entity = (existing ?: SportsComplexEntity(name = name, city = city,
+            publicId = input.requestId ?: java.util.UUID.randomUUID().toString())).copy(
             name = if (existing != null && duplicates.isNotEmpty()) existing.name else name,
             city = if (existing != null && duplicates.isNotEmpty()) existing.city else city, isInitial = false,
         )
         val centerId = if (input.id == null) {
             database.referenceDao().insertComplex(entity)
         } else {
-            requireNotNull(database.referenceDao().getComplex(input.id)) { "Спортивный центр не найден" }
+            requireNotNull(database.referenceDao().getComplex(input.id)) { AppText.get(R.string.app_repository_sportivnyy_tsentr_ne_nayden) }
             database.referenceDao().updateComplex(entity)
             input.id
         }
@@ -169,26 +184,26 @@ class AppRepository(private val database: AppDatabase) {
     }
 
     suspend fun setSportsCenterArchived(id: Long, archived: Boolean) = readyTransaction {
-        val center = requireNotNull(database.referenceDao().getComplex(id)) { "Спортивный центр не найден" }
+        val center = requireNotNull(database.referenceDao().getComplex(id)) { AppText.get(R.string.app_repository_sportivnyy_tsentr_ne_nayden) }
         database.referenceDao().updateComplex(center.copy(isArchived = archived, isInitial = false))
     }
 
     suspend fun addCompletedTraining(userId: Long, input: AddCompletedTrainingInput, requestId: String? = null): Long = readyTransaction {
         if (requestId != null) {
-            require(java.util.UUID.fromString(requestId).toString() == requestId) { "Некорректный идентификатор записи" }
+            require(java.util.UUID.fromString(requestId).toString() == requestId) { AppText.get(R.string.app_repository_nekorrektnyy_identifikator_zapisi) }
             database.trainingDao().getTrainingByPublicId(requestId)?.let { existing ->
                 require(existing.training.userId == userId && sameInput(editSnapshot(existing).input, input)) {
-                    "Идентификатор записи уже занят другой тренировкой"
+                    AppText.get(R.string.app_repository_identifikator_zapisi_uzhe_zanyat_drugoy)
                 }
                 return@readyTransaction existing.training.id
             }
         }
         TrainingValidation.completedDate(input.date)
-        val sport = requireNotNull(database.referenceDao().getSport(input.sportId)) { "Вид спорта не найден" }
+        val sport = requireNotNull(database.referenceDao().getSport(input.sportId)) { AppText.get(R.string.app_repository_vid_sporta_ne_nayden) }
         require(database.referenceDao().getComplexesForSport(sport.id).any { it.id == input.complexId }) {
-            "Выбранный спорт недоступен в этом центре"
+            AppText.get(R.string.app_repository_vybrannyy_sport_nedostupen_v_etom)
         }
-        require(database.referenceDao().getUsers().any { it.id == userId }) { "Локальный профиль не найден" }
+        require(database.referenceDao().getUsers().any { it.id == userId }) { AppText.get(R.string.app_repository_lokalnyy_profil_ne_nayden) }
         val module = SportModules.require(sport.slug)
         module.validate(input)
         val trainingId = database.trainingDao().insertTraining(
@@ -220,8 +235,8 @@ class AppRepository(private val database: AppDatabase) {
     }
 
     private suspend fun ownedTraining(id: Long): TrainingBundle {
-        val bundle = requireNotNull(database.trainingDao().getTrainingBundle(id)) { "Тренировка уже удалена" }
-        require(bundle.training.userId == localProfileId()) { "Тренировка принадлежит другому локальному профилю" }
+        val bundle = requireNotNull(database.trainingDao().getTrainingBundle(id)) { AppText.get(R.string.app_repository_trenirovka_uzhe_udalena) }
+        require(bundle.training.userId == localProfileId()) { AppText.get(R.string.app_repository_trenirovka_prinadlezhit_drugomu_lokalnomu_profilyu) }
         return bundle
     }
 
@@ -231,12 +246,12 @@ class AppRepository(private val database: AppDatabase) {
         val bundle = ownedTraining(snapshot.id)
         // Retrying after process restoration must not overwrite a newer, different result.
         if (sameInput(editSnapshot(bundle).input, input)) return@readyTransaction
-        require(editSnapshot(bundle).revision == snapshot.revision) { "Запись изменилась. Закройте форму и откройте тренировку заново; ваши изменения не записаны." }
-        require(input.sportId == bundle.sport.id) { "Вид спорта сохранённой тренировки менять нельзя" }
+        require(editSnapshot(bundle).revision == snapshot.revision) { AppText.get(R.string.app_repository_zapis_izmenilas_zakroyte_formu_i) }
+        require(input.sportId == bundle.sport.id) { AppText.get(R.string.app_repository_vid_sporta_sohranyonnoy_trenirovki_menyat) }
         TrainingValidation.completedDate(input.date, bundle.training.trainingDate)
         if (input.complexId != bundle.complex.id) {
             require(database.referenceDao().getComplexesForSport(input.sportId).any { it.id == input.complexId }) {
-                "Выбранный спорт недоступен в этом центре"
+                AppText.get(R.string.app_repository_vybrannyy_sport_nedostupen_v_etom)
             }
         }
         val module = SportModules.require(bundle.sport.slug)
@@ -249,13 +264,13 @@ class AppRepository(private val database: AppDatabase) {
         // A confirmed deletion resumed after process death is already successful if the row is gone.
         if (database.trainingDao().getTrainingBundle(snapshot.id) == null) return@readyTransaction
         val bundle = ownedTraining(snapshot.id)
-        require(editSnapshot(bundle).revision == snapshot.revision) { "Запись изменилась. Откройте подтверждение удаления заново." }
+        require(editSnapshot(bundle).revision == snapshot.revision) { AppText.get(R.string.app_repository_zapis_izmenilas_otkroyte_podtverzhdenie_udaleniya) }
         database.planningDao().getPlanForResult(snapshot.id)?.let { plan ->
             val ruleCanceled = plan.recurrenceRuleId?.let { database.planningDao().getRule(it)?.isCanceled } == true
             database.planningDao().updatePlan(plan.copy(completedTrainingId = null,
                 status = if (ruleCanceled) PlannedTrainingStatus.CANCELED else PlannedTrainingStatus.PLANNED))
         }
-        check(database.trainingDao().deleteTraining(snapshot.id) == 1) { "Тренировка уже удалена" }
+        check(database.trainingDao().deleteTraining(snapshot.id) == 1) { AppText.get(R.string.app_repository_trenirovka_uzhe_udalena) }
     }
 
     suspend fun getScheduleMonth(userId: Long, month: YearMonth, selectedDate: LocalDate, today: LocalDate): ScheduleMonthUiModel = readyTransaction {
@@ -289,7 +304,7 @@ class AppRepository(private val database: AppDatabase) {
                     ScheduleEventState.CANCELED else ScheduleEventState.PLANNED,
                 item.recurrenceRuleId != null,
                 details = if (item.occurrenceDate != null && item.occurrenceDate != item.plannedDate)
-                    listOf("Перенесена с ${item.occurrenceDate}") else emptyList(),
+                    listOf(AppText.get(R.string.app_repository_perenesena_s, item.occurrenceDate)) else emptyList(),
                 planKey = "planned-${item.id}",
             )
         }
@@ -300,10 +315,10 @@ class AppRepository(private val database: AppDatabase) {
                 ScheduleDates.expand(rule.startDate, rule.endDate, rule.intervalWeeks, gridStart, gridEnd) else emptyList()).forEach { date ->
                 if (planned.any { it.recurrenceRuleId == rule.id && (it.occurrenceDate ?: it.plannedDate) == date }) return@forEach
                 eventsByDate.getOrPut(date, ::mutableListOf) += ScheduleEventUiModel(
-                    "rule-${rule.id}-$date", date, sport.id, sport.slug, sport.title,
+                    "rule-${rule.id}-${date}", date, sport.id, sport.slug, sport.title,
                     center.name, if (rule.isCanceled) ScheduleEventState.CANCELED else ScheduleEventState.PLANNED, true,
-                    details = listOf("Интервал: ${rule.intervalWeeks} нед."),
-                    planKey = "rule-${rule.id}-$date",
+                    details = listOf(AppText.get(R.string.app_repository_interval_ned, rule.intervalWeeks)),
+                    planKey = "rule-${rule.id}-${date}",
                 )
             }
         }
@@ -346,8 +361,8 @@ class AppRepository(private val database: AppDatabase) {
     suspend fun createBackup(): String = withContext(Dispatchers.IO) {
         readyTransaction {
             val document = DataExchange(database).snapshot(localProfileId())
-            require(document.objectCount() <= ImportFiles.MAX_ITEMS) { "Копия превышает поддерживаемый лимит 100000 объектов" }
-            BackupCodec.encode(document).also { require(it.toByteArray(Charsets.UTF_8).size <= ImportFiles.MAX_BYTES) { "Копия превышает поддерживаемый лимит 16 МиБ" } }
+            require(document.objectCount() <= ImportFiles.MAX_ITEMS) { AppText.get(R.string.app_repository_kopiya_prevyshaet_podderzhivaemyy_limit_100000) }
+            BackupCodec.encode(document).also { require(it.toByteArray(Charsets.UTF_8).size <= ImportFiles.MAX_BYTES) { AppText.get(R.string.app_repository_kopiya_prevyshaet_podderzhivaemyy_limit_16) } }
         }
     }
 
@@ -363,7 +378,7 @@ class AppRepository(private val database: AppDatabase) {
 
     /** Non-UI clients must provide explicit choices when defaults cannot safely resolve a file. */
     suspend fun importData(bytes: ByteArray, userId: Long): ImportResult {
-        require(userId == localProfileId()) { "Импорт выполняется через текущий локальный профиль" }
+        require(userId == localProfileId()) { AppText.get(R.string.app_repository_import_vypolnyaetsya_cherez_tekuschiy_lokalnyy) }
         val source = prepareImport(bytes)
         return withContext(Dispatchers.IO) {
             readyTransaction { DataExchange(database).apply(source, null, userId) }
@@ -381,6 +396,6 @@ class AppRepository(private val database: AppDatabase) {
 
     private fun trainingDetails(bundle: TrainingBundle): List<String> =
         SportModules.find(bundle.sport.slug)?.details(bundle)
-            ?: listOf("Историческая запись: этот вид спорта не поддерживается текущей версией")
+            ?: listOf(AppText.get(R.string.app_repository_istoricheskaya_zapis_etot_vid_sporta))
 
 }

@@ -6,7 +6,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertThrows
 import org.junit.Test
 
-class FootballCsvParserTest {
+class FootballCsvParserTest : com.pamurlykin.sportsactivityassistant.ResourceTextTest() {
     @Test
     fun parsesFootballHistorySemicolonCsv() {
         val csv = """

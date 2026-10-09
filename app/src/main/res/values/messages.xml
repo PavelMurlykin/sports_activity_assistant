@@ -1,0 +1,446 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="climbing_grades_migration_narusheny_svyazi_istoricheskih_trenirovok_obnovlenie" formatted="false">"Нарушены связи исторических тренировок; обновление отменено"</string>
+    <string name="exchange_identity_migration_narusheny_svyazi_bazy_obnovlenie_otmeneno" formatted="false">"Нарушены связи базы; обновление отменено"</string>
+    <string name="local_identity_migration_narusheny_svyazi_v_lokalnoy_baze" formatted="false">"Нарушены связи в локальной базе; обновление отменено"</string>
+    <string name="backup_codec_isklyucheniya_i_svyazi_s_rezultatami" formatted="false">"Исключения и связи с результатами требуют JSON 6"</string>
+    <string name="backup_codec_arhivnye_tsentry_trebuyut_json_5" formatted="false">"Архивные центры требуют JSON 5"</string>
+    <string name="backup_codec_metadannye_kalendarya_dostupny_tolko_v" formatted="false">"Метаданные календаря доступны только в JSON 6"</string>
+    <string name="backup_codec_centers_isarchived_dostupno_tolko_v_json" formatted="false">"centers.isArchived доступно только в JSON 5"</string>
+    <string name="backup_codec_versiya_rezervnoy_kopii_ne_podderzhivaetsya">"Версия резервной копии %1$s не поддерживается"</string>
+    <string name="backup_codec_v_kopii_versii_3_6_dolzhna" formatted="false">"В копии версии 3–6 должна быть указана шкала каждой трассы"</string>
+    <string name="backup_codec_dannye_shkaly_ne_sootvetstvuyut_versii" formatted="false">"Данные шкалы не соответствуют версии копии"</string>
+    <string name="backup_codec_json_pole_schemaversion_obyazatelno" formatted="false">"JSON: поле schemaVersion обязательно"</string>
+    <string name="backup_codec_json_schemaversion_dolzhno_byt_tselym" formatted="false">"JSON: schemaVersion должно быть целым числом, не строкой"</string>
+    <string name="backup_validation_trebuetsya_kanonicheskiy_uuid" formatted="false">"Требуется канонический UUID"</string>
+    <string name="backup_validation_createdat_obyazatelno" formatted="false">"createdAt обязательно"</string>
+    <string name="backup_validation_createdat_podderzhivaetsya_tochnost_do_millisekund" formatted="false">"createdAt: поддерживается точность до миллисекунд"</string>
+    <string name="backup_validation_pustaya_ili_slishkom_dlinnaya_stroka" formatted="false">"Пустая или слишком длинная строка"</string>
+    <string name="backup_validation_povtoryayuschiesya_identifikatory_ssylki" formatted="false">"Повторяющиеся идентификаторы/ссылки"</string>
+    <string name="backup_validation_limit_100000_obektov_v" formatted="false">"Лимит — 100000 объектов в файле"</string>
+    <string name="backup_validation_profiles_ne_mozhet_byt_pustym" formatted="false">"profiles не может быть пустым"</string>
+    <string name="backup_validation_primaryprofilepublicid_otsutstvuet_v_profiles" formatted="false">"primaryProfilePublicId отсутствует в profiles"</string>
+    <string name="backup_validation_displayname_slishkom_dlinnoe" formatted="false">"displayName слишком длинное"</string>
+    <string name="backup_validation_city_slishkom_dlinnoe" formatted="false">"city слишком длинное"</string>
+    <string name="backup_validation_sportslugs_otsutstvuyuschaya_ssylka_na_sport" formatted="false">"sportSlugs: отсутствующая ссылка на спорт"</string>
+    <string name="backup_validation_profilepublicid_profil_ne_nayden" formatted="false">"profilePublicId: профиль не найден"</string>
+    <string name="backup_validation_centerpublicid_tsentr_ne_nayden" formatted="false">"centerPublicId: центр не найден"</string>
+    <string name="backup_validation_sportslug_vid_sporta_ne_nayden" formatted="false">"sportSlug: вид спорта не найден"</string>
+    <string name="backup_validation_slishkom_dlinnoe_ishodnoe_oboznachenie" formatted="false">"Слишком длинное исходное обозначение"</string>
+    <string name="backup_validation_frequency_neizvestnoe_znachenie" formatted="false">"frequency: неизвестное значение"</string>
+    <string name="backup_validation_status_neizvestnoe_znachenie" formatted="false">"status: неизвестное значение"</string>
+    <string name="backup_validation_recurrencerulepublicid_seriya_ne_naydena" formatted="false">"recurrenceRulePublicId: серия не найдена"</string>
+    <string name="backup_validation_ssylka_na_seriyu_protivorechit_obschim" formatted="false">"Ссылка на серию противоречит общим атрибутам плана"</string>
+    <string name="backup_validation_zavershyonnyy_plan_dolzhen_imet_ssylku" formatted="false">"Завершённый план должен иметь ссылку на результат"</string>
+    <string name="backup_validation_ishodnaya_data_dopustima_tolko_v" formatted="false">"Исходная дата допустима только в серии"</string>
+    <string name="backup_validation_svyazannyy_rezultat_otsutstvuet_v_fayle" formatted="false">"Связанный результат отсутствует в файле"</string>
+    <string name="backup_validation_svyazannyy_rezultat_prinadlezhit_drugomu_profilyu" formatted="false">"Связанный результат принадлежит другому профилю или спорту"</string>
+    <string name="backup_validation_otsutstvuyuschaya_ssylka" formatted="false">"Отсутствующая ссылка"</string>
+    <string name="backup_validation_kind_targetpublicid_neizvestnyy_tip_ili_otsutstvuyuschaya" formatted="false">"kind/targetPublicId: неизвестный тип или отсутствующая ссылка"</string>
+    <string name="backup_validation_sopostavlenie_protivorechit_uuid_suschestvuyuschego_obekta" formatted="false">"Сопоставление противоречит UUID существующего объекта"</string>
+    <string name="data_exchange_arhiv" formatted="false">" · архив"</string>
+    <string name="data_exchange_vyberite_odin_profil_dlya_tekuschey" formatted="false">"Выберите один профиль для текущей статистики или явно сохраните все профили отдельно"</string>
+    <string name="data_exchange_profil_uzhe_sohranyon_otdelno_vyberite">"Профиль %1$s уже сохранён отдельно; выберите сохранение всех профилей"</string>
+    <string name="data_exchange_profili_ranee_sopostavleny_s_odnoy" formatted="false">"Профили ранее сопоставлены с одной личной историей; их нельзя автоматически разделить. Импортируйте выбранный профиль отдельно."</string>
+    <string name="data_exchange_osnovnoy_profil_tekuschaya_lichnaya" formatted="false">"Основной профиль — текущая личная статистика; остальные сохраняются отдельно в копии, без смешивания. Переключение профилей пока не предусмотрено."</string>
+    <string name="data_exchange_budut_importirovany_tolko_zapisi_vybrannogo" formatted="false">"Будут импортированы только записи выбранного профиля; остальные не удаляются из файла."</string>
+    <string name="data_exchange_staryy_json_ne_sohranyal_vladeltsev" formatted="false">"Старый JSON не сохранял владельцев и связь разового плана с серией. Отсутствующие сведения нельзя восстановить."</string>
+    <string name="data_exchange_identifikatory_starogo_fayla_zavisyat_ot" formatted="false">"Идентификаторы старого файла зависят от его точных байтов и номера записи. Изменённый файл — другой источник. Совпадения содержания не удаляются автоматически."</string>
+    <string name="data_exchange_sopostavlenie_tsentra_uzhe_zafiksirovano">"Сопоставление центра «%1$s» уже зафиксировано"</string>
+    <string name="data_exchange_podtverdite_tsentr_vyberite_suschestvuyuschiy">"Подтвердите центр «%1$s»: выберите существующий или создайте новый"</string>
+    <string name="data_exchange_tsentr_naznacheniya_bolshe_ne">"Центр назначения «%1$s» больше не существует"</string>
+    <string name="data_exchange_tsentr_tochnoe_nazvanie_i">"Центр «%1$s»: точное название и город уже заняты; сопоставьте центр явно"</string>
+    <string name="data_exchange_tsentr_pohozhie_istoricheskie_tsentry">"Центр «%1$s»: похожие исторические центры сохраняются отдельно по UUID; автоматического объединения нет."</string>
+    <string name="data_exchange_tsentr_uzhe_suschestvuet_sopostavte">"Центр «%1$s» уже существует: сопоставьте его явно"</string>
+    <string name="data_exchange_uuid_uzhe_prinadlezhit_drugomu_obektu">"UUID %1$s уже принадлежит другому объекту (%2$s)"</string>
+    <string name="data_exchange_tsentr_konflikt_uuid">"Центр «%1$s»: конфликт UUID — подтвердите сохранение локальной записи"</string>
+    <string name="data_exchange_tsentr">"Центр · %1$s"</string>
+    <string name="data_exchange_tsentr_sohranyaetsya_lokalnoe_sostoyanie">"Центр «%1$s»: сохраняется локальное состояние архива; импорт истории не открывает центр заново."</string>
+    <string name="data_exchange_tsentr_tekuschiy_spisok_vidov">"Центр «%1$s»: текущий список видов спорта сохраняется; исторические записи допустимы даже после исключения спорта из центра."</string>
+    <string name="data_exchange_profil_konflikt_uuid">"Профиль %1$s: конфликт UUID — подтвердите сохранение локальной записи"</string>
+    <string name="data_exchange_profil">"Профиль · %1$s"</string>
+    <string name="data_exchange_konflikt_uuid_podtverdite">"%1$s: конфликт UUID %2$s — подтвердите сохранение локальной записи"</string>
+    <string name="data_exchange_est_vozmozhnye_sovpadeniya_po_umolchaniyu" formatted="false">"Есть возможные совпадения. По умолчанию сохраняются обе тренировки; исключение требует вашего выбора."</string>
+    <string name="data_exchange_seriya_konflikt_uuid">"Серия %1$s: конфликт UUID — подтвердите сохранение локальной записи"</string>
+    <string name="data_exchange_seriya">"Серия · %1$s · %2$s"</string>
+    <string name="data_exchange_plan_konflikt_uuid">"План %1$s: конфликт UUID — подтвердите сохранение локальной записи"</string>
+    <string name="data_exchange_plan_sohranyonnaya_lokalnaya_seriya">"План %1$s: сохранённая локальная серия несовместима с планом"</string>
+    <string name="data_exchange_plan_svyazannyy_rezultat_isklyuchyon">"План %1$s: связанный результат исключён или несовместим"</string>
+    <string name="data_exchange_plan_sobytie_ili_rezultat">"План %1$s: событие или результат уже связан с другим локальным планом — сохраните локальную запись"</string>
+    <string name="data_exchange_plan">"План · %1$s · %2$s"</string>
+    <string name="data_exchange_sopostavlenie_protivorechit_lokalnomu_uuid">"Сопоставление %1$s/%2$s противоречит локальному UUID"</string>
+    <string name="data_exchange_sopostavlenie_protivorechit_sohranyonnomu">"Сопоставление %1$s/%2$s противоречит сохранённому"</string>
+    <string name="data_exchange_istoricheskih_popytok_kategorii_ne">"%1$s исторических попыток: категории не участвуют в сравнимых максимумах"</string>
+    <string name="football_csv_parser_csv_fayl_pust" formatted="false">"CSV-файл пуст"</string>
+    <string name="football_csv_parser_csv_povtoryayuschiesya_kolonki_zagolovka" formatted="false">"CSV: повторяющиеся колонки заголовка"</string>
+    <string name="football_csv_parser_v_csv_otsutstvuyut_kolonki">"В CSV отсутствуют колонки: %1$s"</string>
+    <string name="football_csv_parser_v_csv_net_trenirovok" formatted="false">"В CSV нет тренировок"</string>
+    <string name="football_csv_parser_stroka_chislo_znacheniy_ne">"Строка %1$s: число значений не совпадает с заголовком"</string>
+    <string name="football_csv_parser_stroka_pole_ne">"Строка %1$s, %2$s: поле не заполнено"</string>
+    <string name="football_csv_parser_stroka_trebuetsya_tseloe">"Строка %1$s, %2$s: требуется целое число"</string>
+    <string name="football_csv_parser_stroka_znachenie_dolzhno">"Строка %1$s, %2$s: значение должно быть положительным"</string>
+    <string name="football_csv_parser_stroka_trebuetsya_tseloe_2">"Строка %1$s, %2$s: требуется целое число в диапазоне Int"</string>
+    <string name="football_csv_parser_stroka_znachenie_ne">"Строка %1$s, %2$s: значение не может быть отрицательным"</string>
+    <string name="football_csv_parser_stroka_training_date_ispolzuyte_yyyy_mm_dd">"Строка %1$s, training_date: используйте YYYY-MM-DD"</string>
+    <string name="football_csv_parser_stroka_distance_km_slishkom_dlinnoe">"Строка %1$s, distance_km: слишком длинное число"</string>
+    <string name="football_csv_parser_stroka_distance_km_nevernoe_chislo">"Строка %1$s, distance_km: неверное число"</string>
+    <string name="football_csv_parser_csv_slishkom_mnogo_zapisey" formatted="false">"CSV: слишком много записей"</string>
+    <string name="football_csv_parser_stroka_kavychka_vnutri_nekavychennogo">"Строка %1$s: кавычка внутри некавыченного поля"</string>
+    <string name="football_csv_parser_stroka_simvol_posle_zakryvayuschey">"Строка %1$s: символ после закрывающей кавычки"</string>
+    <string name="football_csv_parser_stroka_nezakrytaya_kavychka">"Строка %1$s: незакрытая кавычка"</string>
+    <string name="import_files_fayl_prevyshaet_limit_16_mib" formatted="false">"Файл превышает лимит 16 МиБ"</string>
+    <string name="import_files_fayl_pust" formatted="false">"Файл пуст"</string>
+    <string name="import_files_ispolzuyte_utf_8_dlya_json_i" formatted="false">"Используйте UTF-8 для JSON и UTF-8/Windows-1251 для CSV"</string>
+    <string name="import_files_json_dolzhen_byt_korrektnym_utf_8" formatted="false">"JSON должен быть корректным UTF-8; повреждённая кодировка"</string>
+    <string name="import_parser_csv_ne_soderzhit_trenirovok" formatted="false">"CSV не содержит тренировок"</string>
+    <string name="import_parser_istoricheskiy_tsentr">"Исторический центр #%1$s"</string>
+    <string name="import_parser_futbol" formatted="false">"Футбол"</string>
+    <string name="import_parser_futbolnyy_csv" formatted="false">"Футбольный CSV"</string>
+    <string name="import_parser_stroka">"Строка %1$s"</string>
+    <string name="import_parser_user_id_tolko_pole_fayla">"user_id=%1$s (только поле файла)"</string>
+    <string name="import_parser_lokalnyy_profil">"Локальный профиль %1$s"</string>
+    <string name="import_parser_metadannye_profiley_sopostavleniy_ne_sootvetstvuyut_versii" formatted="false">"Метаданные профилей/сопоставлений не соответствуют версии JSON"</string>
+    <string name="import_parser_centers_uuid_ne_sootvetstvuet_staroy">"centers[%1$s]: UUID не соответствует старой версии"</string>
+    <string name="import_parser_tsentr_ssylka_otsutstvuet_ili">"Центр «%1$s»: ссылка отсутствует или неоднозначна"</string>
+    <string name="import_parser_tsentr_nomer_i_nazvanie">"Центр «%1$s»: номер и название противоречат друг другу"</string>
+    <string name="import_parser_trainings_uuid_ne_sootvetstvuet_staroy">"trainings[%1$s]: UUID не соответствует старой версии"</string>
+    <string name="import_parser_trainings_climbingroutes_uuid_v_staroy_versii">"trainings[%1$s].climbingRoutes[%2$s]: UUID в старой версии"</string>
+    <string name="import_parser_recurrencerules_uuid_v_staroy_versii">"recurrenceRules[%1$s]: UUID в старой версии"</string>
+    <string name="import_parser_plannedtrainings_metadannye_v_staroy_versii">"plannedTrainings[%1$s]: метаданные в старой версии"</string>
+    <string name="import_parser_json_adapter">"JSON %1$s (адаптер)"</string>
+    <string name="import_parser_istoriya_bez_svedeniy_o_profile" formatted="false">"История без сведений о профиле"</string>
+    <string name="local_files_ne_udalos_otkryt_fayl_dlya" formatted="false">"Не удалось открыть файл для чтения"</string>
+    <string name="local_files_ne_udalos_otkryt_fayl_dlya_2" formatted="false">"Не удалось открыть файл для записи"</string>
+    <string name="local_files_proverka_zapisannogo_fayla_ne_proydena" formatted="false">"Проверка записанного файла не пройдена"</string>
+    <string name="local_files_kopiya_ne_podtverzhdena_vybrannyy">"Копия не подтверждена: %1$s. Выбранный файл может быть неполным; не используйте его для восстановления."</string>
+    <string name="center_names_vvedite_nazvanie_sportivnogo_tsentra" formatted="false">"Введите название спортивного центра"</string>
+    <string name="center_names_nazvanie_i_gorod_ne_bolee" formatted="false">"Название и город: не более 200 символов каждый"</string>
+    <string name="center_names_nazvanie_i_gorod_ne_dolzhny" formatted="false">"Название и город не должны содержать управляющие символы"</string>
+    <string name="climbing_difficulty_catalog_frantsuzskaya" formatted="false">"Французская"</string>
+    <string name="climbing_difficulty_catalog_bez_kategorii" formatted="false">"Без категории"</string>
+    <string name="climbing_difficulty_catalog_istoricheskaya_shkala_ne_podtverzhdena" formatted="false">"Историческая — шкала не подтверждена"</string>
+    <string name="climbing_difficulty_catalog_etalonnaya_15_m" formatted="false">"Эталонная 15 м"</string>
+    <string name="climbing_difficulty_catalog_inaya_trassa" formatted="false">"Иная трасса"</string>
+    <string name="football_form_values_vvedite_tseloe_chislo" formatted="false">"Введите целое число"</string>
+    <string name="football_form_values_vvedite_distantsiyu_chislom_do_64" formatted="false">"Введите дистанцию числом (до 64 символов)"</string>
+    <string name="statistics_filter_ukazhite_obe_granitsy_perioda" formatted="false">"Укажите обе границы периода"</string>
+    <string name="statistics_filter_god_dolzhen_byt_ot_1" formatted="false">"Год должен быть от 1 до 9999"</string>
+    <string name="statistics_filter_nachalo_perioda_pozzhe_okonchaniya" formatted="false">"Начало периода позже окончания"</string>
+    <string name="statistics_filter_nekorrektnyy_tsentr" formatted="false">"Некорректный центр"</string>
+    <string name="training_validation_god_dolzhen_byt_v_diapazone" formatted="false">"Год должен быть в диапазоне 0001–9999"</string>
+    <string name="training_validation_ispolzuyte_datu_yyyy_mm_dd" formatted="false">"Используйте дату YYYY-MM-DD"</string>
+    <string name="training_validation_buduschuyu_trenirovku_dobavte_v_plan" formatted="false">"Будущую тренировку добавьте в план, а не в результаты"</string>
+    <string name="training_validation_interval_dolzhen_byt_polozhitelnym" formatted="false">"Интервал должен быть положительным"</string>
+    <string name="training_validation_data_okonchaniya_ranshe_nachala_serii" formatted="false">"Дата окончания раньше начала серии"</string>
+    <string name="ui_models_trudnost" formatted="false">"Трудность"</string>
+    <string name="ui_models_skorost" formatted="false">"Скорость"</string>
+    <string name="ui_models_bolder" formatted="false">"Болдер"</string>
+    <string name="ui_models_istoricheskaya_distsiplina" formatted="false">"Историческая дисциплина"</string>
+    <string name="app_repository_nekorrektnaya_stranitsa" formatted="false">"Некорректная страница"</string>
+    <string name="app_repository_istoricheskie_trenirovki" formatted="false">"Исторические тренировки"</string>
+    <string name="app_repository_statistika" formatted="false">"Статистика"</string>
+    <string name="app_repository_vid_sporta_ne_podderzhivaetsya" formatted="false">"Вид спорта не поддерживается"</string>
+    <string name="app_repository_nekorrektnyy_identifikator_zapisi" formatted="false">"Некорректный идентификатор записи"</string>
+    <string name="app_repository_identifikator_zapisi_uzhe_zanyat_drugim" formatted="false">"Идентификатор записи уже занят другим центром"</string>
+    <string name="app_repository_vyberite_hotya_by_odin_vid" formatted="false">"Выберите хотя бы один вид спорта"</string>
+    <string name="app_repository_vid_sporta_ne_nayden" formatted="false">"Вид спорта не найден"</string>
+    <string name="app_repository_sportivnyy_tsentr_ne_nayden" formatted="false">"Спортивный центр не найден"</string>
+    <string name="app_repository_tsentr_s_takim_nazvaniem_i" formatted="false">"Центр с таким названием и городом уже есть, в том числе в архиве. Измените существующий центр."</string>
+    <string name="app_repository_identifikator_zapisi_uzhe_zanyat_drugoy" formatted="false">"Идентификатор записи уже занят другой тренировкой"</string>
+    <string name="app_repository_vybrannyy_sport_nedostupen_v_etom" formatted="false">"Выбранный спорт недоступен в этом центре"</string>
+    <string name="app_repository_lokalnyy_profil_ne_nayden" formatted="false">"Локальный профиль не найден"</string>
+    <string name="app_repository_trenirovka_uzhe_udalena" formatted="false">"Тренировка уже удалена"</string>
+    <string name="app_repository_trenirovka_prinadlezhit_drugomu_lokalnomu_profilyu" formatted="false">"Тренировка принадлежит другому локальному профилю"</string>
+    <string name="app_repository_zapis_izmenilas_zakroyte_formu_i" formatted="false">"Запись изменилась. Закройте форму и откройте тренировку заново; ваши изменения не записаны."</string>
+    <string name="app_repository_vid_sporta_sohranyonnoy_trenirovki_menyat" formatted="false">"Вид спорта сохранённой тренировки менять нельзя"</string>
+    <string name="app_repository_zapis_izmenilas_otkroyte_podtverzhdenie_udaleniya" formatted="false">"Запись изменилась. Откройте подтверждение удаления заново."</string>
+    <string name="app_repository_perenesena_s">"Перенесена с %1$s"</string>
+    <string name="app_repository_interval_ned">"Интервал: %1$s нед."</string>
+    <string name="app_repository_kopiya_prevyshaet_podderzhivaemyy_limit_100000" formatted="false">"Копия превышает поддерживаемый лимит 100000 объектов"</string>
+    <string name="app_repository_kopiya_prevyshaet_podderzhivaemyy_limit_16" formatted="false">"Копия превышает поддерживаемый лимит 16 МиБ"</string>
+    <string name="app_repository_import_vypolnyaetsya_cherez_tekuschiy_lokalnyy" formatted="false">"Импорт выполняется через текущий локальный профиль"</string>
+    <string name="app_repository_istoricheskaya_zapis_etot_vid_sporta" formatted="false">"Историческая запись: этот вид спорта не поддерживается текущей версией"</string>
+    <string name="planning_store_plan_ne_nayden" formatted="false">"План не найден"</string>
+    <string name="planning_store_seriya_ne_naydena" formatted="false">"Серия не найдена"</string>
+    <string name="planning_store_seriya_izmenilas_sobytie_bolshe_ne" formatted="false">"Серия изменилась: событие больше не существует"</string>
+    <string name="planning_store_plan_prinadlezhit_drugomu_lokalnomu_profilyu" formatted="false">"План принадлежит другому локальному профилю"</string>
+    <string name="planning_store_seriya_prinadlezhit_drugomu_lokalnomu_profilyu" formatted="false">"Серия принадлежит другому локальному профилю"</string>
+    <string name="planning_store_u_razovogo_plana_net_serii" formatted="false">"У разового плана нет серии"</string>
+    <string name="planning_store_nekorrektnyy_identifikator_plana" formatted="false">"Некорректный идентификатор плана"</string>
+    <string name="planning_store_identifikator_uzhe_zanyat" formatted="false">"Идентификатор уже занят"</string>
+    <string name="planning_store_plan_izmenilsya_zakroyte_formu_i" formatted="false">"План изменился. Закройте форму и откройте его заново."</string>
+    <string name="planning_store_izmenyayte_svyazannyy_rezultat_a_ne" formatted="false">"Изменяйте связанный результат, а не завершённый план"</string>
+    <string name="planning_store_razovuyu_trenirovku_nelzya_prevratit_v" formatted="false">"Разовую тренировку нельзя превратить в серию при редактировании"</string>
+    <string name="planning_store_plan_izmenilsya_otkroyte_podtverzhdenie_zanovo" formatted="false">"План изменился. Откройте подтверждение заново."</string>
+    <string name="planning_store_zavershyonnyy_plan_otmenit_nelzya" formatted="false">"Завершённый план отменить нельзя"</string>
+    <string name="planning_store_dlya_etogo_plana_uzhe_zapisan" formatted="false">"Для этого плана уже записан результат"</string>
+    <string name="planning_store_plan_izmenilsya_otkroyte_ego_zanovo" formatted="false">"План изменился. Откройте его заново."</string>
+    <string name="planning_store_otmenyonnuyu_trenirovku_zavershit_nelzya" formatted="false">"Отменённую тренировку завершить нельзя"</string>
+    <string name="planning_store_vid_sporta_dolzhen_sootvetstvovat_planu" formatted="false">"Вид спорта должен соответствовать плану"</string>
+    <string name="planning_store_rezultat_uzhe_svyazan_s_drugim" formatted="false">"Результат уже связан с другим планом"</string>
+    <string name="climbing_module_skalolazanie" formatted="false">"Скалолазание"</string>
+    <string name="climbing_module_trenirovka_skalolazaniya_ne_mozhet_soderzhat" formatted="false">"Тренировка скалолазания не может содержать футбольную статистику"</string>
+    <string name="climbing_module_dobavte_hotya_by_odnu_trassu" formatted="false">"Добавьте хотя бы одну трассу"</string>
+    <string name="climbing_module_kolichestvo_popytok_dolzhno_byt_polozhitelnym" formatted="false">"Количество попыток должно быть положительным"</string>
+    <string name="climbing_module_dlya_novoy_trassy_vyberite_podtverzhdyonnuyu" formatted="false">"Для новой трассы выберите подтверждённую шкалу"</string>
+    <string name="climbing_module_neodnoznachnaya_kategoriya_ne_mozhet_soderzhat" formatted="false">"Неоднозначная категория не может содержать подтверждённую оценку"</string>
+    <string name="climbing_module_neizvestnaya_distsiplina_skalolazaniya" formatted="false">"Неизвестная дисциплина скалолазания"</string>
+    <string name="climbing_module_istoricheskaya_distsiplina_ne_sootvetstvuet_tipu" formatted="false">"Историческая дисциплина не соответствует типу трассы"</string>
+    <string name="climbing_module_shkala_ne_sootvetstvuet_distsipline" formatted="false">"Шкала не соответствует дисциплине"</string>
+    <string name="climbing_module_skorost_ne_otsenivaetsya_kategoriey_frantsuzskoy" formatted="false">"Скорость не оценивается категорией французской шкалы"</string>
+    <string name="climbing_module_vyberite_trassu_skorosti" formatted="false">"Выберите трассу скорости"</string>
+    <string name="climbing_module_neizvestnaya_kategoriya_slozhnosti">"Неизвестная категория сложности: %1$s"</string>
+    <string name="climbing_module_kod_kategorii_ne_sootvetstvuet_oboznacheniyu" formatted="false">"Код категории не соответствует обозначению"</string>
+    <string name="climbing_module_u_trudnosti_i_boldera_net" formatted="false">"У трудности и болдера нет типа трассы скорости"</string>
+    <string name="climbing_module_identifikatory_trass_ne_sootvetstvuyut_trenirovke" formatted="false">"Идентификаторы трасс не соответствуют тренировке"</string>
+    <string name="climbing_module_istoricheskuyu_kategoriyu_nelzya_sozdat_ili" formatted="false">"Историческую категорию нельзя создать или изменить без подтверждённой шкалы"</string>
+    <string name="climbing_module_zapis_skalolazaniya_soderzhit_futbolnuyu_statistiku" formatted="false">"Запись скалолазания содержит футбольную статистику"</string>
+    <string name="climbing_module_neizvestnaya_distsiplina_skalolazaniya_2">"Неизвестная дисциплина скалолазания: %1$s"</string>
+    <string name="climbing_module_trenirovki" formatted="false">"Тренировки"</string>
+    <string name="climbing_module_zapisi_trass" formatted="false">"Записи трасс"</string>
+    <string name="climbing_module_popytki_s_povtorami" formatted="false">"Попытки (с повторами)"</string>
+    <string name="climbing_module_uspeshno_proydeno" formatted="false">"Успешно пройдено"</string>
+    <string name="climbing_module_uspeshno_popytki">"%1$s · успешно / попытки"</string>
+    <string name="climbing_module_maksimum">"Максимум · %1$s (%2$s)"</string>
+    <string name="climbing_module_net_uspeshnyh" formatted="false">"Нет успешных"</string>
+    <string name="climbing_module_uspeshno">"%1$s · %2$s · успешно / попытки"</string>
+    <string name="climbing_module_skorost_uspeshno">"Скорость · %1$s · успешно / попытки"</string>
+    <string name="climbing_module_istoricheskie_kategorii_bez_sravneniya" formatted="false">"Исторические категории без сравнения"</string>
+    <string name="climbing_module_iz_popytok_uspeshny">"%1$s из %2$s попыток успешны"</string>
+    <string name="climbing_module_bez_kategorii" formatted="false">"без категории"</string>
+    <string name="climbing_module_istoricheskaya_shkala_trassa_ne_podtverzhdena">"%1$s (историческая: шкала/трасса не подтверждена)"</string>
+    <string name="climbing_module_neizvestnaya_trassa_skorosti" formatted="false">"Неизвестная трасса скорости"</string>
+    <string name="climbing_module_proydena" formatted="false">"пройдена"</string>
+    <string name="climbing_module_ne_proydena" formatted="false">"не пройдена"</string>
+    <string name="football_module_zapolnite_futbolnuyu_statistiku" formatted="false">"Заполните футбольную статистику"</string>
+    <string name="football_module_futbolnaya_trenirovka_ne_mozhet_soderzhat" formatted="false">"Футбольная тренировка не может содержать трассы"</string>
+    <string name="football_module_znachenie_ne_mozhet_byt_otritsatelnym" formatted="false">"Значение не может быть отрицательным"</string>
+    <string name="football_module_lichnye_goly_ne_mogut_prevyshat" formatted="false">"Личные голы не могут превышать счёт команды"</string>
+    <string name="football_module_peredachi_ne_mogut_prevyshat_chislo" formatted="false">"Передачи не могут превышать число голов команды"</string>
+    <string name="football_module_distantsiya_ne_mozhet_byt_otritsatelnoy" formatted="false">"Дистанция не может быть отрицательной"</string>
+    <string name="football_module_ne_bolee_16_znachaschih_tsifr" formatted="false">"Не более 16 значащих цифр, 6 десятичных знаков и 22 цифр целой части"</string>
+    <string name="football_module_chislo_igrokov_dolzhno_byt_polozhitelnym" formatted="false">"Число игроков должно быть положительным"</string>
+    <string name="football_module_vremya_igry_dolzhno_byt_polozhitelnym" formatted="false">"Время игры должно быть положительным"</string>
+    <string name="football_module_futbolnaya_zapis_soderzhit_trassy" formatted="false">"Футбольная запись содержит трассы"</string>
+    <string name="football_module_v_futbolnoy_zapisi_otsutstvuet_statistika" formatted="false">"В футбольной записи отсутствует статистика"</string>
+    <string name="football_module_slishkom_dlinnaya_distantsiya" formatted="false">"Слишком длинная дистанция"</string>
+    <string name="football_module_golov">"%1$s голов"</string>
+    <string name="football_module_peredach">"%1$s передач"</string>
+    <string name="football_module_net_dannyh" formatted="false">"Нет данных"</string>
+    <string name="football_module_igry" formatted="false">"Игры"</string>
+    <string name="football_module_pobedy_nichi_porazheniya" formatted="false">"Победы / ничьи / поражения"</string>
+    <string name="football_module_schyot_komand" formatted="false">"Счёт команд"</string>
+    <string name="football_module_lichnye_goly" formatted="false">"Личные голы"</string>
+    <string name="football_module_golevye_peredachi" formatted="false">"Голевые передачи"</string>
+    <string name="football_module_uchtyonnaya_distantsiya" formatted="false">"Учтённая дистанция"</string>
+    <string name="football_module_km">"%1$s км"</string>
+    <string name="football_module_srednyaya_distantsiya" formatted="false">"Средняя дистанция"</string>
+    <string name="football_module_km_2" formatted="false">"км"</string>
+    <string name="football_module_igr_s_distantsiey" formatted="false">"Игр с дистанцией"</string>
+    <string name="football_module_iz">"%1$s из %2$s"</string>
+    <string name="football_module_uchtyonnoe_vremya" formatted="false">"Учтённое время"</string>
+    <string name="football_module_min">"%1$s мин"</string>
+    <string name="football_module_srednyaya_dlitelnost" formatted="false">"Средняя длительность"</string>
+    <string name="football_module_min_2" formatted="false">"мин"</string>
+    <string name="football_module_igr_so_vremenem" formatted="false">"Игр со временем"</string>
+    <string name="football_module_sredniy_sostav_komandy" formatted="false">"Средний состав команды"</string>
+    <string name="football_module_igrokov" formatted="false">"игроков"</string>
+    <string name="football_module_igr_s_chislom_igrokov" formatted="false">"Игр с числом игроков"</string>
+    <string name="football_module_schyot">"Счёт: %1$s:%2$s"</string>
+    <string name="football_module_lichnye_goly_2">"Личные голы: %1$s"</string>
+    <string name="football_module_golevye_peredachi_2">"Голевые передачи: %1$s"</string>
+    <string name="football_module_distantsiya_km">"Дистанция: %1$s км"</string>
+    <string name="football_module_igrokov_v_komande">"Игроков в команде: %1$s"</string>
+    <string name="football_module_vremya_igry_min">"Время игры: %1$s мин"</string>
+    <string name="sport_module_vid_sporta_ne_podderzhivaetsya">"Вид спорта «%1$s» не поддерживается этой версией приложения; данные не изменены"</string>
+    <string name="add_completed_training_dialog_vvedite_datu_yyyy_mm_dd_god_0001_9999" formatted="false">"Введите дату YYYY-MM-DD (год 0001–9999)"</string>
+    <string name="add_completed_training_dialog_proverte_datu" formatted="false">"Проверьте дату"</string>
+    <string name="add_completed_training_dialog_vyberite_vid_sporta_i_sportivnyy" formatted="false">"Выберите вид спорта и спортивный центр"</string>
+    <string name="add_completed_training_dialog_dlya_etogo_vida_sporta_forma" formatted="false">"Для этого вида спорта форма пока не настроена"</string>
+    <string name="add_completed_training_dialog_ne_udalos_sohranit_trenirovku" formatted="false">"Не удалось сохранить тренировку"</string>
+    <string name="add_completed_training_dialog_proverte_dannye_trenirovki" formatted="false">"Проверьте данные тренировки"</string>
+    <string name="add_completed_training_dialog_sohranenie" formatted="false">"Сохранение…"</string>
+    <string name="add_completed_training_dialog_sohranit" formatted="false">"Сохранить"</string>
+    <string name="add_completed_training_dialog_otmena" formatted="false">"Отмена"</string>
+    <string name="add_completed_training_dialog_rezultat_po_planu" formatted="false">"Результат по плану"</string>
+    <string name="add_completed_training_dialog_zapisat_trenirovku" formatted="false">"Записать тренировку"</string>
+    <string name="add_completed_training_dialog_izmenit_trenirovku" formatted="false">"Изменить тренировку"</string>
+    <string name="add_completed_training_dialog_vid_sporta_iz_plana_ukazhite" formatted="false">"Вид спорта из плана. Укажите фактическую дату и доступный центр; будущий результат записать нельзя."</string>
+    <string name="add_completed_training_dialog_vid_sporta_menyat_nelzya_prezhniy" formatted="false">"Вид спорта менять нельзя. Прежний центр можно оставить, даже если он в архиве."</string>
+    <string name="add_completed_training_dialog_data" formatted="false">"Дата"</string>
+    <string name="add_completed_training_dialog_yyyy_mm_dd_buduschie_trenirovki_dobavlyayte" formatted="false">"YYYY-MM-DD · будущие тренировки добавляйте в план"</string>
+    <string name="add_completed_training_dialog_vybrat_datu" formatted="false">"Выбрать дату"</string>
+    <string name="add_completed_training_dialog_zapis_dlya_etogo_vida_sporta" formatted="false">"Запись для этого вида спорта пока недоступна"</string>
+    <string name="add_completed_training_dialog_vybrat" formatted="false">"Выбрать"</string>
+    <string name="add_training_dialog_vyberite_dostupnyy_tsentr" formatted="false">"Выберите доступный центр"</string>
+    <string name="add_training_dialog_vvedite_tselyy_polozhitelnyy_interval" formatted="false">"Введите целый положительный интервал"</string>
+    <string name="add_training_dialog_ne_udalos_sohranit_plan" formatted="false">"Не удалось сохранить план"</string>
+    <string name="add_training_dialog_plan_trenirovki" formatted="false">"План тренировки"</string>
+    <string name="add_training_dialog_izmenit_vsyu_seriyu" formatted="false">"Изменить всю серию"</string>
+    <string name="add_training_dialog_izmenit_odno_sobytie" formatted="false">"Изменить одно событие"</string>
+    <string name="add_training_dialog_nachalo_serii_yyyy_mm_dd" formatted="false">"Начало серии · YYYY-MM-DD"</string>
+    <string name="add_training_dialog_data_yyyy_mm_dd" formatted="false">"Дата · YYYY-MM-DD"</string>
+    <string name="add_training_dialog_razovaya" formatted="false">"Разовая"</string>
+    <string name="add_training_dialog_po_nedelyam" formatted="false">"По неделям"</string>
+    <string name="add_training_dialog_interval_v_nedelyah" formatted="false">"Интервал в неделях"</string>
+    <string name="add_training_dialog_povtoryat_do_yyyy_mm_dd" formatted="false">"Повторять до · YYYY-MM-DD"</string>
+    <string name="add_training_dialog_vklyuchitelno_pusto_bez_ogranicheniya" formatted="false">"Включительно; пусто — без ограничения"</string>
+    <string name="add_training_dialog_izmenyatsya_sobytiya_bez_individualnyh_isklyucheniy" formatted="false">"Изменятся события без индивидуальных исключений. Переносы, отмены и записанные результаты сохранятся."</string>
+    <string name="import_preview_content_proverka_importa" formatted="false">"Проверка импорта"</string>
+    <string name="import_preview_content_primenit_import" formatted="false">"Применить импорт"</string>
+    <string name="import_preview_content_trenirovok_zapisey_trass_planov">"%1$s: %2$s тренировок, %3$s записей трасс, %4$s планов, %5$s серий."</string>
+    <string name="import_preview_content_poka_nichego_ne_zapisano_istoriya" formatted="false">"Пока ничего не записано. История на устройстве не удаляется. Повторный UUID пропускается, одинаковое содержание само по себе — нет."</string>
+    <string name="import_preview_content_profil_iz_fayla" formatted="false">"Профиль из файла"</string>
+    <string name="import_preview_content_sohranit_vse_otdelno" formatted="false">"Сохранить все отдельно"</string>
+    <string name="import_preview_content_trebuetsya_vybor" formatted="false">"Требуется выбор"</string>
+    <string name="import_preview_content_tolko_tekuschiy_profil">"Только %1$s → текущий профиль"</string>
+    <string name="import_preview_content_podtverdite_tsentr">"Подтвердите центр%1$s"</string>
+    <string name="import_preview_content_sozdat_novyy_tsentr" formatted="false">"Создать новый центр"</string>
+    <string name="import_preview_content_sopostavlenie_sohraneno">"%1$s · сопоставление сохранено"</string>
+    <string name="import_preview_content_sozdat_novyy">"Создать новый: %1$s"</string>
+    <string name="import_preview_content_uzhe_suschestvuyut_po_uuid">"Уже существуют по UUID: %1$s. Возможные совпадения содержания: %2$s. Конфликты: %3$s."</string>
+    <string name="import_preview_content_etot_uuid_uzhe_suschestvuet_s" formatted="false">"Этот UUID уже существует с другими данными. Импорт его не перезапишет."</string>
+    <string name="import_preview_content_sohranit_lokalnuyu_zapis" formatted="false">"Сохранить локальную запись"</string>
+    <string name="import_preview_content_pohozhaya_trenirovka_s_drugim_uuid" formatted="false">"Похожая тренировка с другим UUID: по умолчанию сохранить обе."</string>
+    <string name="import_preview_content_propustit_zapis_iz_fayla" formatted="false">"Пропустить запись из файла"</string>
+    <string name="import_preview_content_vyberite_sootvetstvie" formatted="false">"Выберите соответствие"</string>
+    <string name="import_preview_content_zakryt" formatted="false">"Закрыть"</string>
+    <string name="plan_actions_povtoryayuschayasya_trenirovka" formatted="false">"Повторяющаяся тренировка"</string>
+    <string name="plan_actions_izmenit_tolko_eto_sobytie_ili" formatted="false">"Изменить только это событие или всю серию? Индивидуальные исключения и результаты при редактировании серии сохраняются."</string>
+    <string name="plan_actions_otmenit_tolko_eto_sobytie_ili" formatted="false">"Отменить только это событие или всю серию? Завершённые результаты не удаляются."</string>
+    <string name="plan_actions_tolko_eto_sobytie" formatted="false">"Только это событие"</string>
+    <string name="plan_actions_vsya_seriya" formatted="false">"Вся серия"</string>
+    <string name="plan_actions_otmenit_vsyu_seriyu" formatted="false">"Отменить всю серию?"</string>
+    <string name="plan_actions_otmenit_trenirovku" formatted="false">"Отменить тренировку?"</string>
+    <string name="plan_actions_vse_nezavershyonnye_sobytiya_serii_vklyuchaya" formatted="false">"Все незавершённые события серии, включая переносы, будут отмечены отменёнными. Результаты и индивидуальные исключения сохранятся."</string>
+    <string name="plan_actions_sobytie_ostanetsya_v_kalendare_s">"Событие %1$s останется в календаре с отметкой «Отменена». Результаты не удаляются."</string>
+    <string name="plan_actions_otmena" formatted="false">"Отмена…"</string>
+    <string name="plan_actions_podtverdit_otmenu" formatted="false">"Подтвердить отмену"</string>
+    <string name="plan_actions_ostavit_plan" formatted="false">"Оставить план"</string>
+    <string name="sport_editors_futbolnaya_statistika" formatted="false">"Футбольная статистика"</string>
+    <string name="sport_editors_golov_zabito" formatted="false">"Голов забито"</string>
+    <string name="sport_editors_golov_propuscheno" formatted="false">"Голов пропущено"</string>
+    <string name="sport_editors_distantsiya_km_neobyazatelno" formatted="false">"Дистанция, км (необязательно)"</string>
+    <string name="sport_editors_igrokov_v_komande_neobyazatelno" formatted="false">"Игроков в команде (необязательно)"</string>
+    <string name="sport_editors_vremya_igry_min_neobyazatelno" formatted="false">"Время игры, мин (необязательно)"</string>
+    <string name="sport_editors_ispravte_otmechennye_polya_futbolnoy_statistiki" formatted="false">"Исправьте отмеченные поля футбольной статистики"</string>
+    <string name="sport_editors_kolichestvo_popytok_dolzhno_byt_tselym" formatted="false">"Количество попыток должно быть целым числом"</string>
+    <string name="sport_editors_trassy" formatted="false">"Трассы"</string>
+    <string name="sport_editors_trassa">"Трасса %1$s"</string>
+    <string name="sport_editors_istoricheskaya_kategoriya_shkala_ne_podtverzhdena" formatted="false">"Историческая категория: шкала не подтверждена. Обозначение сохраняется без изменения."</string>
+    <string name="sport_editors_tip" formatted="false">"Тип"</string>
+    <string name="sport_editors_trassa_skorosti" formatted="false">"Трасса скорости"</string>
+    <string name="sport_editors_vyberite_trassu" formatted="false">"Выберите трассу"</string>
+    <string name="sport_editors_kategoriya_slozhnosti_ne_primenyaetsya_etalonnaya" formatted="false">"Категория сложности не применяется. Эталонная трасса должна соответствовать стандарту 15 м."</string>
+    <string name="sport_editors_slozhnost">"Сложность (%1$s)"</string>
+    <string name="sport_editors_proydena" formatted="false">"Пройдена"</string>
+    <string name="sport_editors_ne_proydena" formatted="false">"Не пройдена"</string>
+    <string name="sport_editors_vvedite_polozhitelnoe_tseloe_chislo" formatted="false">"Введите положительное целое число"</string>
+    <string name="sport_editors_kolichestvo_popytok_s_etim_rezultatom" formatted="false">"Количество попыток с этим результатом"</string>
+    <string name="sport_editors_vse_popytki_etoy_stroki_imeyut" formatted="false">"Все попытки этой строки имеют одинаковый результат. Для разных результатов добавьте отдельные строки."</string>
+    <string name="sport_editors_udalit_trassu" formatted="false">"Удалить трассу"</string>
+    <string name="sport_editors_dobavit_trassu" formatted="false">"+ Добавить трассу"</string>
+    <string name="sports_center_dialog_ne_udalos_sohranit_tsentr" formatted="false">"Не удалось сохранить центр"</string>
+    <string name="sports_center_dialog_novyy_sportivnyy_tsentr" formatted="false">"Новый спортивный центр"</string>
+    <string name="sports_center_dialog_izmenit_tsentr" formatted="false">"Изменить центр"</string>
+    <string name="sports_center_dialog_nazvanie" formatted="false">"Название"</string>
+    <string name="sports_center_dialog_ne_bolee_200_simvolov" formatted="false">"Не более 200 символов"</string>
+    <string name="sports_center_dialog_gorod_neobyazatelno" formatted="false">"Город (необязательно)"</string>
+    <string name="sports_center_dialog_dostupnye_vidy_sporta" formatted="false">"Доступные виды спорта"</string>
+    <string name="sports_center_dialog_izmeneniya_deystvuyut_dlya_novyh_zapisey" formatted="false">"Изменения действуют для новых записей. Прежние результаты и планы сохраняются."</string>
+    <string name="sports_center_dialog_tsentr_v_arhive_redaktirovanie_ne" formatted="false">"Центр в архиве. Редактирование не возвращает его в активные."</string>
+    <string name="sports_center_dialog_vid_sporta" formatted="false">"Вид спорта"</string>
+    <string name="sports_center_dialog_vyberite_sport" formatted="false">"Выберите спорт"</string>
+    <string name="sports_center_dialog_sportivnyy_tsentr" formatted="false">"Спортивный центр"</string>
+    <string name="sports_center_dialog_vyberite_tsentr" formatted="false">"Выберите центр"</string>
+    <string name="sports_center_dialog_dlya_etogo_vida_sporta_net" formatted="false">"Для этого вида спорта нет активных центров. Добавьте центр или верните подходящий из архива."</string>
+    <string name="sports_center_dialog_sozdat_tsentr" formatted="false">"Создать центр"</string>
+    <string name="statistics_filters_vse_tsentry" formatted="false">"Все центры"</string>
+    <string name="statistics_filters_tsentr">"Центр #%1$s"</string>
+    <string name="statistics_filters_vsyo_vremya" formatted="false">"Всё время"</string>
+    <string name="statistics_filters_filtry" formatted="false">"Фильтры"</string>
+    <string name="statistics_filters_sbrosit" formatted="false">"Сбросить"</string>
+    <string name="statistics_filters_period_i_tsentr" formatted="false">"Период и центр"</string>
+    <string name="statistics_filters_etot_mesyats" formatted="false">"Этот месяц"</string>
+    <string name="statistics_filters_etot_god" formatted="false">"Этот год"</string>
+    <string name="statistics_filters_s_daty_gggg_mm_dd" formatted="false">"С даты · ГГГГ-ММ-ДД"</string>
+    <string name="statistics_filters_po_datu_gggg_mm_dd" formatted="false">"По дату · ГГГГ-ММ-ДД"</string>
+    <string name="statistics_filters_obe_daty_vklyucheny_pustye_mesyatsy" formatted="false">"Обе даты включены. Пустые месяцы показываются с нулём."</string>
+    <string name="statistics_filters_vvedite_datu_v_formate_gggg_mm_dd" formatted="false">"Введите дату в формате ГГГГ-ММ-ДД"</string>
+    <string name="statistics_filters_nesuschestvuyuschaya_data" formatted="false">"Несуществующая дата"</string>
+    <string name="statistics_filters_primenit" formatted="false">"Применить"</string>
+    <string name="training_actions_udalit_trenirovku" formatted="false">"Удалить тренировку"</string>
+    <string name="training_actions_trenirovka" formatted="false">"Тренировка"</string>
+    <string name="training_actions_ne_udalos_udalit_trenirovku" formatted="false">"Не удалось удалить тренировку"</string>
+    <string name="training_actions_udalit_trenirovku_2" formatted="false">"Удалить тренировку?"</string>
+    <string name="training_actions_rezultat_i_vsya_ego_sportivnaya" formatted="false">"Результат и вся его спортивная статистика будут удалены. Центр, планы и серии останутся. Связанный план снова будет запланирован, а в отменённой серии — отменён. Отменить удаление нельзя; восстановление возможно из прежней копии файла."</string>
+    <string name="training_actions_udalenie" formatted="false">"Удаление…"</string>
+    <string name="training_actions_udalit" formatted="false">"Удалить"</string>
+    <string name="data_management_screen_dannye" formatted="false">"Данные"</string>
+    <string name="data_management_screen_rezervnaya_kopiya" formatted="false">"Резервная копия"</string>
+    <string name="data_management_screen_dannye_hranyatsya_tolko_na_ustroystve" formatted="false">"Данные хранятся только на устройстве. JSON содержит центры, тренировки, спортивную статистику и планы календаря. Автоматический системный бэкап отключён."</string>
+    <string name="data_management_screen_fayl_ne_zashifrovan_dlya_raboty" formatted="false">"Файл не зашифрован. Для работы без интернета выбирайте хранилище устройства в системном диалоге."</string>
+    <string name="data_management_screen_sohranit_kopiyu_v_fayl" formatted="false">"Сохранить копию в файл"</string>
+    <string name="data_management_screen_import" formatted="false">"Импорт"</string>
+    <string name="data_management_screen_json_versiy_1_6_i_futbolnyy" formatted="false">"JSON версий 1–6 и футбольный CSV: перед применением — проверка, выбор профиля и центров. Совпадения UUID пропускаются; одинаковые тренировки с разными UUID сохраняются. Лимит файла — 16 МиБ."</string>
+    <string name="data_management_screen_vybrat_fayl" formatted="false">"Выбрать файл"</string>
+    <string name="main_view_model_rabota_s_faylom" formatted="false">"Работа с файлом…"</string>
+    <string name="main_view_model_vybor_fayla_prervan_vyberite_fayl" formatted="false">"Выбор файла прерван. Выберите файл ещё раз; база не изменена."</string>
+    <string name="main_view_model_proverka_vybora" formatted="false">"Проверка выбора…"</string>
+    <string name="main_view_model_primenenie_importa" formatted="false">"Применение импорта…"</string>
+    <string name="main_view_model_import_zavershyon_trenirovok_dobavleno_propuscheno">"Импорт завершён: %1$s тренировок добавлено, %2$s пропущено; "</string>
+    <string name="main_view_model_planov_seriy_tsentrov_izbrannyh">"%1$s планов, %2$s серий, %3$s центров, %4$s избранных. "</string>
+    <string name="main_view_model_n_istoricheskih_popytok_bez_sravnimoy">"\n%1$s исторических попыток без сравнимой оценки."</string>
+    <string name="main_view_model_operatsiya_prervana_fayl_mozhet_byt" formatted="false">"Операция прервана. Файл может быть пустым; создайте новую копию."</string>
+    <string name="main_view_model_kopiya_sohranena_i_proverena_chteniem" formatted="false">"Копия сохранена и проверена чтением файла"</string>
+    <string name="main_view_model_ne_udalos_vypolnit_operatsiyu" formatted="false">"Не удалось выполнить операцию"</string>
+    <string name="schedule_screen_dobavit_trenirovku" formatted="false">"Добавить тренировку"</string>
+    <string name="schedule_screen_zapishite_rezultat_sostoyavsheysya_trenirovki_ili" formatted="false">"Запишите результат состоявшейся тренировки или добавьте будущую в план."</string>
+    <string name="schedule_screen_zapisat_rezultat" formatted="false">"Записать результат"</string>
+    <string name="schedule_screen_zaplanirovat" formatted="false">"Запланировать"</string>
+    <string name="schedule_screen_kalendar_zavershyonnyh_i_zaplanirovannyh_trenirovok" formatted="false">"Календарь завершённых и запланированных тренировок"</string>
+    <string name="schedule_screen_na_vybrannyy_den_trenirovok_poka" formatted="false">"На выбранный день тренировок пока нет"</string>
+    <string name="schedule_screen_trenirovki_na_vybrannyy_den" formatted="false">"Тренировки на выбранный день"</string>
+    <string name="schedule_screen_den_svoboden" formatted="false">"День свободен"</string>
+    <string name="schedule_screen_dobavte_razovuyu_ili_povtoryayuschuyusya_trenirovku" formatted="false">"Добавьте разовую или повторяющуюся тренировку, и она сразу появится в календаре."</string>
+    <string name="schedule_screen_izmenit_plan" formatted="false">"Изменить план"</string>
+    <string name="schedule_screen_zapisat_rezultat_po_planu" formatted="false">"Записать результат по плану"</string>
+    <string name="schedule_screen_otmenit_trenirovku" formatted="false">"Отменить тренировку"</string>
+    <string name="schedule_screen_rezultat_svyazan_s_planom" formatted="false">"Результат связан с планом"</string>
+    <string name="schedule_screen_sostoyavshayasya_trenirovka" formatted="false">"Состоявшаяся тренировка"</string>
+    <string name="schedule_screen_otmenena" formatted="false">"Отменена"</string>
+    <string name="schedule_screen_seriya" formatted="false">" · серия"</string>
+    <string name="schedule_screen_zaplanirovana_seriya" formatted="false">"Запланирована · серия"</string>
+    <string name="schedule_screen_zaplanirovana" formatted="false">"Запланирована"</string>
+    <string name="sports_centers_screen_sportivnyy_tsentr_sohranyon" formatted="false">"Спортивный центр сохранён"</string>
+    <string name="sports_centers_screen_vernut_tsentr" formatted="false">"Вернуть центр?"</string>
+    <string name="sports_centers_screen_arhivirovat_tsentr" formatted="false">"Архивировать центр?"</string>
+    <string name="sports_centers_screen_tsentr_snova_budet_dostupen_dlya" formatted="false">"Центр снова будет доступен для новых тренировок и планов."</string>
+    <string name="sports_centers_screen_novye_trenirovki_i_plany_zdes" formatted="false">"Новые тренировки и планы здесь будут недоступны. Прежние результаты, планы и серии сохранятся. Архивирование не отменяет события."</string>
+    <string name="sports_centers_screen_tsentr_vozvraschyon" formatted="false">"Центр возвращён"</string>
+    <string name="sports_centers_screen_tsentr_v_arhive" formatted="false">"Центр в архиве"</string>
+    <string name="sports_centers_screen_ne_udalos_izmenit_tsentr" formatted="false">"Не удалось изменить центр"</string>
+    <string name="sports_centers_screen_vernut" formatted="false">"Вернуть"</string>
+    <string name="sports_centers_screen_v_arhiv" formatted="false">"В архив"</string>
+    <string name="sports_centers_screen_sportivnye_tsentry" formatted="false">"Спортивные центры"</string>
+    <string name="sports_centers_screen_mesta_i_dostupnye_vidy_sporta" formatted="false">"Места и доступные виды спорта"</string>
+    <string name="sports_centers_screen_aktivnye" formatted="false">"Активные"</string>
+    <string name="sports_centers_screen_arhiv" formatted="false">"Архив"</string>
+    <string name="sports_centers_screen_arhiv_pust" formatted="false">"Архив пуст"</string>
+    <string name="sports_centers_screen_dobavte_sportivnyy_tsentr" formatted="false">"Добавьте спортивный центр"</string>
+    <string name="sports_centers_screen_vidy_sporta_ne_ukazany" formatted="false">"Виды спорта не указаны"</string>
+    <string name="sports_centers_screen_izmenit" formatted="false">"Изменить"</string>
+    <string name="statistics_screen_vsego_zavershyonnyh_trenirovok" formatted="false">"Всего завершённых тренировок"</string>
+    <string name="statistics_screen_trenirovok">"%1$s тренировок"</string>
+    <string name="statistics_screen_otkryt" formatted="false">"Открыть"</string>
+    <string name="statistics_screen_po_mesyatsam" formatted="false">"По месяцам"</string>
+    <string name="statistics_screen_vsego">"Всего: %1$s"</string>
+    <string name="statistics_screen_net_trenirovok" formatted="false">"Нет тренировок"</string>
+    <string name="statistics_screen_spisok_trenirovok" formatted="false">"Список тренировок"</string>
+    <string name="statistics_screen_itogi" formatted="false">"Итоги"</string>
+    <string name="statistics_screen_poka_pusto" formatted="false">"Пока пусто"</string>
+    <string name="statistics_screen_v_vybrannom_periode_i_tsentre" formatted="false">"В выбранном периоде и центре нет сохранённых тренировок этого вида спорта. Можно изменить или сбросить фильтры."</string>
+    <string name="statistics_screen_pokazano_iz">"Показано %1$s–%2$s из %3$s"</string>
+    <string name="statistics_screen_predyduschaya" formatted="false">"Предыдущая"</string>
+    <string name="statistics_screen_sleduyuschaya" formatted="false">"Следующая"</string>
+</resources>

@@ -50,6 +50,9 @@ interface ReferenceDao {
     @Query("SELECT * FROM sports_complexes WHERE id = :complexId LIMIT 1")
     suspend fun getComplex(complexId: Long): SportsComplexEntity?
 
+    @Query("SELECT * FROM sports_complexes WHERE public_id = :publicId LIMIT 1")
+    suspend fun getComplexByPublicId(publicId: String): SportsComplexEntity?
+
     @Query(
         """
         SELECT sports_complexes.*

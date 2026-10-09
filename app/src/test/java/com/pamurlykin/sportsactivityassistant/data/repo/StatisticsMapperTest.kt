@@ -15,7 +15,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-class StatisticsMapperTest {
+class StatisticsMapperTest : com.pamurlykin.sportsactivityassistant.ResourceTextTest() {
     private val center = SportsComplexEntity(id = 1, name = "Центр", city = "Москва")
 
     @Test

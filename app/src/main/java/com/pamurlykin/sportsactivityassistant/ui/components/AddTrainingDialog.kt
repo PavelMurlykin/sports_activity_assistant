@@ -1,5 +1,11 @@
 ﻿package com.pamurlykin.sportsactivityassistant.ui.components
 
+import kotlinx.coroutines.isActive
+
+import com.pamurlykin.sportsactivityassistant.R
+
+import com.pamurlykin.sportsactivityassistant.text.AppText
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -8,7 +14,6 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.ui.platform.testTag
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -28,6 +33,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.unit.dp
 import com.pamurlykin.sportsactivityassistant.data.model.AddPlannedTrainingInput
 import com.pamurlykin.sportsactivityassistant.data.model.SportsCenterUiModel
@@ -63,11 +72,11 @@ fun AddPlannedTrainingDialog(
     fun input(): AddPlannedTrainingInput {
         require(centers.any { it.id == selectedComplexId &&
             (initial?.sportId == selectedSportId && initial.complexId == it.id ||
-                !it.isArchived && it.sports.any { sport -> sport.id == selectedSportId }) }) { "Выберите доступный центр" }
+                !it.isArchived && it.sports.any { sport -> sport.id == selectedSportId }) }) { AppText.get(R.string.add_training_dialog_vyberite_dostupnyy_tsentr) }
         val date = com.pamurlykin.sportsactivityassistant.data.model.TrainingValidation.parseDate(dateText.trim())
         val end = endDateText.trim().takeIf { repeatWeekly && it.isNotEmpty() }
             ?.let(com.pamurlykin.sportsactivityassistant.data.model.TrainingValidation::parseDate)
-        val interval = if (repeatWeekly) requireNotNull(intervalText.toIntOrNull()) { "Введите целый положительный интервал" } else 1
+        val interval = if (repeatWeekly) requireNotNull(intervalText.toIntOrNull()) { AppText.get(R.string.add_training_dialog_vvedite_tselyy_polozhitelnyy_interval) } else 1
         com.pamurlykin.sportsactivityassistant.data.model.TrainingValidation.recurrence(date, end, interval)
         return AddPlannedTrainingInput(selectedSportId, selectedComplexId, date, repeatWeekly, interval, end)
     }
@@ -75,38 +84,38 @@ fun AddPlannedTrainingDialog(
         if (saving && sports.isNotEmpty() && centers.isNotEmpty()) {
             try { onSave(input(), requestId); errorText = null; onSaved() }
             catch (e: kotlinx.coroutines.CancellationException) { throw e }
-            catch (e: Exception) { errorText = e.message ?: "Не удалось сохранить план" }
-            finally { saving = false }
+            catch (e: Exception) { errorText = e.message ?: AppText.get(R.string.add_training_dialog_ne_udalos_sohranit_plan) }
+            finally { if (kotlinx.coroutines.currentCoroutineContext().isActive) saving = false }
         }
     }
-    AlertDialog(
+    AdaptiveAlertDialog(
         modifier = Modifier.imePadding(),
         onDismissRequest = { if (!saving) onDismiss() },
         confirmButton = { TextButton(enabled = !saving, onClick = {
             runCatching { input() }.onSuccess { errorText = null; saving = true }.onFailure { errorText = it.message }
-        }) { Text(if (saving) "Сохранение…" else "Сохранить") } },
-        dismissButton = { TextButton(enabled = !saving, onClick = onDismiss) { Text("Отмена") } },
-        title = { Text(if (initial == null) "План тренировки" else if (repeatWeekly) "Изменить всю серию" else "Изменить одно событие") },
+        }) { Text(if (saving) AppText.get(R.string.add_completed_training_dialog_sohranenie) else AppText.get(R.string.add_completed_training_dialog_sohranit)) } },
+        dismissButton = { TextButton(enabled = !saving, onClick = onDismiss) { Text(AppText.get(R.string.add_completed_training_dialog_otmena)) } },
+        title = { Text(if (initial == null) AppText.get(R.string.add_training_dialog_plan_trenirovki) else if (repeatWeekly) AppText.get(R.string.add_training_dialog_izmenit_vsyu_seriyu) else AppText.get(R.string.add_training_dialog_izmenit_odno_sobytie)) },
         text = {
-            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Column(Modifier.dialogVerticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 TrainingCenterSelector(sports, centers, selectedSportId, selectedComplexId,
                     { selectedSportId = it }, { selectedComplexId = it }, onSaveCenter, enabled = !saving,
                     retainedCenterId = initial?.complexId.takeIf { initial?.sportId == selectedSportId },
                     onCreateCenter = { creatingCenter = true })
                 OutlinedTextField(dateText, { dateText = it }, Modifier.fillMaxWidth().testTag("plan-date"),
-                    enabled = !saving, label = { Text(if (repeatWeekly) "Начало серии · YYYY-MM-DD" else "Дата · YYYY-MM-DD") }, singleLine = true)
-                if (initial == null) Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    FilterChip(selected = !repeatWeekly, enabled = !saving, onClick = { repeatWeekly = false }, label = { Text("Разовая") })
-                    FilterChip(selected = repeatWeekly, enabled = !saving, onClick = { repeatWeekly = true }, label = { Text("По неделям") })
+                    enabled = !saving, label = { Text(if (repeatWeekly) AppText.get(R.string.add_training_dialog_nachalo_serii_yyyy_mm_dd) else AppText.get(R.string.add_training_dialog_data_yyyy_mm_dd)) }, singleLine = true)
+                if (initial == null) FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FilterChip(selected = !repeatWeekly, enabled = !saving, onClick = { repeatWeekly = false }, label = { Text(AppText.get(R.string.add_training_dialog_razovaya)) })
+                    FilterChip(selected = repeatWeekly, enabled = !saving, onClick = { repeatWeekly = true }, label = { Text(AppText.get(R.string.add_training_dialog_po_nedelyam)) })
                 }
                 if (repeatWeekly) {
                     OutlinedTextField(intervalText, { intervalText = it }, Modifier.fillMaxWidth().testTag("plan-interval"),
-                        enabled = !saving, label = { Text("Интервал в неделях") }, singleLine = true,
+                        enabled = !saving, label = { Text(AppText.get(R.string.add_training_dialog_interval_v_nedelyah)) }, singleLine = true,
                         keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number))
                     OutlinedTextField(endDateText, { endDateText = it }, Modifier.fillMaxWidth().testTag("plan-end"),
-                        enabled = !saving, label = { Text("Повторять до · YYYY-MM-DD") },
-                        supportingText = { Text("Включительно; пусто — без ограничения") }, singleLine = true)
-                    if (initial != null) Text("Изменятся события без индивидуальных исключений. Переносы, отмены и записанные результаты сохранятся.")
+                        enabled = !saving, label = { Text(AppText.get(R.string.add_training_dialog_povtoryat_do_yyyy_mm_dd)) },
+                        supportingText = { Text(AppText.get(R.string.add_training_dialog_vklyuchitelno_pusto_bez_ogranicheniya)) }, singleLine = true)
+                    if (initial != null) Text(AppText.get(R.string.add_training_dialog_izmenyatsya_sobytiya_bez_individualnyh_isklyucheniy))
                 }
                 errorText?.let { Text(it, Modifier.testTag("plan-error"), color = MaterialTheme.colorScheme.error) }
             }
@@ -138,7 +147,7 @@ fun <T> DropdownSelector(
         OutlinedButton(
             onClick = { focusManager.clearFocus(); keyboard?.hide(); expanded = true },
             enabled = enabled,
-            modifier = modifier.fillMaxWidth(),
+            modifier = modifier.fillMaxWidth().heightIn(min = 48.dp).semantics { contentDescription = AppText.get(R.string.selector_description, label, selectedText) },
         ) {
             Text(
                 text = selectedText,

@@ -1,5 +1,11 @@
 package com.pamurlykin.sportsactivityassistant.ui.components
 
+import kotlinx.coroutines.isActive
+
+import com.pamurlykin.sportsactivityassistant.R
+
+import com.pamurlykin.sportsactivityassistant.text.AppText
+
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -48,18 +54,18 @@ fun AddCompletedTrainingDialog(
         TrainingValidation.parseDate(dateText.trim()).also { TrainingValidation.completedDate(it, initial?.date.takeUnless { fromPlan }) }
     }
     val dateError = if (!attempted || dateResult.isSuccess) null else {
-        if (runCatching { TrainingValidation.parseDate(dateText.trim()) }.isFailure) "Введите дату YYYY-MM-DD (год 0001–9999)"
+        if (runCatching { TrainingValidation.parseDate(dateText.trim()) }.isFailure) AppText.get(R.string.add_completed_training_dialog_vvedite_datu_yyyy_mm_dd_god_0001_9999)
         else dateResult.exceptionOrNull()?.message
     }
     holders.SaveableStateProvider(selectedSportId) {
         val draft = SportEditors.find(selectedSport?.slug)?.rememberDraft(initial.takeUnless { fromPlan })
         fun input(): AddCompletedTrainingInput {
-            val date = dateResult.getOrElse { throw IllegalArgumentException(dateError ?: "Проверьте дату") }
+            val date = dateResult.getOrElse { throw IllegalArgumentException(dateError ?: AppText.get(R.string.add_completed_training_dialog_proverte_datu)) }
             require(selectedSport != null && centers.any { center ->
                 center.id == selectedComplexId && (!fromPlan && center.id == initial?.complexId ||
                     !center.isArchived && center.sports.any { it.id == selectedSportId })
-            }) { "Выберите вид спорта и спортивный центр" }
-            return requireNotNull(draft) { "Для этого вида спорта форма пока не настроена" }
+            }) { AppText.get(R.string.add_completed_training_dialog_vyberite_vid_sporta_i_sportivnyy) }
+            return requireNotNull(draft) { AppText.get(R.string.add_completed_training_dialog_dlya_etogo_vida_sporta_forma) }
                 .input(selectedSportId, selectedComplexId, date)
         }
         LaunchedEffect(saving, selectedSport?.id, centers.isNotEmpty()) {
@@ -69,11 +75,11 @@ fun AddCompletedTrainingDialog(
                     errorText = null
                     onSaved()
                 } catch (e: CancellationException) { throw e }
-                catch (e: Exception) { errorText = e.message ?: "Не удалось сохранить тренировку" }
-                finally { saving = false }
+                catch (e: Exception) { errorText = e.message ?: AppText.get(R.string.add_completed_training_dialog_ne_udalos_sohranit_trenirovku) }
+                finally { if (kotlinx.coroutines.currentCoroutineContext().isActive) saving = false }
             }
         }
-        AlertDialog(
+        AdaptiveAlertDialog(
             modifier = Modifier.imePadding(),
             onDismissRequest = { if (!saving) onDismiss() },
             confirmButton = {
@@ -81,28 +87,28 @@ fun AddCompletedTrainingDialog(
                     if (!saving) {
                         attempted = true
                         runCatching { input() }.onSuccess { errorText = null; saving = true }
-                            .onFailure { errorText = it.message ?: "Проверьте данные тренировки" }
+                            .onFailure { errorText = it.message ?: AppText.get(R.string.add_completed_training_dialog_proverte_dannye_trenirovki) }
                     }
-                }) { Text(if (saving) "Сохранение…" else "Сохранить") }
+                }) { Text(if (saving) AppText.get(R.string.add_completed_training_dialog_sohranenie) else AppText.get(R.string.add_completed_training_dialog_sohranit)) }
             },
-            dismissButton = { TextButton(enabled = !saving, onClick = onDismiss) { Text("Отмена") } },
-            title = { Text(if (fromPlan) "Результат по плану" else if (initial == null) "Записать тренировку" else "Изменить тренировку") },
+            dismissButton = { TextButton(enabled = !saving, onClick = onDismiss) { Text(AppText.get(R.string.add_completed_training_dialog_otmena)) } },
+            title = { Text(if (fromPlan) AppText.get(R.string.add_completed_training_dialog_rezultat_po_planu) else if (initial == null) AppText.get(R.string.add_completed_training_dialog_zapisat_trenirovku) else AppText.get(R.string.add_completed_training_dialog_izmenit_trenirovku)) },
             text = {
-                Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Column(Modifier.dialogVerticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     TrainingCenterSelector(sports, centers, selectedSportId, selectedComplexId,
                         { selectedSportId = it }, { selectedComplexId = it }, onSaveCenter,
                         enabled = !saving, sportLocked = initial != null, retainedCenterId = initial?.complexId.takeUnless { fromPlan },
                         onCreateCenter = { creatingCenter = true })
-                    if (initial != null) Text(if (fromPlan) "Вид спорта из плана. Укажите фактическую дату и доступный центр; будущий результат записать нельзя." else "Вид спорта менять нельзя. Прежний центр можно оставить, даже если он в архиве.",
+                    if (initial != null) Text(if (fromPlan) AppText.get(R.string.add_completed_training_dialog_vid_sporta_iz_plana_ukazhite) else AppText.get(R.string.add_completed_training_dialog_vid_sporta_menyat_nelzya_prezhniy),
                         style = MaterialTheme.typography.bodySmall)
                     OutlinedTextField(dateText, { dateText = it }, Modifier.fillMaxWidth().testTag("training-date"),
-                        enabled = !saving, label = { Text("Дата") },
-                        supportingText = { Text(dateError ?: "YYYY-MM-DD · будущие тренировки добавляйте в план") },
+                        enabled = !saving, label = { Text(AppText.get(R.string.add_completed_training_dialog_data)) },
+                        supportingText = { Text(dateError ?: AppText.get(R.string.add_completed_training_dialog_yyyy_mm_dd_buduschie_trenirovki_dobavlyayte)) },
                         isError = dateError != null, singleLine = true)
                     TextButton(enabled = !saving, onClick = { datePickerOpen = true },
-                        modifier = Modifier.testTag("training-date-picker")) { Text("Выбрать дату") }
+                        modifier = Modifier.testTag("training-date-picker")) { Text(AppText.get(R.string.add_completed_training_dialog_vybrat_datu)) }
                     HorizontalDivider()
-                    draft?.Content(enabled = !saving) ?: Text("Запись для этого вида спорта пока недоступна")
+                    draft?.Content(enabled = !saving) ?: Text(AppText.get(R.string.add_completed_training_dialog_zapis_dlya_etogo_vida_sporta))
                     errorText?.let { Text(it, Modifier.testTag("training-error"),
                         color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
                 }
@@ -128,8 +134,8 @@ fun AddCompletedTrainingDialog(
             confirmButton = { TextButton(enabled = picker.selectedDateMillis != null, onClick = {
                 dateText = Instant.ofEpochMilli(requireNotNull(picker.selectedDateMillis)).atZone(ZoneOffset.UTC).toLocalDate().toString()
                 datePickerOpen = false
-            }) { Text("Выбрать") } },
-            dismissButton = { TextButton(onClick = { datePickerOpen = false }) { Text("Отмена") } }) {
+            }) { Text(AppText.get(R.string.add_completed_training_dialog_vybrat)) } },
+            dismissButton = { TextButton(onClick = { datePickerOpen = false }) { Text(AppText.get(R.string.add_completed_training_dialog_otmena)) } }) {
             DatePicker(picker)
         }
     }

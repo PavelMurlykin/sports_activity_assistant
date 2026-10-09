@@ -1,14 +1,20 @@
 package com.pamurlykin.sportsactivityassistant.data.model
 
+import com.pamurlykin.sportsactivityassistant.R
+
+import com.pamurlykin.sportsactivityassistant.text.AppText
+
 import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.YearMonth
 
-enum class ClimbingWorkoutType(val storageValue: String, val title: String) {
-    DIFFICULTY("difficulty", "Трудность"),
-    SPEED("speed", "Скорость"),
-    BOULDERING("bouldering", "Болдер"),
-    UNKNOWN("unknown", "Историческая дисциплина");
+enum class ClimbingWorkoutType(val storageValue: String, private val titleResource: Int) {
+    DIFFICULTY("difficulty", R.string.ui_models_trudnost),
+    SPEED("speed", R.string.ui_models_skorost),
+    BOULDERING("bouldering", R.string.ui_models_bolder),
+    UNKNOWN("unknown", R.string.ui_models_istoricheskaya_distsiplina);
+
+    val title: String get() = AppText.get(titleResource)
 
     companion object {
         fun fromStorage(value: String): ClimbingWorkoutType {
@@ -180,6 +186,7 @@ data class SaveSportsCenterInput(
     val name: String,
     val city: String?,
     val sportIds: Set<Int>,
+    val requestId: String? = null,
 )
 
 data class DataOperationUiState(

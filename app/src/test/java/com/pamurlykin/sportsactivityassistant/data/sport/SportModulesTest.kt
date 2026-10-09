@@ -9,7 +9,7 @@ import java.time.LocalDate
 import org.junit.Assert.*
 import org.junit.Test
 
-class SportModulesTest {
+class SportModulesTest : com.pamurlykin.sportsactivityassistant.ResourceTextTest() {
     private val football = AddCompletedTrainingInput(1, 1, LocalDate.parse("2026-10-01"), FootballTrainingInput(0, 0, 0, 0, null, null, null))
 
     @Test

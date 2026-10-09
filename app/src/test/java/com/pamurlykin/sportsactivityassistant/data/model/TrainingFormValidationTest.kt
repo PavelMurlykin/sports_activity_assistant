@@ -4,7 +4,7 @@ import java.time.LocalDate
 import org.junit.Assert.*
 import org.junit.Test
 
-class TrainingFormValidationTest {
+class TrainingFormValidationTest : com.pamurlykin.sportsactivityassistant.ResourceTextTest() {
     @Test fun emptyOptionalsAreNullAndZeroScoresValid() {
         val result = FootballFormValues.parse(listOf("0","0","0","0","","",""))
         assertTrue(result.errors.isEmpty()); assertNull(result.input!!.distanceKm)

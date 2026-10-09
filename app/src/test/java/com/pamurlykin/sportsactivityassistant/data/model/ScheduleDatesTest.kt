@@ -5,7 +5,7 @@ import org.junit.Test
 import java.time.LocalDate
 import java.time.YearMonth
 
-class ScheduleDatesTest {
+class ScheduleDatesTest : com.pamurlykin.sportsactivityassistant.ResourceTextTest() {
     @Test fun leapFebruaryHasCompleteMondaySundayGridAndYearBoundary() {
         val days = ScheduleDates.grid(YearMonth.of(2020,2))
         assertEquals(LocalDate.parse("2020-01-27"),days.first())

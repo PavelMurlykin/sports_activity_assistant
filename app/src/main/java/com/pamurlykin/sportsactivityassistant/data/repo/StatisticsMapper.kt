@@ -1,5 +1,9 @@
 package com.pamurlykin.sportsactivityassistant.data.repo
 
+import com.pamurlykin.sportsactivityassistant.R
+
+import com.pamurlykin.sportsactivityassistant.text.AppText
+
 import com.pamurlykin.sportsactivityassistant.data.entity.SportEntity
 import com.pamurlykin.sportsactivityassistant.data.entity.TrainingBundle
 import com.pamurlykin.sportsactivityassistant.data.model.MetricUiModel
@@ -57,6 +61,6 @@ object StatisticsMapper {
     fun sport(sport: SportEntity, bundles: List<TrainingBundle>): SportStatisticsUiModel =
         SportStatisticsUiModel(sport.id, sport.slug, sport.title,
             SportModules.find(sport.slug)?.metrics(bundles)
-                ?: listOf(MetricUiModel("Исторические тренировки", bundles.size.toString()),
-                    MetricUiModel("Статистика", "Вид спорта не поддерживается")))
+                ?: listOf(MetricUiModel(AppText.get(R.string.app_repository_istoricheskie_trenirovki), bundles.size.toString()),
+                    MetricUiModel(AppText.get(R.string.app_repository_statistika), AppText.get(R.string.app_repository_vid_sporta_ne_podderzhivaetsya))))
 }

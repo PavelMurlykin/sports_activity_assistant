@@ -1,5 +1,9 @@
 ﻿package com.pamurlykin.sportsactivityassistant.ui.screen
 
+import com.pamurlykin.sportsactivityassistant.R
+
+import com.pamurlykin.sportsactivityassistant.text.AppText
+
 import android.content.ContentResolver
 import android.net.Uri
 import com.pamurlykin.sportsactivityassistant.data.backup.*
@@ -220,11 +224,23 @@ class MainViewModel(
         }
     }
 
-    suspend fun saveSportsCenter(input: SaveSportsCenterInput): Long = repository.saveSportsCenter(input)
+    private val centerWrites = mutableMapOf<String, kotlinx.coroutines.Deferred<Long>>()
 
-    suspend fun setSportsCenterArchived(id: Long, archived: Boolean) {
-        repository.setSportsCenterArchived(id, archived)
-        refreshSchedule()
+    suspend fun saveSportsCenter(input: SaveSportsCenterInput): Long {
+        val key = input.requestId ?: return repository.saveSportsCenter(input)
+        if (centerWrites.size >= 64) centerWrites.entries.removeAll { it.value.isCompleted }
+        val task = centerWrites[key] ?: viewModelScope.async {
+            try { repository.saveSportsCenter(input) }
+            catch (e: Exception) { centerWrites.remove(key); throw e }
+        }.also { centerWrites[key] = it }
+        return task.await()
+    }
+
+    suspend fun setSportsCenterArchived(id: Long, archived: Boolean, requestId: String = java.util.UUID.randomUUID().toString()) {
+        trainingWrite(requestId) {
+            repository.setSportsCenterArchived(id, archived)
+            refreshSchedule()
+        }
     }
 
     suspend fun loadComplexesForSport(sportId: Int): List<ComplexOptionUiModel> {
@@ -248,7 +264,7 @@ class MainViewModel(
         if (_fileBusy.value) return false
         _fileBusy.value = true
         phase = nextPhase
-        _dataOperationState.value = DataOperationUiState(inProgress = true, message = "Работа с файлом…")
+        _dataOperationState.value = DataOperationUiState(inProgress = true, message = AppText.get(R.string.main_view_model_rabota_s_faylom))
         return true
     }
 
@@ -256,7 +272,7 @@ class MainViewModel(
 
     fun importSelected(resolver: ContentResolver, uri: Uri?) {
         if (phase != "importSelection") {
-            if (uri != null && phase == "idle") showError(IllegalStateException("Выбор файла прерван. Выберите файл ещё раз; база не изменена."))
+            if (uri != null && phase == "idle") showError(IllegalStateException(AppText.get(R.string.main_view_model_vybor_fayla_prervan_vyberite_fayl)))
             return
         }
         if (uri == null) { cancelFile(); return }
@@ -284,7 +300,7 @@ class MainViewModel(
         val source = pendingImport ?: return
         previewJob?.cancel()
         phase = "previewing"
-        _dataOperationState.value = DataOperationUiState(inProgress = true, message = "Проверка выбора…")
+        _dataOperationState.value = DataOperationUiState(inProgress = true, message = AppText.get(R.string.main_view_model_proverka_vybora))
         previewJob = viewModelScope.launch {
             try {
                 val next = repository.previewImport(source, choices)
@@ -306,15 +322,15 @@ class MainViewModel(
         val source = pendingImport ?: return
         val preview = _importPreview.value?.takeIf { it.canApply } ?: return
         phase = "applying"
-        _dataOperationState.value = DataOperationUiState(inProgress = true, message = "Применение импорта…")
+        _dataOperationState.value = DataOperationUiState(inProgress = true, message = AppText.get(R.string.main_view_model_primenenie_importa))
         fileJob = viewModelScope.launch {
             try {
                 val r = repository.applyImport(source, preview.choices)
                 finishFile()
                 _dataOperationState.value = DataOperationUiState(message =
-                    "Импорт завершён: ${r.importedTrainings} тренировок добавлено, ${r.skippedTrainings} пропущено; " +
-                    "${r.importedPlans} планов, ${r.importedRules} серий, ${r.importedCenters} центров, ${r.importedFavorites} избранных. " +
-                    if (r.historicalRouteAttempts > 0) "\n${r.historicalRouteAttempts} исторических попыток без сравнимой оценки." else "")
+                    AppText.get(R.string.main_view_model_import_zavershyon_trenirovok_dobavleno_propuscheno, r.importedTrainings, r.skippedTrainings) +
+                    AppText.get(R.string.main_view_model_planov_seriy_tsentrov_izbrannyh, r.importedPlans, r.importedRules, r.importedCenters, r.importedFavorites) +
+                    if (r.historicalRouteAttempts > 0) AppText.get(R.string.main_view_model_n_istoricheskih_popytok_bez_sravnimoy, r.historicalRouteAttempts) else "")
                 refreshSchedule()
             } catch (e: CancellationException) { throw e }
             catch (e: Exception) {
@@ -334,7 +350,7 @@ class MainViewModel(
                 val bytes = repository.createBackup().toByteArray(Charsets.UTF_8)
                 kotlinx.coroutines.currentCoroutineContext().ensureActive()
                 if (phase != "exportPreparing") return@launch
-                require(bytes.size <= ImportFiles.MAX_BYTES) { "Копия превышает поддерживаемый лимит 16 МиБ" }
+                require(bytes.size <= ImportFiles.MAX_BYTES) { AppText.get(R.string.app_repository_kopiya_prevyshaet_podderzhivaemyy_limit_16) }
                 pendingExport = bytes
                 phase = "exportSelection"
                 _exportReady.value = true
@@ -349,7 +365,7 @@ class MainViewModel(
         if (uri == null) { if (phase == "exportSelection") cancelFile(); return }
         val bytes = pendingExport
         if (phase != "exportSelection" || bytes == null) {
-            showError(IllegalStateException("Операция прервана. Файл может быть пустым; создайте новую копию."))
+            showError(IllegalStateException(AppText.get(R.string.main_view_model_operatsiya_prervana_fayl_mozhet_byt)))
             return
         }
         phase = "writing"
@@ -357,7 +373,7 @@ class MainViewModel(
             try {
                 withContext(Dispatchers.IO) { LocalFiles.writeVerified(resolver, uri, bytes) }
                 finishFile()
-                _dataOperationState.value = DataOperationUiState(message = "Копия сохранена и проверена чтением файла")
+                _dataOperationState.value = DataOperationUiState(message = AppText.get(R.string.main_view_model_kopiya_sohranena_i_proverena_chteniem))
             } catch (e: CancellationException) { throw e }
             catch (e: Exception) { finishFile(); showError(e) }
         }
@@ -388,7 +404,7 @@ class MainViewModel(
     }
 
     fun sportTitle(sportId: Int): String {
-        return statisticsState.value.sports.firstOrNull { it.id == sportId }?.title ?: "Статистика"
+        return statisticsState.value.sports.firstOrNull { it.id == sportId }?.title ?: AppText.get(R.string.app_repository_statistika)
     }
 
     private fun refreshSchedule() {
@@ -418,7 +434,7 @@ class MainViewModel(
 
     private fun showError(error: Throwable) {
         _dataOperationState.value = DataOperationUiState(
-            message = error.message ?: "Не удалось выполнить операцию",
+            message = error.message ?: AppText.get(R.string.main_view_model_ne_udalos_vypolnit_operatsiyu),
             isError = true,
         )
     }

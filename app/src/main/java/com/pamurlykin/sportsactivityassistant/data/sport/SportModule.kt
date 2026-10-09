@@ -1,5 +1,9 @@
 package com.pamurlykin.sportsactivityassistant.data.sport
 
+import com.pamurlykin.sportsactivityassistant.R
+
+import com.pamurlykin.sportsactivityassistant.text.AppText
+
 import com.pamurlykin.sportsactivityassistant.data.backup.TrainingBackup
 import com.pamurlykin.sportsactivityassistant.data.dao.TrainingDao
 import com.pamurlykin.sportsactivityassistant.data.entity.TrainingBundle
@@ -30,6 +34,6 @@ object SportModules {
     private val bySlug = all.associateBy { it.slug }
     fun find(slug: String): SportModule? = bySlug[slug]
     fun require(slug: String): SportModule = requireNotNull(find(slug)) {
-        "Вид спорта «$slug» не поддерживается этой версией приложения; данные не изменены"
+        AppText.get(R.string.sport_module_vid_sporta_ne_podderzhivaetsya, slug)
     }
 }

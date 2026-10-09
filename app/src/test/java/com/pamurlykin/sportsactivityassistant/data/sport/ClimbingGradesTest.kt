@@ -7,7 +7,7 @@ import java.time.LocalDate
 import org.junit.Assert.*
 import org.junit.Test
 
-class ClimbingGradesTest {
+class ClimbingGradesTest : com.pamurlykin.sportsactivityassistant.ResourceTextTest() {
     private val date = LocalDate.parse("2026-10-07")
     private fun input(route: ClimbingRouteInput) = AddCompletedTrainingInput(2, 1, date, climbingRoutes = listOf(route))
 

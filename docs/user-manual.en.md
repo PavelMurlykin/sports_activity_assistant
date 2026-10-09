@@ -16,7 +16,9 @@ Reading the calendar, statistics and directory shows «Загрузка данн
 
 Add buttons have accessible names «Добавить тренировку» (Add workout) and «Добавить спортивный центр» (Add sports center); they appear after the required reference data loads. Sport cards and result expansion are identified as actions. On a narrow screen, the calendar grid scrolls horizontally: swipe across it to reveal the remaining weekdays; pages and forms scroll vertically. Cell height accommodates increased font size. The selected calendar date survives rotation and system process restoration, but is not included in the JSON backup.
 
-The interface is still Russian. This English manual describes the same workflows and does not promise full English localization. Full manual TalkBack verification and testing every form with enlarged fonts are not yet complete.
+In landscape, navigation moves to a side rail: calendar, statistics, centers and data use icons with accessible names. Subtitles are hidden and dialogs use the available width. The entire dialog scrolls, including Save and Cancel: these actions remain reachable with the keyboard open. In other orientations, the body of a long form scrolls. The system Back button can hide the keyboard without closing the form.
+
+The interface is still Russian. Interface, validation and file-operation texts are in Android resources. This English manual describes the same workflows and does not promise full English localization.
 
 ## Recording a workout
 
@@ -75,6 +77,8 @@ Climbing: workout count, «Записи трасс» (Route records: rows, not a
 On «Центры» (Centers), press «+» and enter a name, optional city and one or more available sports. Name and city are limited to 200 characters each. For new centers, whitespace including non-breaking spaces is collapsed to one space and trimmed; an empty city is stored as absent. Duplicate matching ignores case and uses Unicode normalization. You cannot create the same name/city again, even if the existing center is archived; the same name in different cities is allowed.
 
 Press «Изменить» (Edit) to change the name, city or sports. UUID and original creation time are retained. On failure the form remains open with your entries; repeated save taps are blocked. Long names wrap and the sports list/form scrolls. In the directory, center fields and selected sports survive rotation. Migration does not merge similar historical centers: their sports can be edited or they can be archived while retaining their original name/city; renaming to a conflicting name requires a different name or city.
+
+Rotating during a center save does not start a second write: the restored form waits for the same request. If the write completed before system process restoration, retrying confirmation does not duplicate the center. Archive/restore also retain the selected action during rotation; an already archived center is not automatically reopened.
 
 «В архив» (Archive) requires confirmation. The «Архив» tab shows closed centers; «Вернуть» (Restore) makes a center available again. Archiving or removing an offered sport prevents new workouts and plans for that combination without deleting history, favorites, plans or series. Archiving does not cancel existing events. Center deletion is not provided.
 

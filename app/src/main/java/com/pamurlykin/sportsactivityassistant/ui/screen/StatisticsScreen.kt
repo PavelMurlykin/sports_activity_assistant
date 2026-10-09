@@ -1,5 +1,7 @@
 ﻿package com.pamurlykin.sportsactivityassistant.ui.screen
 
+import com.pamurlykin.sportsactivityassistant.text.AppText
+
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -44,6 +46,9 @@ import com.pamurlykin.sportsactivityassistant.ui.components.TrainingActionDialog
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
+import android.content.res.Configuration
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import java.time.format.TextStyle
@@ -95,7 +100,7 @@ fun StatisticsScreen(
                             verticalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
                             Text(
-                                text = "Всего завершённых тренировок",
+                                text = AppText.get(R.string.statistics_screen_vsego_zavershyonnyh_trenirovok),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.SemiBold,
                             )
@@ -125,7 +130,7 @@ fun StatisticsScreen(
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(text = sport.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
                                 Text(
-                                    text = "${sport.completedTrainings} тренировок",
+                                    text = AppText.get(R.string.statistics_screen_trenirovok, sport.completedTrainings),
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
@@ -137,14 +142,14 @@ fun StatisticsScreen(
                                     )
                                 }
                             }
-                            Text(text = "Открыть", color = MaterialTheme.colorScheme.primary)
+                            Text(text = AppText.get(R.string.statistics_screen_otkryt), color = MaterialTheme.colorScheme.primary)
                         }
                     }
                 }
 
                 if (statisticsState.months.isNotEmpty()) {
                     item {
-                        Text("По месяцам", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
+                        Text(AppText.get(R.string.statistics_screen_po_mesyatsam), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
                     }
                     items(statisticsState.months, key = { it.month.toString() }) { month ->
                         Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
@@ -158,8 +163,8 @@ fun StatisticsScreen(
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.SemiBold,
                                 )
-                                Text("Всего: ${month.totalTrainings}")
-                                Text(month.countsBySport.joinToString(" · ").ifEmpty { "Нет тренировок" }, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(AppText.get(R.string.statistics_screen_vsego, month.totalTrainings))
+                                Text(month.countsBySport.joinToString(" · ").ifEmpty { AppText.get(R.string.statistics_screen_net_trenirovok) }, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                         }
                     }
@@ -215,8 +220,8 @@ fun StatisticsDetailScreen(
                 title = {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(text = title)
-                        Text(
-                            text = "Список тренировок",
+                        if (LocalConfiguration.current.orientation != Configuration.ORIENTATION_LANDSCAPE) Text(
+                            text = AppText.get(R.string.statistics_screen_spisok_trenirovok),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -244,7 +249,7 @@ fun StatisticsDetailScreen(
                             modifier = Modifier.fillMaxWidth().padding(16.dp),
                             verticalArrangement = Arrangement.spacedBy(10.dp),
                         ) {
-                            Text("Итоги", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                            Text(AppText.get(R.string.statistics_screen_itogi), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
                             statistics.metrics.forEachIndexed { index, metric ->
                                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                                     Text(metric.label, modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -256,7 +261,7 @@ fun StatisticsDetailScreen(
                     }
                 }
                 item {
-                    Text("Тренировки", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
+                    Text(AppText.get(R.string.climbing_module_trenirovki), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
                 }
             }
             if (pageRead.failed) {
@@ -267,8 +272,8 @@ fun StatisticsDetailScreen(
                 item {
                     Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
                         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Text(text = "Пока пусто", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                            Text(text = "В выбранном периоде и центре нет сохранённых тренировок этого вида спорта. Можно изменить или сбросить фильтры.")
+                            Text(text = AppText.get(R.string.statistics_screen_poka_pusto), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                            Text(text = AppText.get(R.string.statistics_screen_v_vybrannom_periode_i_tsentre))
                         }
                     }
                 }
@@ -288,11 +293,11 @@ fun StatisticsDetailScreen(
 @Composable
 private fun TrainingPageControls(page: TrainingPageUiModel, onPage: (Int) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Text("Показано ${page.page * TrainingPageUiModel.SIZE + 1}–${page.page * TrainingPageUiModel.SIZE + page.items.size} из ${page.total}")
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-            TextButton(onClick = { onPage(page.page - 1) }, enabled = page.page > 0) { Text("Предыдущая") }
-            Text("${page.page + 1} / ${page.pageCount}")
-            TextButton(onClick = { onPage(page.page + 1) }, enabled = page.page + 1 < page.pageCount) { Text("Следующая") }
+        Text(AppText.get(R.string.statistics_screen_pokazano_iz, page.page * TrainingPageUiModel.SIZE + 1, page.page * TrainingPageUiModel.SIZE + page.items.size, page.total))
+        FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            TextButton(onClick = { onPage(page.page - 1) }, enabled = page.page > 0) { Text(AppText.get(R.string.statistics_screen_predyduschaya)) }
+            Text(AppText.get(R.string.paging_index, page.page + 1, page.pageCount))
+            TextButton(onClick = { onPage(page.page + 1) }, enabled = page.page + 1 < page.pageCount) { Text(AppText.get(R.string.statistics_screen_sleduyuschaya)) }
         }
     }
 }

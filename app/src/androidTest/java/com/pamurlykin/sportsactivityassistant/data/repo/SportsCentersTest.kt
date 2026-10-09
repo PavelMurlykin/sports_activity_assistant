@@ -17,6 +17,20 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class SportsCentersTest {
+    @Test fun centerCreationRetryAfterRepositoryRecreationKeepsIdentityAndRejectsChangedPayload() = runBlocking {
+        db { database, repo ->
+            repo.localProfileId()
+            val sports = database.referenceDao().getSports().map { it.id }.toSet()
+            val input = SaveSportsCenterInput(name = "Повторяемый центр", city = null, sportIds = sports,
+                requestId = java.util.UUID.randomUUID().toString())
+            val first = repo.saveSportsCenter(input)
+            assertEquals(first, AppRepository(database).saveSportsCenter(input))
+            assertEquals(1, database.referenceDao().getAllComplexes().count { it.publicId == input.requestId })
+            assertTrue(runCatching { repo.saveSportsCenter(input.copy(name = "Другое содержимое")) }.isFailure)
+            assertEquals("Повторяемый центр", database.referenceDao().getComplex(first)!!.name)
+        }
+    }
+
     private suspend fun db(test: suspend (AppDatabase, AppRepository) -> Unit) {
         val database = Room.inMemoryDatabaseBuilder(InstrumentationRegistry.getInstrumentation().targetContext, AppDatabase::class.java).build()
         try { test(database, AppRepository(database)) } finally { database.close() }

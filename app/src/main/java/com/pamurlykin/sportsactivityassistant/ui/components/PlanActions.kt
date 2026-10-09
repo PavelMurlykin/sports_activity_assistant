@@ -1,5 +1,9 @@
 package com.pamurlykin.sportsactivityassistant.ui.components
 
+import kotlinx.coroutines.isActive
+
+import com.pamurlykin.sportsactivityassistant.text.AppText
+
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -32,13 +36,13 @@ fun PlanActionDialog(key: String, recurring: Boolean, action: PlanAction, viewMo
     val loadFailureText = stringResource(R.string.load_plan_failed)
     var loadAttempt by rememberSaveable { mutableIntStateOf(0) }
     if (scope == null) {
-        AlertDialog(onDismissRequest = onDismiss, title = { Text("Повторяющаяся тренировка") },
+        AdaptiveAlertDialog(onDismissRequest = onDismiss, title = { Text(AppText.get(R.string.plan_actions_povtoryayuschayasya_trenirovka)) },
             text = { Text(if (action == PlanAction.EDIT)
-                "Изменить только это событие или всю серию? Индивидуальные исключения и результаты при редактировании серии сохраняются."
-                else "Отменить только это событие или всю серию? Завершённые результаты не удаляются.") },
-            confirmButton = { TextButton(onClick = { scope = PlanScope.EVENT }) { Text("Только это событие") } },
+                AppText.get(R.string.plan_actions_izmenit_tolko_eto_sobytie_ili)
+                else AppText.get(R.string.plan_actions_otmenit_tolko_eto_sobytie_ili)) },
+            confirmButton = { TextButton(onClick = { scope = PlanScope.EVENT }) { Text(AppText.get(R.string.plan_actions_tolko_eto_sobytie)) } },
             dismissButton = { Column {
-                TextButton(onClick = { scope = PlanScope.SERIES }) { Text("Вся серия") }
+                TextButton(onClick = { scope = PlanScope.SERIES }) { Text(AppText.get(R.string.plan_actions_vsya_seriya)) }
                 TextButton(onClick = onDismiss) { Text(stringResource(R.string.close)) }
             } })
         return
@@ -52,8 +56,8 @@ fun PlanActionDialog(key: String, recurring: Boolean, action: PlanAction, viewMo
     }
     val snapshot = encoded?.let { Json.decodeFromString(PlanSnapshot.serializer(), it) }
     if (snapshot == null || statistics.sports.isEmpty() || centers.isEmpty()) {
-        AlertDialog(onDismissRequest = onDismiss, title = { Text("План тренировки") },
-            text = { Column(Modifier.verticalScroll(rememberScrollState())) {
+        AdaptiveAlertDialog(onDismissRequest = onDismiss, title = { Text(AppText.get(R.string.add_training_dialog_plan_trenirovki)) },
+            text = { Column(Modifier.dialogVerticalScroll(rememberScrollState())) {
                 ReadStateNotice(error != null || statisticsRead.failed || centersRead.failed, {
                     error = null; loadAttempt++; viewModel.retryReads()
                 }, failureMessage = error)
@@ -76,18 +80,18 @@ fun PlanActionDialog(key: String, recurring: Boolean, action: PlanAction, viewMo
                     try { viewModel.cancelPlan(snapshot, requireNotNull(scope), requestId); onDismiss() }
                     catch (e: CancellationException) { throw e }
                     catch (e: Exception) { error = e.message }
-                    finally { saving = false }
+                    finally { if (kotlinx.coroutines.currentCoroutineContext().isActive) saving = false }
                 }
             }
-            AlertDialog(onDismissRequest = { if (!saving) onDismiss() },
-                title = { Text(if (scope == PlanScope.SERIES) "Отменить всю серию?" else "Отменить тренировку?") },
-                text = { Column(Modifier.verticalScroll(rememberScrollState())) {
-                    Text(if (scope == PlanScope.SERIES) "Все незавершённые события серии, включая переносы, будут отмечены отменёнными. Результаты и индивидуальные исключения сохранятся."
-                        else "Событие ${snapshot.date} останется в календаре с отметкой «Отменена». Результаты не удаляются.")
+            AdaptiveAlertDialog(onDismissRequest = { if (!saving) onDismiss() },
+                title = { Text(if (scope == PlanScope.SERIES) AppText.get(R.string.plan_actions_otmenit_vsyu_seriyu) else AppText.get(R.string.plan_actions_otmenit_trenirovku)) },
+                text = { Column(Modifier.dialogVerticalScroll(rememberScrollState())) {
+                    Text(if (scope == PlanScope.SERIES) AppText.get(R.string.plan_actions_vse_nezavershyonnye_sobytiya_serii_vklyuchaya)
+                        else AppText.get(R.string.plan_actions_sobytie_ostanetsya_v_kalendare_s, snapshot.date))
                     error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
                 } },
-                confirmButton = { TextButton(enabled = !saving, onClick = { saving = true }) { Text(if (saving) "Отмена…" else "Подтвердить отмену") } },
-                dismissButton = { TextButton(enabled = !saving, onClick = onDismiss) { Text("Оставить план") } })
+                confirmButton = { TextButton(enabled = !saving, onClick = { saving = true }) { Text(if (saving) AppText.get(R.string.plan_actions_otmena) else AppText.get(R.string.plan_actions_podtverdit_otmenu)) } },
+                dismissButton = { TextButton(enabled = !saving, onClick = onDismiss) { Text(AppText.get(R.string.plan_actions_ostavit_plan)) } })
         }
     }
 }

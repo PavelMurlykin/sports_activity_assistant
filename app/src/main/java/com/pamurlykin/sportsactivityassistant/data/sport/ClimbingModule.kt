@@ -1,5 +1,9 @@
 package com.pamurlykin.sportsactivityassistant.data.sport
 
+import com.pamurlykin.sportsactivityassistant.R
+
+import com.pamurlykin.sportsactivityassistant.text.AppText
+
 import com.pamurlykin.sportsactivityassistant.data.backup.ClimbingRouteBackup
 import com.pamurlykin.sportsactivityassistant.data.backup.TrainingBackup
 import com.pamurlykin.sportsactivityassistant.data.dao.TrainingDao
@@ -18,36 +22,36 @@ import java.time.LocalDate
 
 object ClimbingModule : SportModule {
     override val slug = "climbing"
-    override val title = "Скалолазание"
+    override val title = AppText.get(R.string.climbing_module_skalolazanie)
 
     override fun validate(input: AddCompletedTrainingInput, allowHistorical: Boolean) {
-        require(input.football == null) { "Тренировка скалолазания не может содержать футбольную статистику" }
-        require(input.climbingRoutes.isNotEmpty()) { "Добавьте хотя бы одну трассу" }
+        require(input.football == null) { AppText.get(R.string.climbing_module_trenirovka_skalolazaniya_ne_mozhet_soderzhat) }
+        require(input.climbingRoutes.isNotEmpty()) { AppText.get(R.string.climbing_module_dobavte_hotya_by_odnu_trassu) }
         input.climbingRoutes.forEach { route ->
-            require(route.repeatCount > 0) { "Количество попыток должно быть положительным" }
+            require(route.repeatCount > 0) { AppText.get(R.string.climbing_module_kolichestvo_popytok_dolzhno_byt_polozhitelnym) }
             if (route.gradingSystem == Catalog.LEGACY) {
-                require(allowHistorical) { "Для новой трассы выберите подтверждённую шкалу" }
-                require(route.gradeCode == null && route.speedCourse == null) { "Неоднозначная категория не может содержать подтверждённую оценку" }
+                require(allowHistorical) { AppText.get(R.string.climbing_module_dlya_novoy_trassy_vyberite_podtverzhdyonnuyu) }
+                require(route.gradeCode == null && route.speedCourse == null) { AppText.get(R.string.climbing_module_neodnoznachnaya_kategoriya_ne_mozhet_soderzhat) }
                 require(route.workoutType != ClimbingWorkoutType.UNKNOWN || !route.legacyWorkoutType.isNullOrBlank()) {
-                    "Неизвестная дисциплина скалолазания"
+                    AppText.get(R.string.climbing_module_neizvestnaya_distsiplina_skalolazaniya)
                 }
                 require(route.workoutType == ClimbingWorkoutType.UNKNOWN || route.legacyWorkoutType == null) {
-                    "Историческая дисциплина не соответствует типу трассы"
+                    AppText.get(R.string.climbing_module_istoricheskaya_distsiplina_ne_sootvetstvuet_tipu)
                 }
             } else {
-                require(route.workoutType in ClimbingWorkoutType.supported && route.legacyWorkoutType == null) { "Неизвестная дисциплина скалолазания" }
-                require(route.gradingSystem == Catalog.systemFor(route.workoutType)) { "Шкала не соответствует дисциплине" }
+                require(route.workoutType in ClimbingWorkoutType.supported && route.legacyWorkoutType == null) { AppText.get(R.string.climbing_module_neizvestnaya_distsiplina_skalolazaniya) }
+                require(route.gradingSystem == Catalog.systemFor(route.workoutType)) { AppText.get(R.string.climbing_module_shkala_ne_sootvetstvuet_distsipline) }
                 if (route.workoutType == ClimbingWorkoutType.SPEED) {
-                    require(route.gradeCode == null && route.routeDifficulty.isEmpty()) { "Скорость не оценивается категорией французской шкалы" }
-                    require(SpeedCourse.entries.any { it.code == route.speedCourse }) { "Выберите трассу скорости" }
+                    require(route.gradeCode == null && route.routeDifficulty.isEmpty()) { AppText.get(R.string.climbing_module_skorost_ne_otsenivaetsya_kategoriey_frantsuzskoy) }
+                    require(SpeedCourse.entries.any { it.code == route.speedCourse }) { AppText.get(R.string.climbing_module_vyberite_trassu_skorosti) }
                 } else {
                     val grade = requireNotNull(route.gradeCode?.let { Catalog.find(route.gradingSystem, it) }) {
-                        "Неизвестная категория сложности: ${route.routeDifficulty}"
+                        AppText.get(R.string.climbing_module_neizvestnaya_kategoriya_slozhnosti, route.routeDifficulty)
                     }
                     require(route.gradeCode == grade.code && Catalog.find(route.gradingSystem, route.routeDifficulty)?.code == grade.code) {
-                        "Код категории не соответствует обозначению"
+                        AppText.get(R.string.climbing_module_kod_kategorii_ne_sootvetstvuet_oboznacheniyu)
                     }
-                    require(route.speedCourse == null) { "У трудности и болдера нет типа трассы скорости" }
+                    require(route.speedCourse == null) { AppText.get(R.string.climbing_module_u_trudnosti_i_boldera_net) }
                 }
             }
         }
@@ -67,11 +71,11 @@ object ClimbingModule : SportModule {
         validate(input, allowHistorical = true)
         val old = original.climbingRoutes.associateBy { it.publicId }
         val ids = input.climbingRoutes.mapNotNull { it.publicId }
-        require(ids.distinct().size == ids.size && ids.all { runCatching { java.util.UUID.fromString(it).toString() == it }.getOrDefault(false) }) { "Идентификаторы трасс не соответствуют тренировке" }
+        require(ids.distinct().size == ids.size && ids.all { runCatching { java.util.UUID.fromString(it).toString() == it }.getOrDefault(false) }) { AppText.get(R.string.climbing_module_identifikatory_trass_ne_sootvetstvuyut_trenirovke) }
         input.climbingRoutes.filter { it.gradingSystem == Catalog.LEGACY }.forEach { route ->
             val previous = old[route.publicId]
             require(previous != null && previous.copy(isCompleted = route.isCompleted, repeatCount = route.repeatCount) == route) {
-                "Историческую категорию нельзя создать или изменить без подтверждённой шкалы"
+                AppText.get(R.string.climbing_module_istoricheskuyu_kategoriyu_nelzya_sozdat_ili)
             }
         }
     }
@@ -95,11 +99,11 @@ object ClimbingModule : SportModule {
     }
 
     override fun decodeDetails(backup: TrainingBackup, sportId: Int, complexId: Long): AddCompletedTrainingInput {
-        require(backup.football == null) { "Запись скалолазания содержит футбольную статистику" }
+        require(backup.football == null) { AppText.get(R.string.climbing_module_zapis_skalolazaniya_soderzhit_futbolnuyu_statistiku) }
         return AddCompletedTrainingInput(sportId, complexId, LocalDate.parse(backup.date), climbingRoutes = backup.climbingRoutes.map {
             val type = ClimbingWorkoutType.fromStorage(it.workoutType)
             require(type != ClimbingWorkoutType.UNKNOWN || (it.gradingSystem == Catalog.LEGACY && it.legacyWorkoutType == it.workoutType)) {
-                "Неизвестная дисциплина скалолазания: ${it.workoutType}"
+                AppText.get(R.string.climbing_module_neizvestnaya_distsiplina_skalolazaniya_2, it.workoutType)
             }
             val historical = HistoricalClimbingGrades.classify(it.workoutType, it.routeDifficulty)
             ClimbingRouteInput(type, it.routeDifficulty, it.completed, it.repeatCount,
@@ -144,46 +148,46 @@ object ClimbingModule : SportModule {
         val completed = buckets.sumOf { it.completed }
         val percent = if (attempts == 0L) 0 else completed * 100 / attempts
         val metrics = buildList {
-            add(MetricUiModel("Тренировки", trainings.toString()))
-            add(MetricUiModel("Записи трасс", buckets.sumOf { it.rowCount }.toString()))
-            add(MetricUiModel("Попытки (с повторами)", attempts.toString()))
-            add(MetricUiModel("Успешно пройдено", "$completed ($percent%)"))
+            add(MetricUiModel(AppText.get(R.string.climbing_module_trenirovki), trainings.toString()))
+            add(MetricUiModel(AppText.get(R.string.climbing_module_zapisi_trass), buckets.sumOf { it.rowCount }.toString()))
+            add(MetricUiModel(AppText.get(R.string.climbing_module_popytki_s_povtorami), attempts.toString()))
+            add(MetricUiModel(AppText.get(R.string.climbing_module_uspeshno_proydeno), "${completed} (${percent}%)"))
             ClimbingWorkoutType.entries.forEach { type ->
                 val groups = buckets.filter { it.workoutType == type }
                 if (groups.isNotEmpty()) add(MetricUiModel(
-                    "${type.title} · успешно / попытки", "${groups.sumOf { it.completed }} / ${groups.sumOf { it.attempts }}"))
+                    AppText.get(R.string.climbing_module_uspeshno_popytki, type.title), "${groups.sumOf { it.completed }} / ${groups.sumOf { it.attempts }}"))
             }
             listOf(ClimbingWorkoutType.DIFFICULTY, ClimbingWorkoutType.BOULDERING).forEach { type ->
                 val system = Catalog.systemFor(type)
                 val confirmed = buckets.filter { it.workoutType == type && it.gradingSystem == system &&
                     it.speedCourse == null && it.gradeMatches && Catalog.find(system, it.gradeCode.orEmpty()) != null }
                 val hardest = Catalog.hardest(system, confirmed.filter { it.completed > 0 }.mapNotNull { it.gradeCode })
-                add(MetricUiModel("Максимум · ${type.title} (${Catalog.title(system)})", hardest?.label ?: "Нет успешных"))
+                add(MetricUiModel(AppText.get(R.string.climbing_module_maksimum, type.title, Catalog.title(system)), hardest?.label ?: AppText.get(R.string.climbing_module_net_uspeshnyh)))
                 confirmed.groupBy { it.gradeCode }.entries.sortedBy { Catalog.find(system, it.key!!)?.rank }.forEach { (code, groups) ->
-                    add(MetricUiModel("${type.title} · ${Catalog.find(system, code!!)?.label} · успешно / попытки",
+                    add(MetricUiModel(AppText.get(R.string.climbing_module_uspeshno, type.title, Catalog.find(system, code!!)?.label),
                         "${groups.sumOf { it.completed }} / ${groups.sumOf { it.attempts }}"))
                 }
             }
             SpeedCourse.entries.forEach { course ->
                 val groups = buckets.filter { it.workoutType == ClimbingWorkoutType.SPEED && it.speedCourse == course.code && it.gradingSystem == Catalog.NONE }
-                if (groups.isNotEmpty()) add(MetricUiModel("Скорость · ${course.title} · успешно / попытки",
+                if (groups.isNotEmpty()) add(MetricUiModel(AppText.get(R.string.climbing_module_skorost_uspeshno, course.title),
                     "${groups.sumOf { it.completed }} / ${groups.sumOf { it.attempts }}"))
             }
             val legacy = buckets.filter { it.gradingSystem == Catalog.LEGACY }.sumOf { it.attempts }
-            if (legacy > 0) add(MetricUiModel("Исторические категории без сравнения", legacy.toString()))
+            if (legacy > 0) add(MetricUiModel(AppText.get(R.string.climbing_module_istoricheskie_kategorii_bez_sravneniya), legacy.toString()))
         }
-        return SportAggregate(metrics, listOf("$completed из $attempts попыток успешны"))
+        return SportAggregate(metrics, listOf(AppText.get(R.string.climbing_module_iz_popytok_uspeshny, completed, attempts)))
     }
 
     override fun details(bundle: TrainingBundle): List<String> = bundle.climbing?.routes.orEmpty().map {
         val count = if (it.repeatCount > 1) " × ${it.repeatCount}" else ""
         val category = when {
             it.gradingSystem == Catalog.LEGACY ->
-                "${it.routeDifficulty.ifEmpty { "без категории" }} (историческая: шкала/трасса не подтверждена)"
+                AppText.get(R.string.climbing_module_istoricheskaya_shkala_trassa_ne_podtverzhdena, it.routeDifficulty.ifEmpty { AppText.get(R.string.climbing_module_bez_kategorii) })
             it.workoutType == ClimbingWorkoutType.SPEED ->
-                SpeedCourse.entries.firstOrNull { course -> course.code == it.speedCourse }?.title ?: "Неизвестная трасса скорости"
+                SpeedCourse.entries.firstOrNull { course -> course.code == it.speedCourse }?.title ?: AppText.get(R.string.climbing_module_neizvestnaya_trassa_skorosti)
             else -> "${it.gradeCode?.let { code -> Catalog.find(it.gradingSystem, code)?.label } ?: it.routeDifficulty} · ${Catalog.title(it.gradingSystem)}"
         }
-        "${it.legacyWorkoutType ?: it.workoutType.title} · $category$count · ${if (it.isCompleted) "пройдена" else "не пройдена"}"
+        "${it.legacyWorkoutType ?: it.workoutType.title} · ${category}${count} · ${if (it.isCompleted) AppText.get(R.string.climbing_module_proydena) else AppText.get(R.string.climbing_module_ne_proydena)}"
     }
 }
