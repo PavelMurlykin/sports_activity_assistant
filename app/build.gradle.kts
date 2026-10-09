@@ -67,8 +67,8 @@ android {
         applicationId = "com.pamurlykin.sportsactivityassistant"
         minSdk = 26
         targetSdk = 37
-        versionCode = 12
-        versionName = "1.9.1"
+        versionCode = 13
+        versionName = "1.9.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
@@ -105,6 +105,7 @@ ksp {
 }
 
 android.sourceSets.getByName("androidTest").assets.directories.add(layout.projectDirectory.dir("schemas").asFile.path)
+android.sourceSets.getByName("androidTest").assets.directories.add(layout.projectDirectory.dir("../docs/examples").asFile.path)
 android.sourceSets.getByName("test").resources.directories.add(layout.projectDirectory.dir("src/main/res/values").asFile.path)
 
 dependencies {

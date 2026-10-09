@@ -8,6 +8,10 @@ Install the debug APK from `app/build/outputs/apk/debug/app-debug.apk`, built as
 
 Before uninstalling the app or clearing its data, save a backup: both actions remove the local database. Do not install test builds over your only copy of important history without first saving a file.
 
+To update, save a verified JSON backup, then install the new APK without uninstalling the app or clearing its database. With ADB, use `install -r`. The APK needs a compatible signature: another computer's debug key may differ. On a signature error, do not delete your only history; export from the old installed version and verify the file before a separate installation/restoration. Build and ADB instructions are in README.
+
+Quick start: create a place on Centers with the required sports → Schedule → “+” → Record result. For a future date choose Plan. After saving, check Statistics and create a local backup on Data.
+
 Upgrading to the current database schema (version 7) preserves local keys, UUIDs, workouts, historical route repeat counts, centers, plans and their relationships. Inherited external profile identifiers are removed; an existing local name is retained. Reference initialization completes before data reads and writes without overwriting existing records. Broken references abort the migration; the database is not automatically recreated.
 
 ## Loading, errors and accessible actions
@@ -117,6 +121,8 @@ Unknown JSON versions/fields, unsupported sports, mixed sport details, invalid s
 Damaged JSON or unsupported fields produce «Файл JSON повреждён…» (JSON file is damaged…) with a suggestion to choose a verified JSON 1–6 backup. The error message does not display file contents. Existing history is unchanged; do not clear the database to retry.
 
 Check workout counts, details and calendar after transfer. New backups cannot be imported into older app builds. A [format and limitations reference](backup-format.md) is included in the project.
+
+[JSON 6 and football CSV examples](examples/README.md) are synthetic files for a separate test installation, not your history; they are not packaged in the APK. The JSON example contains 3 results, 4 route rows / 5 attempts, plans and a series with a result link/cancellation/move. After import: 2 football games, team score 3:1, distance 7.35 km from 1 game; climbing: 2 of 5 successful attempts (40%). Importing both alternative examples may add similar records with different UUIDs; do not use them to populate personal history unless you intend to retain those records.
 
 ## Known limitations
 

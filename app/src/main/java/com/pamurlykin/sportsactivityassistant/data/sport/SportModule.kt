@@ -29,11 +29,23 @@ interface SportModule {
     fun details(bundle: TrainingBundle): List<String>
 }
 
-object SportModules {
-    val all: List<SportModule> = listOf(FootballModule, ClimbingModule)
+/** Immutable registry also usable by extension-contract tests without changing the shipped sports. */
+class SportModuleRegistry(modules: List<SportModule>) {
+    val all: List<SportModule> = modules.toList()
+    init {
+        require(all.all { it.slug.isNotBlank() }) { "Sport module slug must not be blank" }
+        require(all.map { it.slug }.distinct().size == all.size) { "Duplicate sport module slug" }
+    }
     private val bySlug = all.associateBy { it.slug }
     fun find(slug: String): SportModule? = bySlug[slug]
     fun require(slug: String): SportModule = requireNotNull(find(slug)) {
         AppText.get(R.string.sport_module_vid_sporta_ne_podderzhivaetsya, slug)
     }
+}
+
+object SportModules {
+    private val registry = SportModuleRegistry(listOf(FootballModule, ClimbingModule))
+    val all: List<SportModule> get() = registry.all
+    fun find(slug: String): SportModule? = registry.find(slug)
+    fun require(slug: String): SportModule = registry.require(slug)
 }

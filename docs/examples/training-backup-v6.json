@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 6,
+  "exportedAt": "2026-10-09T00:00:00Z",
+  "sports": [
+    {"slug": "football", "title": "Футбол"},
+    {"slug": "climbing", "title": "Скалолазание"}
+  ],
+  "profiles": [{"publicId": "30000000-0000-4000-8000-000000000001", "displayName": "Пример локальной истории", "createdAt": "2025-01-01T00:00:00Z"}],
+  "primaryProfilePublicId": "30000000-0000-4000-8000-000000000001",
+  "centers": [{"publicId": "30000000-0000-4000-8000-000000000002", "name": "Пример спортивного центра", "city": "Пример города", "createdAt": "2025-01-01T00:00:00Z", "isArchived": false, "sportSlugs": ["football", "climbing"]}],
+  "trainings": [
+    {
+      "publicId": "30000000-0000-4000-8000-000000000010", "createdAt": "2025-12-14T18:00:00Z", "date": "2025-12-14", "sportSlug": "football",
+      "centerName": "Пример спортивного центра", "centerCity": "Пример города", "centerPublicId": "30000000-0000-4000-8000-000000000002", "profilePublicId": "30000000-0000-4000-8000-000000000001",
+      "football": {"teamGoalsScored": 3, "teamGoalsConceded": 1, "userGoalsScored": 1, "userAssists": 1, "distanceKm": "7.35", "playersPerTeam": 5, "durationMinutes": 60}
+    },
+    {
+      "publicId": "30000000-0000-4000-8000-000000000011", "createdAt": "2025-12-21T18:00:00Z", "date": "2025-12-21", "sportSlug": "football",
+      "centerName": "Пример спортивного центра", "centerCity": "Пример города", "centerPublicId": "30000000-0000-4000-8000-000000000002", "profilePublicId": "30000000-0000-4000-8000-000000000001",
+      "football": {"teamGoalsScored": 0, "teamGoalsConceded": 0, "userGoalsScored": 0, "userAssists": 0}
+    },
+    {
+      "publicId": "30000000-0000-4000-8000-000000000012", "createdAt": "2025-12-22T18:00:00Z", "date": "2025-12-22", "sportSlug": "climbing",
+      "centerName": "Пример спортивного центра", "centerCity": "Пример города", "centerPublicId": "30000000-0000-4000-8000-000000000002", "profilePublicId": "30000000-0000-4000-8000-000000000001",
+      "climbingRoutes": [
+        {"publicId": "30000000-0000-4000-8000-000000000020", "workoutType": "difficulty", "routeDifficulty": "6b+", "gradingSystem": "french", "gradeCode": "6b+", "completed": true, "repeatCount": 1},
+        {"publicId": "30000000-0000-4000-8000-000000000021", "workoutType": "bouldering", "routeDifficulty": "6A", "gradingSystem": "fontainebleau", "gradeCode": "6a", "completed": false, "repeatCount": 1},
+        {"publicId": "30000000-0000-4000-8000-000000000022", "workoutType": "speed", "routeDifficulty": "", "gradingSystem": "none", "speedCourse": "standard_15m", "completed": true, "repeatCount": 1},
+        {"publicId": "30000000-0000-4000-8000-000000000023", "workoutType": "difficulty", "routeDifficulty": "6c", "gradingSystem": "french", "gradeCode": "6c", "completed": false, "repeatCount": 2}
+      ]
+    }
+  ],
+  "recurrenceRules": [{"publicId": "30000000-0000-4000-8000-000000000030", "createdAt": "2025-12-01T00:00:00Z", "startDate": "2025-12-14", "endDate": "2027-02-01", "frequency": "weekly", "intervalWeeks": 1, "isCanceled": false, "sportSlug": "football", "centerName": "Пример спортивного центра", "centerCity": "Пример города", "centerPublicId": "30000000-0000-4000-8000-000000000002", "profilePublicId": "30000000-0000-4000-8000-000000000001"}],
+  "plannedTrainings": [
+    {"publicId": "30000000-0000-4000-8000-000000000040", "createdAt": "2025-12-01T00:00:00Z", "date": "2025-12-14", "occurrenceDate": "2025-12-14", "status": "completed", "recurrenceRulePublicId": "30000000-0000-4000-8000-000000000030", "completedTrainingPublicId": "30000000-0000-4000-8000-000000000010", "sportSlug": "football", "centerName": "Пример спортивного центра", "centerCity": "Пример города", "centerPublicId": "30000000-0000-4000-8000-000000000002", "profilePublicId": "30000000-0000-4000-8000-000000000001"},
+    {"publicId": "30000000-0000-4000-8000-000000000041", "createdAt": "2025-12-01T00:00:00Z", "date": "2025-12-21", "occurrenceDate": "2025-12-21", "status": "canceled", "recurrenceRulePublicId": "30000000-0000-4000-8000-000000000030", "sportSlug": "football", "centerName": "Пример спортивного центра", "centerCity": "Пример города", "centerPublicId": "30000000-0000-4000-8000-000000000002", "profilePublicId": "30000000-0000-4000-8000-000000000001"},
+    {"publicId": "30000000-0000-4000-8000-000000000042", "createdAt": "2025-12-01T00:00:00Z", "date": "2025-12-29", "occurrenceDate": "2025-12-28", "status": "planned", "recurrenceRulePublicId": "30000000-0000-4000-8000-000000000030", "sportSlug": "football", "centerName": "Пример спортивного центра", "centerCity": "Пример города", "centerPublicId": "30000000-0000-4000-8000-000000000002", "profilePublicId": "30000000-0000-4000-8000-000000000001"},
+    {"publicId": "30000000-0000-4000-8000-000000000043", "createdAt": "2026-10-09T00:00:00Z", "date": "2027-01-11", "status": "planned", "sportSlug": "climbing", "centerName": "Пример спортивного центра", "centerCity": "Пример города", "centerPublicId": "30000000-0000-4000-8000-000000000002", "profilePublicId": "30000000-0000-4000-8000-000000000001"}
+  ],
+  "favorites": [{"profilePublicId": "30000000-0000-4000-8000-000000000001", "centerPublicId": "30000000-0000-4000-8000-000000000002", "createdAt": "2025-12-01T00:00:00Z"}],
+  "aliases": []
+}
