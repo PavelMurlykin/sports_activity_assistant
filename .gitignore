@@ -32,6 +32,7 @@ replay_pid*
 local.properties
 build/
 app/build/
+app/release/
 .idea/
 captures/
 .local-testing/

@@ -12,6 +12,8 @@ To update, save a verified JSON backup, then install the new APK without uninsta
 
 Quick start: create a place on Centers with the required sports → Schedule → “+” → Record result. For a future date choose Plan. After saving, check Statistics and create a local backup on Data.
 
+The app's “Sports Vortex” icon combines a football and a climber; the Android launcher determines its outer shape. When themed icons are enabled, the system theme determines its colors. In Statistics, football uses a colored ball with a goal, and climbing uses a climber wearing an orange helmet. Sport names accompany the images.
+
 Upgrading to the current database schema (version 7) preserves local keys, UUIDs, workouts, historical route repeat counts, centers, plans and their relationships. Inherited external profile identifiers are removed; an existing local name is retained. Reference initialization completes before data reads and writes without overwriting existing records. Broken references abort the migration; the database is not automatically recreated.
 
 ## Loading, errors and accessible actions

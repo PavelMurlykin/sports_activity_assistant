@@ -41,8 +41,8 @@ interface SportDraft {
 object SportEditors {
     private data class Presentation(val editor: SportEditor, val visual: SportVisual)
     private val bySlug = mapOf(
-        "football" to Presentation(FootballEditor, SportVisual(Icons.Rounded.SportsSoccer, Pine, Sky)),
-        "climbing" to Presentation(ClimbingEditor, SportVisual(Icons.Rounded.Terrain, Mist, Clay)),
+        "football" to Presentation(FootballEditor, SportVisual(Icons.Rounded.SportsSoccer, Pine, Sky, R.drawable.sport_football)),
+        "climbing" to Presentation(ClimbingEditor, SportVisual(Icons.Rounded.Terrain, Mist, Clay, R.drawable.sport_climbing)),
     )
     fun find(slug: String?): SportEditor? = bySlug[slug]?.editor
     fun visual(slug: String): SportVisual? = bySlug[slug]?.visual

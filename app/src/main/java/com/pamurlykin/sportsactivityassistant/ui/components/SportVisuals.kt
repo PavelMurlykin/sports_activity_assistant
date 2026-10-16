@@ -1,5 +1,7 @@
 ﻿package com.pamurlykin.sportsactivityassistant.ui.components
 
+import androidx.annotation.DrawableRes
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
@@ -12,6 +14,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.pamurlykin.sportsactivityassistant.ui.theme.Pine
@@ -21,6 +24,7 @@ data class SportVisual(
     val icon: ImageVector,
     val tint: Color,
     val container: Color,
+    @DrawableRes val artwork: Int? = null,
 )
 
 fun sportVisual(slug: String): SportVisual =
@@ -30,9 +34,18 @@ fun sportVisual(slug: String): SportVisual =
 fun SportBadge(
     slug: String,
     modifier: Modifier = Modifier,
-    size: Dp = 32.dp,
+    size: Dp = 40.dp,
 ) {
     val visual = sportVisual(slug)
+    val artwork = visual.artwork
+    if (artwork != null) {
+        Image(
+            painter = painterResource(artwork),
+            contentDescription = null,
+            modifier = modifier.size(size),
+        )
+        return
+    }
     Box(
         modifier = modifier
             .size(size)
