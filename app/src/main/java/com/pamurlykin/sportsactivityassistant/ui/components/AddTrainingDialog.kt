@@ -1,4 +1,4 @@
-﻿package com.pamurlykin.sportsactivityassistant.ui.components
+package com.pamurlykin.sportsactivityassistant.ui.components
 
 import kotlinx.coroutines.isActive
 
@@ -58,6 +58,8 @@ fun AddPlannedTrainingDialog(
 ) {
     var selectedSportId by rememberSaveable { mutableIntStateOf(initial?.sportId ?: sports.firstOrNull()?.id ?: 0) }
     var selectedComplexId by rememberSaveable { mutableLongStateOf(initial?.complexId ?: 0L) }
+    var startTime by rememberSaveable { mutableStateOf(initial?.startTime.orEmpty()) }
+    var endTime by rememberSaveable { mutableStateOf(initial?.endTime.orEmpty()) }
     var dateText by rememberSaveable { mutableStateOf((initial?.date ?: initialDate).toString()) }
     var repeatWeekly by rememberSaveable { mutableStateOf(initial?.repeatWeekly ?: false) }
     var intervalText by rememberSaveable { mutableStateOf((initial?.intervalWeeks ?: 1).toString()) }
@@ -78,7 +80,10 @@ fun AddPlannedTrainingDialog(
             ?.let(com.pamurlykin.sportsactivityassistant.data.model.TrainingValidation::parseDate)
         val interval = if (repeatWeekly) requireNotNull(intervalText.toIntOrNull()) { AppText.get(R.string.add_training_dialog_vvedite_tselyy_polozhitelnyy_interval) } else 1
         com.pamurlykin.sportsactivityassistant.data.model.TrainingValidation.recurrence(date, end, interval)
-        return AddPlannedTrainingInput(selectedSportId, selectedComplexId, date, repeatWeekly, interval, end)
+        val start = com.pamurlykin.sportsactivityassistant.data.model.TrainingTimes.parse(startTime)
+        val finish = com.pamurlykin.sportsactivityassistant.data.model.TrainingTimes.parse(endTime)
+        com.pamurlykin.sportsactivityassistant.data.model.TrainingTimes.duration(start, finish)
+        return AddPlannedTrainingInput(selectedSportId, selectedComplexId, date, repeatWeekly, interval, end, start, finish)
     }
     LaunchedEffect(saving, sports.isNotEmpty(), centers.isNotEmpty()) {
         if (saving && sports.isNotEmpty() && centers.isNotEmpty()) {
@@ -104,6 +109,13 @@ fun AddPlannedTrainingDialog(
                     onCreateCenter = { creatingCenter = true })
                 OutlinedTextField(dateText, { dateText = it }, Modifier.fillMaxWidth().testTag("plan-date"),
                     enabled = !saving, label = { Text(if (repeatWeekly) AppText.get(R.string.add_training_dialog_nachalo_serii_yyyy_mm_dd) else AppText.get(R.string.add_training_dialog_data_yyyy_mm_dd)) }, singleLine = true)
+                OutlinedTextField(startTime, { startTime = it }, Modifier.fillMaxWidth().testTag("plan-start-time"),
+                    enabled = !saving, label = { Text(AppText.get(R.string.time_start)) }, singleLine = true,
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Text))
+                OutlinedTextField(endTime, { endTime = it }, Modifier.fillMaxWidth().testTag("plan-end-time"),
+                    enabled = !saving, label = { Text(AppText.get(R.string.time_end)) }, singleLine = true,
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Text))
+                Text(AppText.get(R.string.time_hint), style = MaterialTheme.typography.bodySmall)
                 if (initial == null) FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     FilterChip(selected = !repeatWeekly, enabled = !saving, onClick = { repeatWeekly = false }, label = { Text(AppText.get(R.string.add_training_dialog_razovaya)) })
                     FilterChip(selected = repeatWeekly, enabled = !saving, onClick = { repeatWeekly = true }, label = { Text(AppText.get(R.string.add_training_dialog_po_nedelyam)) })

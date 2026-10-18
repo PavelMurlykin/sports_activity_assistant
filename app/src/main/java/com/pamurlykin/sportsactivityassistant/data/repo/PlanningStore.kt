@@ -27,7 +27,7 @@ internal class PlanningStore(private val db: AppDatabase, private val owner: Lon
                 require(series || rule.frequency == RecurrenceFrequency.WEEKLY &&
                     ScheduleDates.occurs(rule.startDate, rule.endDate, rule.intervalWeeks, date)) { AppText.get(R.string.planning_store_seriya_izmenilas_sobytie_bolshe_ne) }
                 PlannedTrainingEntity(userId = rule.userId, sportId = rule.sportId, sportsComplexId = rule.sportsComplexId,
-                    plannedDate = date, recurrenceRuleId = rule.id, occurrenceDate = date,
+                    plannedDate = date, recurrenceRuleId = rule.id, occurrenceDate = date, startTime = rule.startTime, endTime = rule.endTime,
                     createdAt = rule.createdAt, publicId = UUID.nameUUIDFromBytes("occurrence:${rule.publicId}:${date}".toByteArray()).toString())
             }
         }
@@ -44,7 +44,8 @@ internal class PlanningStore(private val db: AppDatabase, private val owner: Lon
             (rule?.startDate ?: e.plan.plannedDate).toString(), rule != null,
             rule?.intervalWeeks ?: 1, rule?.endDate?.toString(),
             e.plan.toString() + "|" + e.rule.toString(),
-            e.plan.status == PlannedTrainingStatus.CANCELED || e.rule?.isCanceled == true)
+            e.plan.status == PlannedTrainingStatus.CANCELED || e.rule?.isCanceled == true,
+            if (rule != null) rule.startTime else e.plan.startTime, if (rule != null) rule.endTime else e.plan.endTime)
     }
 
     suspend fun load(key: String, scope: PlanScope) = snapshot(key, event(key, scope == PlanScope.SERIES), scope)
@@ -54,6 +55,7 @@ internal class PlanningStore(private val db: AppDatabase, private val owner: Lon
     }
 
     private suspend fun validate(input: AddPlannedTrainingInput, oldSport: Int? = null, oldCenter: Long? = null) {
+        TrainingTimes.duration(input.startTime, input.endTime)
         TrainingValidation.recurrence(input.date, input.endDate, input.intervalWeeks)
         SportModules.require(requireNotNull(db.referenceDao().getSport(input.sportId)) { AppText.get(R.string.app_repository_vid_sporta_ne_nayden) }.slug)
         if (input.sportId != oldSport || input.complexId != oldCenter) {
@@ -67,21 +69,21 @@ internal class PlanningStore(private val db: AppDatabase, private val owner: Lon
         require(UUID.fromString(requestId).toString() == requestId) { AppText.get(R.string.planning_store_nekorrektnyy_identifikator_plana) }
         dao.getAllPlannedTrainings().firstOrNull { it.publicId == requestId }?.let {
             require(!input.repeatWeekly && it.userId == owner && it.sportId == input.sportId &&
-                it.sportsComplexId == input.complexId && it.plannedDate == input.date) { AppText.get(R.string.planning_store_identifikator_uzhe_zanyat) }
+                it.sportsComplexId == input.complexId && it.plannedDate == input.date && it.startTime == input.startTime && it.endTime == input.endTime) { AppText.get(R.string.planning_store_identifikator_uzhe_zanyat) }
             return it.id
         }
         dao.getAllRecurrenceRules().firstOrNull { it.publicId == requestId }?.let {
             require(input.repeatWeekly && it.userId == owner && it.sportId == input.sportId && it.sportsComplexId == input.complexId &&
-                it.startDate == input.date && it.endDate == input.endDate && it.intervalWeeks == input.intervalWeeks) { AppText.get(R.string.planning_store_identifikator_uzhe_zanyat) }
+                it.startDate == input.date && it.endDate == input.endDate && it.intervalWeeks == input.intervalWeeks && it.startTime == input.startTime && it.endTime == input.endTime) { AppText.get(R.string.planning_store_identifikator_uzhe_zanyat) }
             return it.id
         }
         validate(input)
         require(db.referenceDao().getUsers().any { it.id == owner }) { AppText.get(R.string.app_repository_lokalnyy_profil_ne_nayden) }
         return if (input.repeatWeekly) dao.insertRecurrenceRule(RecurrenceRuleEntity(userId = owner,
             sportId = input.sportId, sportsComplexId = input.complexId, startDate = input.date, endDate = input.endDate,
-            frequency = RecurrenceFrequency.WEEKLY, intervalWeeks = input.intervalWeeks, publicId = requestId))
+            frequency = RecurrenceFrequency.WEEKLY, intervalWeeks = input.intervalWeeks, publicId = requestId, startTime = input.startTime, endTime = input.endTime))
         else dao.insertPlannedTraining(PlannedTrainingEntity(userId = owner, sportId = input.sportId,
-            sportsComplexId = input.complexId, plannedDate = input.date, publicId = requestId))
+            sportsComplexId = input.complexId, plannedDate = input.date, publicId = requestId, startTime = input.startTime, endTime = input.endTime))
     }
 
     suspend fun update(old: PlanSnapshot, scope: PlanScope, input: AddPlannedTrainingInput) {
@@ -95,8 +97,8 @@ internal class PlanningStore(private val db: AppDatabase, private val owner: Lon
         validate(input, current.sportId, current.complexId)
         if (scope == PlanScope.SERIES) {
             dao.updateRule(requireNotNull(e.rule).copy(sportId = input.sportId, sportsComplexId = input.complexId,
-                startDate = input.date, endDate = input.endDate, intervalWeeks = input.intervalWeeks))
-        } else persist(e.plan.copy(sportId = input.sportId, sportsComplexId = input.complexId, plannedDate = input.date,
+                startDate = input.date, endDate = input.endDate, intervalWeeks = input.intervalWeeks, startTime = input.startTime, endTime = input.endTime))
+        } else persist(e.plan.copy(sportId = input.sportId, sportsComplexId = input.complexId, plannedDate = input.date, startTime = input.startTime, endTime = input.endTime,
             occurrenceDate = if (e.rule != null) e.plan.occurrenceDate ?: e.plan.plannedDate else null))
     }
 

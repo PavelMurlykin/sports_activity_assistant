@@ -15,12 +15,13 @@ data class BackupDocument(
     val primaryProfilePublicId: String? = null,
     val favorites: List<FavoriteBackup> = emptyList(),
     val aliases: List<AliasBackup> = emptyList(),
+    val primaryCenters: List<PrimaryCenterBackup> = emptyList(),
 ) {
     fun objectCount(): Long = sports.size.toLong() + centers.size + profiles.size + trainings.size +
-        trainings.sumOf { it.climbingRoutes.size.toLong() } + plannedTrainings.size + recurrenceRules.size + favorites.size + aliases.size
+        trainings.sumOf { it.climbingRoutes.size.toLong() } + plannedTrainings.size + recurrenceRules.size + favorites.size + aliases.size + primaryCenters.size
 
     companion object {
-        const val CURRENT_SCHEMA_VERSION = 6
+        const val CURRENT_SCHEMA_VERSION = 7
     }
 }
 
@@ -55,6 +56,7 @@ data class TrainingBackup(
     val centerPublicId: String? = null,
     val profilePublicId: String? = null,
     val createdAt: String? = null,
+    val durationMinutes: Int? = null,
 )
 
 @Serializable
@@ -95,6 +97,8 @@ data class PlannedTrainingBackup(
     val recurrenceRulePublicId: String? = null,
     val occurrenceDate: String? = null,
     val completedTrainingPublicId: String? = null,
+    val startTime: String? = null,
+    val endTime: String? = null,
 )
 
 @Serializable
@@ -111,6 +115,8 @@ data class RecurrenceRuleBackup(
     val createdAt: String? = null,
     val frequency: String = "weekly",
     val isCanceled: Boolean = false,
+    val startTime: String? = null,
+    val endTime: String? = null,
 )
 
 @Serializable
@@ -118,6 +124,9 @@ data class ProfileBackup(val publicId: String, val displayName: String? = null, 
 
 @Serializable
 data class FavoriteBackup(val profilePublicId: String, val centerPublicId: String, val createdAt: String)
+
+@Serializable
+data class PrimaryCenterBackup(val profilePublicId: String, val sportSlug: String, val centerPublicId: String)
 
 @Serializable
 data class AliasBackup(val kind: String, val sourceKey: String, val targetPublicId: String)

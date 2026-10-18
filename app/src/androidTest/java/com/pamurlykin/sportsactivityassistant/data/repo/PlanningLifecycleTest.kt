@@ -133,7 +133,7 @@ class PlanningLifecycleTest {
             repo.cancelPlan(whole,PlanScope.SERIES)
             val bytes = repo.createBackup().toByteArray()
             val source = repo.prepareImport(bytes)
-            assertEquals(6,source.sourceVersion); assertTrue(BackupValidation.errors(source).isEmpty())
+            assertEquals(BackupDocument.CURRENT_SCHEMA_VERSION,source.sourceVersion); assertTrue(BackupValidation.errors(source).isEmpty())
             val before = source.document
             fixture { restoredDb,restored,restoredUser,_,_ ->
                 restored.importData(bytes,restoredUser)

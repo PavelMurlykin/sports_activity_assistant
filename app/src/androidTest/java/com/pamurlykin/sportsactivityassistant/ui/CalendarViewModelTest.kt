@@ -33,6 +33,22 @@ class CalendarViewModelTest {
             test(vm) { value -> instrumentation.runOnMainSync { now = value; vm.refreshToday() } }
         } finally { instrumentation.runOnMainSync { store.clear() }; db.close() }
     }
+    @Test fun selectingAnotherDayKeepsTheLoadedMonthAndItsObserver() {
+        fixture { vm,_ ->
+            val original = requireNotNull(vm.scheduleState.value)
+            val next = original.selectedDate.minusDays(1)
+            InstrumentationRegistry.getInstrumentation().runOnMainSync {
+                vm.selectDate(next)
+                val selected = requireNotNull(vm.scheduleReadState.value.data)
+                assertSame(original.days, selected.days)
+                assertEquals(next, selected.selectedDate)
+                assertFalse(vm.scheduleReadState.value.loading)
+            }
+            SystemClock.sleep(100)
+            assertEquals(next, vm.scheduleState.value!!.selectedDate)
+        }
+    }
+
     @Test fun rapidMonthSwitchPublishesOnlyLastSelectionAcrossYearBoundary() {
         fixture { vm,_ ->
             val instrumentation = InstrumentationRegistry.getInstrumentation()

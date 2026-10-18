@@ -1,6 +1,7 @@
-﻿package com.pamurlykin.sportsactivityassistant.data
+package com.pamurlykin.sportsactivityassistant.data
 
 import android.content.Context
+import com.pamurlykin.sportsactivityassistant.data.entity.SportPrimaryCenterEntity
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
@@ -37,8 +38,9 @@ import com.pamurlykin.sportsactivityassistant.data.entity.ImportAliasEntity
         RecurrenceRuleEntity::class,
         PlannedTrainingEntity::class,
         ImportAliasEntity::class,
+        SportPrimaryCenterEntity::class,
     ],
-    version = 7,
+    version = 8,
     exportSchema = true,
 )
 @TypeConverters(Converters::class)
@@ -58,7 +60,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "sports_activity_assistant.db",
                 )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8)
                     .build()
                     .also { instance = it }
             }
@@ -67,6 +69,19 @@ abstract class AppDatabase : RoomDatabase() {
         val MIGRATION_2_3: Migration = LocalIdentityMigration()
         val MIGRATION_3_4: Migration = ClimbingGradesMigration()
         val MIGRATION_4_5: Migration = ExchangeIdentityMigration()
+        val MIGRATION_7_8 = object : Migration(7, 8) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE trainings ADD COLUMN duration_minutes INTEGER")
+                for (table in listOf("planned_trainings", "recurrence_rules")) {
+                    db.execSQL("ALTER TABLE $table ADD COLUMN start_time TEXT")
+                    db.execSQL("ALTER TABLE $table ADD COLUMN end_time TEXT")
+                }
+                db.execSQL("CREATE TABLE IF NOT EXISTS sport_primary_centers (user_id INTEGER NOT NULL, sport_id INTEGER NOT NULL, sports_complex_id INTEGER NOT NULL, PRIMARY KEY(user_id, sport_id), FOREIGN KEY(user_id) REFERENCES users(id) ON UPDATE NO ACTION ON DELETE CASCADE, FOREIGN KEY(sport_id) REFERENCES sports(id) ON UPDATE NO ACTION ON DELETE CASCADE, FOREIGN KEY(sports_complex_id) REFERENCES sports_complexes(id) ON UPDATE NO ACTION ON DELETE CASCADE)")
+                db.execSQL("CREATE INDEX index_sport_primary_centers_sport_id ON sport_primary_centers(sport_id)")
+                db.execSQL("CREATE INDEX index_sport_primary_centers_sports_complex_id ON sport_primary_centers(sports_complex_id)")
+            }
+        }
+
         val MIGRATION_6_7 = object : Migration(6, 7) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 // Additive migration: every historical row, link, UUID and timestamp is untouched.

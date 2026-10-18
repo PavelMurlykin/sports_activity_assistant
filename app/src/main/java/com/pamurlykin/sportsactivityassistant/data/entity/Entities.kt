@@ -1,4 +1,4 @@
-﻿package com.pamurlykin.sportsactivityassistant.data.entity
+package com.pamurlykin.sportsactivityassistant.data.entity
 
 import androidx.room.ColumnInfo
 import androidx.room.Embedded
@@ -154,6 +154,7 @@ data class TrainingEntity(
     @ColumnInfo(name = "training_date") val trainingDate: LocalDate,
     @ColumnInfo(name = "created_at") val createdAt: Instant = Instant.now(),
     @ColumnInfo(name = "public_id", defaultValue = "''") val publicId: String = UUID.randomUUID().toString(),
+    @ColumnInfo(name = "duration_minutes") val durationMinutes: Int? = null,
 )
 
 @Entity(
@@ -266,6 +267,8 @@ data class RecurrenceRuleEntity(
     @ColumnInfo(name = "interval_weeks") val intervalWeeks: Int,
     @ColumnInfo(name = "created_at") val createdAt: Instant = Instant.now(),
     @ColumnInfo(name = "public_id", defaultValue = "''") val publicId: String = UUID.randomUUID().toString(),
+    @ColumnInfo(name = "start_time") val startTime: String? = null,
+    @ColumnInfo(name = "end_time") val endTime: String? = null,
 )
 
 @Entity(
@@ -325,6 +328,8 @@ data class PlannedTrainingEntity(
     val status: PlannedTrainingStatus = PlannedTrainingStatus.PLANNED,
     @ColumnInfo(name = "created_at") val createdAt: Instant = Instant.now(),
     @ColumnInfo(name = "public_id", defaultValue = "''") val publicId: String = UUID.randomUUID().toString(),
+    @ColumnInfo(name = "start_time") val startTime: String? = null,
+    @ColumnInfo(name = "end_time") val endTime: String? = null,
 )
 
 data class ClimbingTrainingWithRoutes(
@@ -373,4 +378,20 @@ data class TrainingBundle(
         entityColumn = "training_id",
     )
     val climbing: ClimbingTrainingWithRoutes?,
+)
+
+@Entity(
+    tableName = "sport_primary_centers",
+    primaryKeys = ["user_id", "sport_id"],
+    foreignKeys = [
+        ForeignKey(entity = UserEntity::class, parentColumns = ["id"], childColumns = ["user_id"], onDelete = ForeignKey.CASCADE),
+        ForeignKey(entity = SportEntity::class, parentColumns = ["id"], childColumns = ["sport_id"], onDelete = ForeignKey.CASCADE),
+        ForeignKey(entity = SportsComplexEntity::class, parentColumns = ["id"], childColumns = ["sports_complex_id"], onDelete = ForeignKey.CASCADE),
+    ],
+    indices = [Index("sport_id"), Index("sports_complex_id")],
+)
+data class SportPrimaryCenterEntity(
+    @ColumnInfo(name = "user_id") val userId: Long,
+    @ColumnInfo(name = "sport_id") val sportId: Int,
+    @ColumnInfo(name = "sports_complex_id") val sportsComplexId: Long,
 )

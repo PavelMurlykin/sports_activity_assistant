@@ -1,6 +1,7 @@
 package com.pamurlykin.sportsactivityassistant.data.backup
 
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -79,6 +80,19 @@ class BackupCodecTest : com.pamurlykin.sportsactivityassistant.ResourceTextTest(
         val old = current.copy(schemaVersion = 4, centers = listOf(center.copy(isArchived = false)))
         assertFalse(BackupCodec.decode(BackupCodec.encode(old)).centers.single().isArchived)
         assertTrue(runCatching { BackupCodec.decode(BackupCodec.encode(current).replace("\"schemaVersion\": 5", "\"schemaVersion\": 4")) }.isFailure)
+    }
+
+    @Test fun schedulePreferencesRequireVersion7AndOldFilesKeepOptionalValuesEmpty() {
+        val plan = PlannedTrainingBackup("2020-02-29", "football", "Арена", startTime = "23:30", endTime = "01:00")
+        val current = climbingDocument(7, emptyList()).copy(plannedTrainings = listOf(plan),
+            primaryCenters = listOf(PrimaryCenterBackup("profile", "football", "center")))
+        val raw = BackupCodec.encode(current)
+        assertEquals(current, BackupCodec.decode(raw))
+        assertTrue(runCatching { BackupCodec.encode(current.copy(schemaVersion = 6)) }.isFailure)
+        assertTrue(runCatching { BackupCodec.decode(raw.replace("\"schemaVersion\": 7", "\"schemaVersion\": 6")) }.isFailure)
+        val old = BackupCodec.decode(BackupCodec.encode(climbingDocument(6, emptyList()).copy(plannedTrainings = listOf(plan.copy(startTime = null, endTime = null)))))
+        assertNull(old.plannedTrainings.single().startTime)
+        assertTrue(old.primaryCenters.isEmpty())
     }
 
     @Test fun calendarMetadataRequiresVersion6AndCannotBeDowngradedSilently() {

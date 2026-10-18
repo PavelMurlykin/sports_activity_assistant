@@ -9,7 +9,7 @@ data class TrainingEditSnapshot(val id: Long, val input: AddCompletedTrainingInp
     companion object {
         fun restore(id: Long, sportId: Int, centerId: Long, revision: String): TrainingEditSnapshot {
             val backup = Json.decodeFromString(TrainingBackup.serializer(), revision)
-            return TrainingEditSnapshot(id, SportModules.require(backup.sportSlug).decodeDetails(backup, sportId, centerId), revision)
+            return TrainingEditSnapshot(id, SportModules.require(backup.sportSlug).decodeDetails(backup, sportId, centerId).copy(durationMinutes = backup.durationMinutes), revision)
         }
     }
 }

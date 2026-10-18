@@ -28,13 +28,13 @@ class TrainingFormUiTest {
         compose.setContent { MaterialTheme {
             AddCompletedTrainingDialog(sports, date, listOf(center), {}, { input, _ -> saved = input })
         } }
-        compose.onNodeWithTag("football-0").performScrollTo().performTextReplacement("2")
-        compose.onNodeWithTag("football-2").performScrollTo().performTextReplacement("3")
+        compose.onNodeWithTag("football-0").performScrollTo().performSemanticsAction(SemanticsActions.SetProgress) { it(2f) }
+        compose.onNodeWithTag("football-2").performScrollTo().performSemanticsAction(SemanticsActions.SetProgress) { it(3f) }
         compose.onNodeWithTag("football-4").performScrollTo().performTextReplacement("7,35")
         compose.onNodeWithText("Сохранить").performSemanticsAction(SemanticsActions.OnClick) { it() }
         compose.onNodeWithText("Личные голы не могут превышать счёт команды").performScrollTo().assertExists()
         compose.runOnIdle { assertNull(saved) }
-        compose.onNodeWithTag("football-2").performScrollTo().performTextReplacement("1")
+        compose.onNodeWithTag("football-2").performScrollTo().performSemanticsAction(SemanticsActions.SetProgress) { it(1f) }
         compose.onNodeWithText("Сохранить").performSemanticsAction(SemanticsActions.OnClick) { it() }
         compose.runOnIdle { val result = requireNotNull(saved); assertEquals(2, result.football!!.teamGoalsScored); assertEquals("7.35".toBigDecimal(), result.football.distanceKm) }
     }
@@ -49,10 +49,10 @@ class TrainingFormUiTest {
                 if (calls == 1) throw IllegalStateException("Ошибка записи")
             }, onSaved = { saved = true })
         } }
-        compose.onNodeWithTag("football-0").performScrollTo().performTextReplacement("3")
+        compose.onNodeWithTag("football-0").performScrollTo().performSemanticsAction(SemanticsActions.SetProgress) { it(3f) }
         compose.onNodeWithText("Сохранить").performSemanticsAction(SemanticsActions.OnClick) { it() }
         compose.onNodeWithText("Ошибка записи").performScrollTo().assertExists()
-        compose.onNodeWithTag("football-0").performScrollTo().assertTextContains("3")
+        compose.onNodeWithTag("football-0").performScrollTo().assert(SemanticsMatcher.expectValue(androidx.compose.ui.semantics.SemanticsProperties.StateDescription, "3"))
         compose.onNodeWithText("Сохранить").performSemanticsAction(SemanticsActions.OnClick) { it() }
         compose.runOnIdle { assertEquals(2, calls); assertEquals(tokens[0], tokens[1]); assertTrue(saved) }
     }
@@ -78,7 +78,7 @@ class TrainingFormUiTest {
         restoration.setContent { MaterialTheme {
             AddCompletedTrainingDialog(sports, date, listOf(center), {}, { input, _ -> saved = input })
         } }
-        compose.onNodeWithTag("football-0").performScrollTo().performTextReplacement("4")
+        compose.onNodeWithTag("football-0").performScrollTo().performSemanticsAction(SemanticsActions.SetProgress) { it(4f) }
         compose.onNodeWithTag("training-sport").performScrollTo().performSemanticsAction(SemanticsActions.OnClick) { it() }
         compose.onNodeWithText("Скалолазание").performClick()
         compose.onNodeWithText("+ Добавить трассу").performScrollTo().performClick()
@@ -90,7 +90,7 @@ class TrainingFormUiTest {
         compose.runOnIdle { val result = requireNotNull(saved); assertEquals(2, result.climbingRoutes.size); assertEquals(12, result.climbingRoutes[1].repeatCount); assertFalse(result.climbingRoutes[1].isCompleted) }
         compose.onNodeWithTag("training-sport").performScrollTo().performSemanticsAction(SemanticsActions.OnClick) { it() }
         compose.onNodeWithText("Футбол").performClick()
-        compose.onNodeWithTag("football-0").performScrollTo().assertTextContains("4")
+        compose.onNodeWithTag("football-0").performScrollTo().assert(SemanticsMatcher.expectValue(androidx.compose.ui.semantics.SemanticsProperties.StateDescription, "4"))
     }
 
     @Test fun futureDateIsInlineErrorAndDatePickerOpensWithoutChangingDraft() {
@@ -137,13 +137,13 @@ class TrainingFormUiTest {
                     8
                 })
         } }
-        compose.onNodeWithTag("football-0").performScrollTo().performTextReplacement("4")
+        compose.onNodeWithTag("football-0").performScrollTo().performSemanticsAction(SemanticsActions.SetProgress) { it(4f) }
         compose.onNodeWithText("Создать центр").performScrollTo().performClick()
         compose.onNodeWithTag("center-name").performTextInput("Новая площадка")
         restoration.emulateSavedInstanceStateRestore()
         compose.onNodeWithTag("center-name").assertTextContains("Новая площадка")
         compose.onAllNodesWithText("Сохранить").onLast().performClick()
-        compose.onNodeWithTag("football-0").performScrollTo().assertTextContains("4")
+        compose.onNodeWithTag("football-0").performScrollTo().assert(SemanticsMatcher.expectValue(androidx.compose.ui.semantics.SemanticsProperties.StateDescription, "4"))
         compose.onNodeWithText("Сохранить").performSemanticsAction(SemanticsActions.OnClick) { it() }
         compose.runOnIdle { val result = requireNotNull(saved); assertEquals(8L, result.complexId); assertEquals(4, result.football!!.teamGoalsScored) }
     }
@@ -172,7 +172,7 @@ class TrainingFormUiTest {
         compose.setContent { MaterialTheme {
             AddCompletedTrainingDialog(sports, date, listOf(center), { dismissed = true }, { _, _ -> calls++ })
         } }
-        compose.onNodeWithTag("football-0").performScrollTo().performTextReplacement("5")
+        compose.onNodeWithTag("football-0").performScrollTo().performSemanticsAction(SemanticsActions.SetProgress) { it(5f) }
         compose.onNodeWithText("Отмена").performSemanticsAction(SemanticsActions.OnClick) { it() }
         compose.runOnIdle { assertTrue(dismissed); assertEquals(0, calls) }
     }

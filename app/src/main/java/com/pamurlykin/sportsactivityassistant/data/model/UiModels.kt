@@ -101,6 +101,7 @@ data class SportsCenterUiModel(
     val city: String?,
     val sports: List<SportSummaryUiModel>,
     val isArchived: Boolean = false,
+    val primarySportIds: Set<Int> = emptySet(),
 ) {
     val fullTitle: String = listOfNotNull(name, city?.takeIf(String::isNotBlank)).joinToString(", ")
 }
@@ -149,6 +150,8 @@ data class AddPlannedTrainingInput(
     val repeatWeekly: Boolean,
     val intervalWeeks: Int,
     val endDate: LocalDate?,
+    val startTime: String? = null,
+    val endTime: String? = null,
 )
 
 data class FootballTrainingInput(
@@ -179,6 +182,7 @@ data class AddCompletedTrainingInput(
     val date: LocalDate,
     val football: FootballTrainingInput? = null,
     val climbingRoutes: List<ClimbingRouteInput> = emptyList(),
+    val durationMinutes: Int? = null,
 )
 
 data class SaveSportsCenterInput(

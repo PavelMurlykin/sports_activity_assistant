@@ -37,6 +37,7 @@ object BackupValidation {
                 d.trainings.flatMap { it.climbingRoutes }.map { it.publicId } + d.plannedTrainings.map { it.publicId } + d.recurrenceRules.map { it.publicId }
             ids.forEach(::uuid); distinct(ids)
             distinct(d.aliases.map { it.kind to it.sourceKey })
+            distinct(d.primaryCenters.map { it.profilePublicId to it.sportSlug })
             distinct(d.favorites.map { it.profilePublicId to it.centerPublicId })
         }
         val sports = d.sports.map { it.slug }.toSet()
@@ -57,6 +58,7 @@ object BackupValidation {
             val location = source.locations[training.publicId] ?: "trainings[${i}]"
             check(location) {
                 uuid(training.publicId); timestamp(training.createdAt); refs(training.profilePublicId, training.centerPublicId, training.sportSlug)
+                require(training.durationMinutes == null || training.durationMinutes > 0) { AppText.get(R.string.duration_invalid) }
                 TrainingValidation.parseDate(training.date)
                 val module = SportModules.require(training.sportSlug)
                 module.validate(module.decodeDetails(training, 1, 1), allowHistorical = true)
@@ -69,11 +71,13 @@ object BackupValidation {
         val rules = d.recurrenceRules.associateBy { it.publicId }
         d.recurrenceRules.forEachIndexed { i, rule -> check("recurrenceRules[${i}]") {
             uuid(rule.publicId); timestamp(rule.createdAt); refs(rule.profilePublicId, rule.centerPublicId, rule.sportSlug)
+            com.pamurlykin.sportsactivityassistant.data.model.TrainingTimes.duration(rule.startTime, rule.endTime)
             require(rule.frequency in setOf("weekly", "none")) { AppText.get(R.string.backup_validation_frequency_neizvestnoe_znachenie) }
             TrainingValidation.recurrence(TrainingValidation.parseDate(rule.startDate), rule.endDate?.let(TrainingValidation::parseDate), rule.intervalWeeks)
         } }
         d.plannedTrainings.forEachIndexed { i, plan -> check("plannedTrainings[${i}]") {
             uuid(plan.publicId); timestamp(plan.createdAt); refs(plan.profilePublicId, plan.centerPublicId, plan.sportSlug); TrainingValidation.parseDate(plan.date)
+            com.pamurlykin.sportsactivityassistant.data.model.TrainingTimes.duration(plan.startTime, plan.endTime)
             require(plan.status in (if (source.sourceVersion >= 6) setOf("planned", "canceled", "completed") else setOf("planned", "canceled"))) { AppText.get(R.string.backup_validation_status_neizvestnoe_znachenie) }
             plan.recurrenceRulePublicId?.let { id ->
                 val rule = requireNotNull(rules[id]) { AppText.get(R.string.backup_validation_recurrencerulepublicid_seriya_ne_naydena) }
@@ -94,6 +98,10 @@ object BackupValidation {
                 }
             }
         }
+        d.primaryCenters.forEachIndexed { i, item -> check("primaryCenters[$i]") {
+            refs(item.profilePublicId, item.centerPublicId, item.sportSlug)
+            require(centers.getValue(item.centerPublicId).let { !it.isArchived && item.sportSlug in it.sportSlugs }) { AppText.get(R.string.primary_center_invalid) }
+        } }
         d.favorites.forEachIndexed { i, item -> check("favorites[${i}]") {
             require(item.profilePublicId in profiles && item.centerPublicId in centers) { AppText.get(R.string.backup_validation_otsutstvuyuschaya_ssylka) }; timestamp(item.createdAt)
         } }

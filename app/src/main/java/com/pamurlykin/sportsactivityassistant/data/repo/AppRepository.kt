@@ -123,13 +123,16 @@ class AppRepository(private val database: AppDatabase) {
         } }.flowOn(Dispatchers.IO)
 
     fun observeSportsCenters(): Flow<List<SportsCenterUiModel>> =
-        readyFlow { database.referenceDao().observeComplexesWithSports().map { centers ->
+        readyFlow { kotlinx.coroutines.flow.combine(database.referenceDao().observeComplexesWithSports(),
+            database.referenceDao().observePrimaryCenters()) { centers, primary ->
+            val primaryByCenter = primary.filter { it.userId == localProfileId() }.groupBy { it.sportsComplexId }
             centers.map { item ->
                 SportsCenterUiModel(
                     id = item.complex.id,
                     name = item.complex.name,
                     city = item.complex.city,
                     isArchived = item.complex.isArchived,
+                    primarySportIds = primaryByCenter[item.complex.id].orEmpty().map { it.sportId }.toSet(),
                     sports = item.sports.sortedBy { it.title }.map {
                         SportSummaryUiModel(it.id, it.slug, it.title, 0)
                     },
@@ -180,12 +183,25 @@ class AppRepository(private val database: AppDatabase) {
         database.referenceDao().insertComplexSports(
             input.sportIds.map { SportsComplexSportEntity(sportsComplexId = centerId, sportId = it) },
         )
+        database.referenceDao().removeUnsupportedPrimaryCenters(centerId, input.sportIds)
         centerId
     }
 
     suspend fun setSportsCenterArchived(id: Long, archived: Boolean) = readyTransaction {
         val center = requireNotNull(database.referenceDao().getComplex(id)) { AppText.get(R.string.app_repository_sportivnyy_tsentr_ne_nayden) }
         database.referenceDao().updateComplex(center.copy(isArchived = archived, isInitial = false))
+        if (archived) database.referenceDao().removePrimaryCenter(id)
+    }
+
+    suspend fun setPrimaryCenter(sportId: Int, centerId: Long?) = readyTransaction {
+        val owner = localProfileId()
+        if (centerId == null) database.referenceDao().clearPrimaryCenter(owner, sportId)
+        else {
+            require(database.referenceDao().getComplexesForSport(sportId).any { it.id == centerId }) {
+                AppText.get(R.string.app_repository_vybrannyy_sport_nedostupen_v_etom)
+            }
+            database.referenceDao().setPrimaryCenter(com.pamurlykin.sportsactivityassistant.data.entity.SportPrimaryCenterEntity(owner, sportId, centerId))
+        }
     }
 
     suspend fun addCompletedTraining(userId: Long, input: AddCompletedTrainingInput, requestId: String? = null): Long = readyTransaction {
@@ -198,6 +214,7 @@ class AppRepository(private val database: AppDatabase) {
                 return@readyTransaction existing.training.id
             }
         }
+        require(input.durationMinutes == null || input.durationMinutes > 0) { AppText.get(R.string.duration_invalid) }
         TrainingValidation.completedDate(input.date)
         val sport = requireNotNull(database.referenceDao().getSport(input.sportId)) { AppText.get(R.string.app_repository_vid_sporta_ne_nayden) }
         require(database.referenceDao().getComplexesForSport(sport.id).any { it.id == input.complexId }) {
@@ -207,7 +224,7 @@ class AppRepository(private val database: AppDatabase) {
         val module = SportModules.require(sport.slug)
         module.validate(input)
         val trainingId = database.trainingDao().insertTraining(
-            TrainingEntity(userId = userId, sportId = sport.id, sportsComplexId = input.complexId, trainingDate = input.date, publicId = requestId ?: java.util.UUID.randomUUID().toString()),
+            TrainingEntity(durationMinutes = input.durationMinutes, userId = userId, sportId = sport.id, sportsComplexId = input.complexId, trainingDate = input.date, publicId = requestId ?: java.util.UUID.randomUUID().toString()),
         )
         module.insertDetails(database.trainingDao(), trainingId, input)
         trainingId
@@ -228,6 +245,7 @@ class AppRepository(private val database: AppDatabase) {
             legacyId = bundle.training.id, date = bundle.training.trainingDate.toString(),
             sportSlug = bundle.sport.slug, centerName = "", publicId = bundle.training.publicId,
             centerPublicId = bundle.complex.publicId, createdAt = bundle.training.createdAt.toString(),
+            durationMinutes = bundle.training.durationMinutes,
         )
         val backup = module.encodeDetails(bundle, common).let { it.copy(climbingRoutes = it.climbingRoutes.sortedBy { route -> route.publicId }) }
         val revision = Json.encodeToString(TrainingBackup.serializer(), backup)
@@ -248,6 +266,7 @@ class AppRepository(private val database: AppDatabase) {
         if (sameInput(editSnapshot(bundle).input, input)) return@readyTransaction
         require(editSnapshot(bundle).revision == snapshot.revision) { AppText.get(R.string.app_repository_zapis_izmenilas_zakroyte_formu_i) }
         require(input.sportId == bundle.sport.id) { AppText.get(R.string.app_repository_vid_sporta_sohranyonnoy_trenirovki_menyat) }
+        require(input.durationMinutes == null || input.durationMinutes > 0) { AppText.get(R.string.duration_invalid) }
         TrainingValidation.completedDate(input.date, bundle.training.trainingDate)
         if (input.complexId != bundle.complex.id) {
             require(database.referenceDao().getComplexesForSport(input.sportId).any { it.id == input.complexId }) {
@@ -256,7 +275,7 @@ class AppRepository(private val database: AppDatabase) {
         }
         val module = SportModules.require(bundle.sport.slug)
         module.validateEdit(input, editSnapshot(bundle).input)
-        database.trainingDao().updateTraining(bundle.training.copy(sportsComplexId = input.complexId, trainingDate = input.date))
+        database.trainingDao().updateTraining(bundle.training.copy(sportsComplexId = input.complexId, trainingDate = input.date, durationMinutes = input.durationMinutes))
         module.updateDetails(database.trainingDao(), bundle, input)
     }
 
@@ -303,7 +322,7 @@ class AppRepository(private val database: AppDatabase) {
                     item.recurrenceRuleId?.let { database.planningDao().getRule(it)?.isCanceled } == true)
                     ScheduleEventState.CANCELED else ScheduleEventState.PLANNED,
                 item.recurrenceRuleId != null,
-                details = if (item.occurrenceDate != null && item.occurrenceDate != item.plannedDate)
+                details = TrainingTimes.label(item.startTime, item.endTime) + if (item.occurrenceDate != null && item.occurrenceDate != item.plannedDate)
                     listOf(AppText.get(R.string.app_repository_perenesena_s, item.occurrenceDate)) else emptyList(),
                 planKey = "planned-${item.id}",
             )
@@ -317,7 +336,7 @@ class AppRepository(private val database: AppDatabase) {
                 eventsByDate.getOrPut(date, ::mutableListOf) += ScheduleEventUiModel(
                     "rule-${rule.id}-${date}", date, sport.id, sport.slug, sport.title,
                     center.name, if (rule.isCanceled) ScheduleEventState.CANCELED else ScheduleEventState.PLANNED, true,
-                    details = listOf(AppText.get(R.string.app_repository_interval_ned, rule.intervalWeeks)),
+                    details = TrainingTimes.label(rule.startTime, rule.endTime) + listOf(AppText.get(R.string.app_repository_interval_ned, rule.intervalWeeks)),
                     planKey = "rule-${rule.id}-${date}",
                 )
             }
@@ -395,7 +414,8 @@ class AppRepository(private val database: AppDatabase) {
     )
 
     private fun trainingDetails(bundle: TrainingBundle): List<String> =
-        SportModules.find(bundle.sport.slug)?.details(bundle)
-            ?: listOf(AppText.get(R.string.app_repository_istoricheskaya_zapis_etot_vid_sporta))
+        listOfNotNull(bundle.training.durationMinutes?.let { AppText.get(R.string.duration_value, it) }) +
+            (SportModules.find(bundle.sport.slug)?.details(bundle)
+                ?: listOf(AppText.get(R.string.app_repository_istoricheskaya_zapis_etot_vid_sporta)))
 
 }

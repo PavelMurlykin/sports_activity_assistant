@@ -5,6 +5,9 @@ import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.performScrollTo
 import com.pamurlykin.sportsactivityassistant.data.model.AddCompletedTrainingInput
 import com.pamurlykin.sportsactivityassistant.data.model.SportsCenterUiModel
@@ -66,12 +69,10 @@ class SportEditorsTest {
                 LocalDate.parse("2026-10-07"), listOf(SportsCenterUiModel(8, "Скалодром", null, listOf(SportSummaryUiModel(6, "climbing", "Скалолазание", 0)))), {}, { input, _ -> saved = input })
         } }
         compose.waitForIdle()
-        compose.onNodeWithTag("route-0-type").performScrollTo().performClick()
-        compose.onNodeWithText("Болдер").performClick()
+        compose.onNode(hasText("Болдер") and hasAnyAncestor(hasTestTag("route-0-type"))).performScrollTo().performClick()
         compose.onNodeWithText("Сложность (Fontainebleau)").assertExists()
         compose.onNodeWithText("+ Добавить трассу").performScrollTo().performClick()
-        compose.onNodeWithTag("route-1-type").performScrollTo().performClick()
-        compose.onNodeWithText("Скорость").performClick()
+        compose.onNode(hasText("Скорость") and hasAnyAncestor(hasTestTag("route-1-type"))).performScrollTo().performClick()
         compose.onNodeWithTag("route-1-course").performScrollTo().performClick()
         compose.onNodeWithText("Эталонная 15 м").performClick()
         compose.onNodeWithText("Сохранить").performClick()
@@ -93,8 +94,7 @@ class SportEditorsTest {
                 LocalDate.parse("2026-10-07"), listOf(SportsCenterUiModel(8, "Скалодром", null, listOf(SportSummaryUiModel(6, "climbing", "Скалолазание", 0)))), {}, { input, _ -> saved = input })
         } }
         compose.waitForIdle()
-        compose.onNodeWithTag("route-0-type").performScrollTo().performClick()
-        compose.onNodeWithText("Скорость").performClick()
+        compose.onNode(hasText("Скорость") and hasAnyAncestor(hasTestTag("route-0-type"))).performScrollTo().performClick()
         compose.onNodeWithText("Сохранить").performClick()
         compose.runOnIdle { assertNull(saved) }
         compose.onNodeWithTag("training-error").performScrollTo().assertExists()

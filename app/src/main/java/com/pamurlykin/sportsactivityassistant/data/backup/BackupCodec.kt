@@ -25,6 +25,17 @@ object BackupCodec {
 
     fun encode(document: BackupDocument): String {
         var encoded = json.encodeToJsonElement(BackupDocument.serializer(), document).jsonObject
+        if (document.schemaVersion < 7) {
+            require(document.primaryCenters.isEmpty() && document.trainings.all { it.durationMinutes == null } &&
+                document.plannedTrainings.all { it.startTime == null && it.endTime == null } &&
+                document.recurrenceRules.all { it.startTime == null && it.endTime == null }) { AppText.get(R.string.backup_requires_7) }
+            fun stripNew(key: String, fields: Set<String>) = kotlinx.serialization.json.JsonArray(
+                (encoded.getValue(key) as kotlinx.serialization.json.JsonArray).map { JsonObject(it.jsonObject - fields) })
+            encoded = JsonObject(encoded - "primaryCenters" +
+                ("trainings" to stripNew("trainings", setOf("durationMinutes"))) +
+                ("plannedTrainings" to stripNew("plannedTrainings", setOf("startTime", "endTime"))) +
+                ("recurrenceRules" to stripNew("recurrenceRules", setOf("startTime", "endTime"))))
+        }
         if (document.schemaVersion < 6) {
             require(document.recurrenceRules.none { it.isCanceled } && document.plannedTrainings.all {
                 it.occurrenceDate == null && it.completedTrainingPublicId == null && it.status != "completed"
@@ -48,6 +59,14 @@ object BackupCodec {
 
     fun decode(raw: String): BackupDocument {
         val version = sourceVersion(raw)
+        if (version < 7) {
+            val root = json.parseToJsonElement(raw).jsonObject
+            require("primaryCenters" !in root && listOf("plannedTrainings", "recurrenceRules", "trainings").all { key ->
+                (root[key] as? kotlinx.serialization.json.JsonArray)?.all { item ->
+                    (if (key == "trainings") setOf("durationMinutes") else setOf("startTime", "endTime")).none { it in item.jsonObject }
+                } != false
+            }) { AppText.get(R.string.backup_requires_7) }
+        }
         if (version < 6) {
             val root = json.parseToJsonElement(raw).jsonObject
             fun noFields(key: String, fields: Set<String>) = root[key]?.let { list ->

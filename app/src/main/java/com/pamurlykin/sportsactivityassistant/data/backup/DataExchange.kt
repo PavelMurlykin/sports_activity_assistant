@@ -37,7 +37,7 @@ class DataExchange(private val db: AppDatabase) {
                     sportSlug = bundle.sport.slug, centerLegacyId = bundle.complex.id,
                     centerName = bundle.complex.name, centerCity = bundle.complex.city,
                     publicId = bundle.training.publicId, centerPublicId = bundle.complex.publicId,
-                    profilePublicId = profile(bundle.training.userId), createdAt = bundle.training.createdAt.toString())
+                    profilePublicId = profile(bundle.training.userId), createdAt = bundle.training.createdAt.toString(), durationMinutes = bundle.training.durationMinutes)
                 // Even inconsistent old payloads must be exported, not silently discarded.
                 SportModules.all.fold(common) { value, module -> module.encodeDetails(bundle, value) }
             },
@@ -45,16 +45,17 @@ class DataExchange(private val db: AppDatabase) {
                 val c = center(item.sportsComplexId)
                 RecurrenceRuleBackup(item.startDate.toString(), item.endDate?.toString(), requireNotNull(sports[item.sportId]).slug,
                     c.name, c.city, item.intervalWeeks, item.publicId, c.publicId, profile(item.userId),
-                    item.createdAt.toString(), item.frequency.storageValue, item.isCanceled)
+                    item.createdAt.toString(), item.frequency.storageValue, item.isCanceled, item.startTime, item.endTime)
             },
             plannedTrainings = db.planningDao().getAllPlannedTrainings().map { item ->
                 val c = center(item.sportsComplexId)
                 PlannedTrainingBackup(item.plannedDate.toString(), requireNotNull(sports[item.sportId]).slug, c.name, c.city,
                     item.status.storageValue, item.publicId, c.publicId, profile(item.userId), item.createdAt.toString(),
                     item.recurrenceRuleId?.let { requireNotNull(rules[it]).publicId },
-                    item.occurrenceDate?.toString(), item.completedTrainingId?.let { requireNotNull(trainings[it]).training.publicId })
+                    item.occurrenceDate?.toString(), item.completedTrainingId?.let { requireNotNull(trainings[it]).training.publicId }, item.startTime, item.endTime)
             },
             favorites = refs.getFavoriteComplexes().map { FavoriteBackup(profile(it.userId), center(it.sportsComplexId).publicId, it.createdAt.toString()) },
+            primaryCenters = refs.getPrimaryCenters().map { PrimaryCenterBackup(profile(it.userId), requireNotNull(sports[it.sportId]).slug, center(it.sportsComplexId).publicId) },
             aliases = refs.getImportAliases().map { AliasBackup(it.kind, it.sourceKey, it.targetPublicId) },
         )
     }
@@ -101,7 +102,7 @@ class DataExchange(private val db: AppDatabase) {
         val selectedProfiles = d.profiles.filter { initial.preserveAllProfiles || it.publicId == initial.selectedProfile }
         val primary = if (initial.preserveAllProfiles) d.primaryProfilePublicId else initial.selectedProfile
         val freshProfile = users.size == 1 && active.displayName == null && current.trainings.isEmpty() &&
-            current.plannedTrainings.isEmpty() && current.recurrenceRules.isEmpty() && current.favorites.isEmpty() && current.aliases.isEmpty()
+            current.plannedTrainings.isEmpty() && current.recurrenceRules.isEmpty() && current.favorites.isEmpty() && current.primaryCenters.isEmpty() && current.aliases.isEmpty()
         val adoptProfile = primary?.takeIf { freshProfile && it != active.publicId }
         val profileMap = selectedProfiles.associate { p ->
             val fixed = localAliases["profile" to p.publicId] ?: usersById[p.publicId]?.publicId
@@ -143,7 +144,7 @@ class DataExchange(private val db: AppDatabase) {
             }
         }
         val usedCenterIds = (current.trainings.map { it.centerPublicId } + current.plannedTrainings.map { it.centerPublicId } +
-            current.recurrenceRules.map { it.centerPublicId } + current.favorites.map { it.centerPublicId } + current.aliases.filter { it.kind == "center" }.map { it.targetPublicId }).toSet()
+            current.recurrenceRules.map { it.centerPublicId } + current.primaryCenters.map { it.centerPublicId } + current.favorites.map { it.centerPublicId } + current.aliases.filter { it.kind == "center" }.map { it.targetPublicId }).toSet()
         val counts = mappings.values.filterNotNull().groupingBy { it }.eachCount()
         val adopted = mutableMapOf<String, Long>()
         val centerMap = d.centers.associate { c ->
@@ -305,8 +306,8 @@ class DataExchange(private val db: AppDatabase) {
             if (t.publicId in existingTrainings || t.publicId in plan.preview.choices.skipTrainingIds) skipped++ else {
                 val module = SportModules.require(t.sportSlug)
                 val sport = sports.getValue(t.sportSlug)
-                val input = module.decodeDetails(t, sport.id, center(t.centerPublicId))
-                val id = db.trainingDao().insertTraining(TrainingEntity(userId = profile(t.profilePublicId), sportId = sport.id,
+                val input = module.decodeDetails(t, sport.id, center(t.centerPublicId)).copy(durationMinutes = t.durationMinutes)
+                val id = db.trainingDao().insertTraining(TrainingEntity(durationMinutes = t.durationMinutes, userId = profile(t.profilePublicId), sportId = sport.id,
                     sportsComplexId = input.complexId, trainingDate = input.date, createdAt = time(t.createdAt), publicId = t.publicId!!))
                 module.insertDetails(db.trainingDao(), id, input); imported++
             }
@@ -318,7 +319,7 @@ class DataExchange(private val db: AppDatabase) {
                 val item = RecurrenceRuleEntity(userId = profile(r.profilePublicId), sportId = sports.getValue(r.sportSlug).id,
                     sportsComplexId = center(r.centerPublicId), startDate = TrainingValidation.parseDate(r.startDate),
                     endDate = r.endDate?.let(TrainingValidation::parseDate), frequency = RecurrenceFrequency.fromStorage(r.frequency),
-                    intervalWeeks = r.intervalWeeks, isCanceled = r.isCanceled, createdAt = time(r.createdAt), publicId = r.publicId!!)
+                    intervalWeeks = r.intervalWeeks, isCanceled = r.isCanceled, startTime = r.startTime, endTime = r.endTime, createdAt = time(r.createdAt), publicId = r.publicId!!)
                 rules[item.publicId] = item.copy(id = db.planningDao().insertRecurrenceRule(item)); importedRules++
             }
         }
@@ -330,11 +331,18 @@ class DataExchange(private val db: AppDatabase) {
                 db.planningDao().insertPlannedTraining(PlannedTrainingEntity(userId = profile(p.profilePublicId),
                     sportId = sports.getValue(p.sportSlug).id, sportsComplexId = center(p.centerPublicId),
                     plannedDate = TrainingValidation.parseDate(p.date), recurrenceRuleId = p.recurrenceRulePublicId?.let { rules.getValue(it).id },
-                    status = PlannedTrainingStatus.fromStorage(p.status),
+                    status = PlannedTrainingStatus.fromStorage(p.status), startTime = p.startTime, endTime = p.endTime,
                     occurrenceDate = p.occurrenceDate?.let(TrainingValidation::parseDate),
                     completedTrainingId = p.completedTrainingPublicId?.let { results.getValue(it).training.id }, createdAt = time(p.createdAt), publicId = p.publicId!!))
                 importedPlans++
             }
+        }
+        val primaryCenters = refs.getPrimaryCenters().map { it.userId to it.sportId }.toMutableSet()
+        d.primaryCenters.filter { it.profilePublicId in plan.profiles }.forEach { p ->
+            val u = profile(p.profilePublicId); val s = sports.getValue(p.sportSlug).id; val c = center(p.centerPublicId)
+            // Keep an explicit local preference when restoring into an existing diary.
+            if (primaryCenters.add(u to s) && refs.getComplexesForSport(s).any { it.id == c })
+                refs.setPrimaryCenter(SportPrimaryCenterEntity(u, s, c))
         }
         val favorites = refs.getFavoriteComplexes().map { it.userId to it.sportsComplexId }.toMutableSet()
         var importedFavorites = 0

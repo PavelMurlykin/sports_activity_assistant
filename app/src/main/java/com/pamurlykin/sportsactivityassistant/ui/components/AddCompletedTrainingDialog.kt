@@ -35,9 +35,12 @@ fun AddCompletedTrainingDialog(
     initial: AddCompletedTrainingInput? = null,
     onSaved: () -> Unit = {},
     fromPlan: Boolean = false,
+    initialSportId: Int? = null,
+    plannedDurationMinutes: Int? = null,
 ) {
-    var selectedSportId by rememberSaveable { mutableIntStateOf(initial?.sportId ?: sports.firstOrNull()?.id ?: 0) }
+    var selectedSportId by rememberSaveable { mutableIntStateOf(initial?.sportId ?: initialSportId ?: sports.firstOrNull()?.id ?: 0) }
     var selectedComplexId by rememberSaveable { mutableLongStateOf(initial?.complexId ?: 0L) }
+    var durationText by rememberSaveable { mutableStateOf(initial?.durationMinutes?.toString().orEmpty()) }
     var dateText by rememberSaveable { mutableStateOf((initial?.date ?: initialDate).toString()) }
     var errorText by rememberSaveable { mutableStateOf<String?>(null) }
     var attempted by rememberSaveable { mutableStateOf(false) }
@@ -58,15 +61,18 @@ fun AddCompletedTrainingDialog(
         else dateResult.exceptionOrNull()?.message
     }
     holders.SaveableStateProvider(selectedSportId) {
-        val draft = SportEditors.find(selectedSport?.slug)?.rememberDraft(initial.takeUnless { fromPlan })
+        val draft = SportEditors.find(selectedSport?.slug)?.rememberDraft(initial)
         fun input(): AddCompletedTrainingInput {
             val date = dateResult.getOrElse { throw IllegalArgumentException(dateError ?: AppText.get(R.string.add_completed_training_dialog_proverte_datu)) }
             require(selectedSport != null && centers.any { center ->
                 center.id == selectedComplexId && (!fromPlan && center.id == initial?.complexId ||
                     !center.isArchived && center.sports.any { it.id == selectedSportId })
             }) { AppText.get(R.string.add_completed_training_dialog_vyberite_vid_sporta_i_sportivnyy) }
+            val duration = if (selectedSport.slug != "football" && durationText.isNotBlank()) {
+                requireNotNull(durationText.trim().toIntOrNull()?.takeIf { it > 0 }) { AppText.get(R.string.duration_invalid) }
+            } else null
             return requireNotNull(draft) { AppText.get(R.string.add_completed_training_dialog_dlya_etogo_vida_sporta_forma) }
-                .input(selectedSportId, selectedComplexId, date)
+                .input(selectedSportId, selectedComplexId, date).copy(durationMinutes = duration)
         }
         LaunchedEffect(saving, selectedSport?.id, centers.isNotEmpty()) {
             if (saving && selectedSport != null && centers.isNotEmpty()) {
@@ -79,7 +85,7 @@ fun AddCompletedTrainingDialog(
                 finally { if (kotlinx.coroutines.currentCoroutineContext().isActive) saving = false }
             }
         }
-        AdaptiveAlertDialog(
+        com.pamurlykin.sportsactivityassistant.ui.screen.TrainingFormScreen(
             modifier = Modifier.imePadding(),
             onDismissRequest = { if (!saving) onDismiss() },
             confirmButton = {
@@ -94,7 +100,7 @@ fun AddCompletedTrainingDialog(
             dismissButton = { TextButton(enabled = !saving, onClick = onDismiss) { Text(AppText.get(R.string.add_completed_training_dialog_otmena)) } },
             title = { Text(if (fromPlan) AppText.get(R.string.add_completed_training_dialog_rezultat_po_planu) else if (initial == null) AppText.get(R.string.add_completed_training_dialog_zapisat_trenirovku) else AppText.get(R.string.add_completed_training_dialog_izmenit_trenirovku)) },
             text = {
-                Column(Modifier.dialogVerticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     TrainingCenterSelector(sports, centers, selectedSportId, selectedComplexId,
                         { selectedSportId = it }, { selectedComplexId = it }, onSaveCenter,
                         enabled = !saving, sportLocked = initial != null, retainedCenterId = initial?.complexId.takeUnless { fromPlan },
@@ -107,6 +113,9 @@ fun AddCompletedTrainingDialog(
                         isError = dateError != null, singleLine = true)
                     TextButton(enabled = !saving, onClick = { datePickerOpen = true },
                         modifier = Modifier.testTag("training-date-picker")) { Text(AppText.get(R.string.add_completed_training_dialog_vybrat_datu)) }
+                    plannedDurationMinutes?.let { Text(AppText.get(R.string.planned_duration, it), style = MaterialTheme.typography.bodyMedium) }
+                    if (selectedSport?.slug != "football") StepNumberField(durationText, { durationText = it },
+                        AppText.get(R.string.duration_minutes), "training-duration", enabled = !saving)
                     HorizontalDivider()
                     draft?.Content(enabled = !saving) ?: Text(AppText.get(R.string.add_completed_training_dialog_zapis_dlya_etogo_vida_sporta))
                     errorText?.let { Text(it, Modifier.testTag("training-error"),

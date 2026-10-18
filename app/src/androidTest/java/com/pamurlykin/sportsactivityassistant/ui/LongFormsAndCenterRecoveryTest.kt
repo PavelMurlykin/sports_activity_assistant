@@ -22,7 +22,7 @@ class LongFormsAndCenterRecoveryTest {
     @get:Rule val compose = createComposeRule()
     private val sport = SportSummaryUiModel(1, "football", "Футбол", 0)
 
-    @Test fun landscapeWholeDialogScrollRestoresLastFieldAndReachesSaveAction() {
+    @Test fun landscapeScreenRestoresLastFieldAndKeepsSaveActionVisible() {
         val restoration = StateRestorationTester(compose)
         var saved: AddCompletedTrainingInput? = null
         restoration.setContent {
@@ -37,7 +37,7 @@ class LongFormsAndCenterRecoveryTest {
         compose.onNodeWithTag("football-6").performScrollTo().performTextReplacement("60")
         restoration.emulateSavedInstanceStateRestore()
         compose.onNodeWithTag("football-6").performScrollTo().assertTextContains("60")
-        compose.onNodeWithText("Сохранить").performScrollTo().performClick()
+        compose.onNodeWithText("Сохранить").performClick()
         compose.runOnIdle { assertEquals(60, saved!!.football!!.durationMinutes) }
     }
 

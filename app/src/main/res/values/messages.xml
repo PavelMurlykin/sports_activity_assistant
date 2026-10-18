@@ -5,10 +5,10 @@
     <string name="local_identity_migration_narusheny_svyazi_v_lokalnoy_baze" formatted="false">"Нарушены связи в локальной базе; обновление отменено"</string>
     <string name="backup_codec_isklyucheniya_i_svyazi_s_rezultatami" formatted="false">"Исключения и связи с результатами требуют JSON 6"</string>
     <string name="backup_codec_arhivnye_tsentry_trebuyut_json_5" formatted="false">"Архивные центры требуют JSON 5"</string>
-    <string name="backup_codec_metadannye_kalendarya_dostupny_tolko_v" formatted="false">"Метаданные календаря доступны только в JSON 6"</string>
+    <string name="backup_codec_metadannye_kalendarya_dostupny_tolko_v" formatted="false">"Метаданные календаря доступны в JSON 6 и выше"</string>
     <string name="backup_codec_centers_isarchived_dostupno_tolko_v_json" formatted="false">"centers.isArchived доступно только в JSON 5"</string>
     <string name="backup_codec_versiya_rezervnoy_kopii_ne_podderzhivaetsya">"Версия резервной копии %1$s не поддерживается"</string>
-    <string name="backup_codec_v_kopii_versii_3_6_dolzhna" formatted="false">"В копии версии 3–6 должна быть указана шкала каждой трассы"</string>
+    <string name="backup_codec_v_kopii_versii_3_6_dolzhna" formatted="false">"В копии версии 3–7 должна быть указана шкала каждой трассы"</string>
     <string name="backup_codec_dannye_shkaly_ne_sootvetstvuyut_versii" formatted="false">"Данные шкалы не соответствуют версии копии"</string>
     <string name="backup_codec_json_pole_schemaversion_obyazatelno" formatted="false">"JSON: поле schemaVersion обязательно"</string>
     <string name="backup_codec_json_schemaversion_dolzhno_byt_tselym" formatted="false">"JSON: schemaVersion должно быть целым числом, не строкой"</string>
@@ -382,7 +382,7 @@
     <string name="data_management_screen_fayl_ne_zashifrovan_dlya_raboty" formatted="false">"Файл не зашифрован. Для работы без интернета выбирайте хранилище устройства в системном диалоге."</string>
     <string name="data_management_screen_sohranit_kopiyu_v_fayl" formatted="false">"Сохранить копию в файл"</string>
     <string name="data_management_screen_import" formatted="false">"Импорт"</string>
-    <string name="data_management_screen_json_versiy_1_6_i_futbolnyy" formatted="false">"JSON версий 1–6 и футбольный CSV: перед применением — проверка, выбор профиля и центров. Совпадения UUID пропускаются; одинаковые тренировки с разными UUID сохраняются. Лимит файла — 16 МиБ."</string>
+    <string name="data_management_screen_json_versiy_1_6_i_futbolnyy" formatted="false">"JSON версий 1–7 и футбольный CSV: перед применением — проверка, выбор профиля и центров. Совпадения UUID пропускаются; одинаковые тренировки с разными UUID сохраняются. Лимит файла — 16 МиБ."</string>
     <string name="data_management_screen_vybrat_fayl" formatted="false">"Выбрать файл"</string>
     <string name="main_view_model_rabota_s_faylom" formatted="false">"Работа с файлом…"</string>
     <string name="main_view_model_vybor_fayla_prervan_vyberite_fayl" formatted="false">"Выбор файла прерван. Выберите файл ещё раз; база не изменена."</string>
@@ -398,7 +398,6 @@
     <string name="schedule_screen_zapishite_rezultat_sostoyavsheysya_trenirovki_ili" formatted="false">"Запишите результат состоявшейся тренировки или добавьте будущую в план."</string>
     <string name="schedule_screen_zapisat_rezultat" formatted="false">"Записать результат"</string>
     <string name="schedule_screen_zaplanirovat" formatted="false">"Запланировать"</string>
-    <string name="schedule_screen_kalendar_zavershyonnyh_i_zaplanirovannyh_trenirovok" formatted="false">"Календарь завершённых и запланированных тренировок"</string>
     <string name="schedule_screen_na_vybrannyy_den_trenirovok_poka" formatted="false">"На выбранный день тренировок пока нет"</string>
     <string name="schedule_screen_trenirovki_na_vybrannyy_den" formatted="false">"Тренировки на выбранный день"</string>
     <string name="schedule_screen_den_svoboden" formatted="false">"День свободен"</string>
@@ -409,7 +408,6 @@
     <string name="schedule_screen_rezultat_svyazan_s_planom" formatted="false">"Результат связан с планом"</string>
     <string name="schedule_screen_sostoyavshayasya_trenirovka" formatted="false">"Состоявшаяся тренировка"</string>
     <string name="schedule_screen_otmenena" formatted="false">"Отменена"</string>
-    <string name="schedule_screen_seriya" formatted="false">" · серия"</string>
     <string name="schedule_screen_zaplanirovana_seriya" formatted="false">"Запланирована · серия"</string>
     <string name="schedule_screen_zaplanirovana" formatted="false">"Запланирована"</string>
     <string name="sports_centers_screen_sportivnyy_tsentr_sohranyon" formatted="false">"Спортивный центр сохранён"</string>
@@ -432,7 +430,6 @@
     <string name="sports_centers_screen_izmenit" formatted="false">"Изменить"</string>
     <string name="statistics_screen_vsego_zavershyonnyh_trenirovok" formatted="false">"Всего завершённых тренировок"</string>
     <string name="statistics_screen_trenirovok">"%1$s тренировок"</string>
-    <string name="statistics_screen_otkryt" formatted="false">"Открыть"</string>
     <string name="statistics_screen_po_mesyatsam" formatted="false">"По месяцам"</string>
     <string name="statistics_screen_vsego">"Всего: %1$s"</string>
     <string name="statistics_screen_net_trenirovok" formatted="false">"Нет тренировок"</string>

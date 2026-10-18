@@ -16,9 +16,11 @@ data class PlanSnapshot(
     val endDate: String?,
     val revision: String,
     val canceled: Boolean,
+    val startTime: String? = null,
+    val endTime: String? = null,
 ) {
     fun input() = AddPlannedTrainingInput(sportId, complexId, LocalDate.parse(date), repeatWeekly,
-        intervalWeeks, endDate?.let(LocalDate::parse))
+        intervalWeeks, endDate?.let(LocalDate::parse), startTime, endTime)
 }
 
 enum class PlanScope { EVENT, SERIES }

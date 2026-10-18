@@ -75,7 +75,7 @@ class LifecycleAndCalendarUiTest {
         compose.onNodeWithTag("read-loading").assertDoesNotExist()
     }
 
-    @Test fun compactCalendarKeepsDayTargetsAndSelectionAtDoubleFontScale() {
+    @Test fun compactCalendarFitsSevenColumnsAndKeepsSelectionAtDoubleFontScale() {
         val first = LocalDate.parse("2020-09-28")
         val selected = androidx.compose.runtime.mutableStateOf(first)
         compose.setContent {
@@ -95,8 +95,8 @@ class LifecycleAndCalendarUiTest {
         }
         compose.onNodeWithContentDescription("Предыдущий месяц").assertWidthIsAtLeast(48.dp).assertHeightIsAtLeast(48.dp)
         compose.onNodeWithContentDescription("2020-09-28", substring = true)
-            .performScrollTo().assertWidthIsAtLeast(48.dp).assertHeightIsAtLeast(172.dp).assertIsSelected()
-        compose.onNodeWithContentDescription("2020-10-04", substring = true).performScrollTo().performClick()
+            .assertWidthIsAtLeast(36.dp).assertIsSelected()
+        compose.onNodeWithContentDescription("2020-10-04", substring = true).assertIsDisplayed().performClick()
         compose.runOnIdle { assertEquals(LocalDate.parse("2020-10-04"), selected.value) }
         compose.onNodeWithContentDescription("2020-10-04", substring = true).assertIsSelected()
     }

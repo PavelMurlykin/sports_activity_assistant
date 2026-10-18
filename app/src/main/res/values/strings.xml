@@ -1,6 +1,6 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="import_invalid_json">Файл JSON повреждён или содержит неподдерживаемые поля. Выберите проверенную копию JSON 1–6. Данные на устройстве не изменены.</string>
+    <string name="import_invalid_json">Файл JSON повреждён или содержит неподдерживаемые поля. Выберите проверенную копию JSON 1–7. Данные на устройстве не изменены.</string>
     <string name="app_name">Sports Activity Assistant</string>
     <string name="nav_schedule">Расписание</string>
     <string name="nav_statistics">Статистика</string>
@@ -20,7 +20,6 @@
     <string name="calendar_planned">запланирована</string>
     <string name="calendar_canceled">отменена</string>
     <string name="calendar_event">%1$s: %2$s</string>
-    <string name="calendar_more_events">+%1$d</string>
     <string name="back_to_statistics">Назад к общей статистике</string>
     <string name="expand_training">Показать детали тренировки</string>
     <string name="collapse_training">Скрыть детали тренировки</string>
@@ -37,4 +36,22 @@
     <string-array name="calendar_weekdays">
         <item>Пн</item><item>Вт</item><item>Ср</item><item>Чт</item><item>Пт</item><item>Сб</item><item>Вс</item>
     </string-array>
+    <string name="time_invalid">Укажите время в формате ЧЧ:ММ (00:00–23:59)</string>
+    <string name="time_equal">Время начала и окончания должно различаться</string>
+    <string name="time_start">Время начала (необязательно)</string>
+    <string name="time_end">Время окончания (необязательно)</string>
+    <string name="time_start_value">Начало: %1$s</string>
+    <string name="time_end_value">Окончание: %1$s</string>
+    <string name="time_hint">ЧЧ:ММ. Окончание раньше начала — на следующий день.</string>
+    <string name="planned_duration">По плану: %1$d мин. Длительность результата можно изменить.</string>
+    <string name="duration_minutes">Длительность, мин (необязательно)</string>
+    <string name="duration_value">Длительность: %1$d мин</string>
+    <string name="duration_invalid">Длительность должна быть положительным целым числом</string>
+    <string name="primary_centers">Основной центр для каждого вида спорта</string>
+    <string name="primary_center_none">Не выбран</string>
+    <string name="primary_center_invalid">Основной центр должен быть активен и поддерживать выбранный спорт</string>
+    <string name="add_sport_training">Записать тренировку: %1$s</string>
+    <string name="increment_value">Увеличить: %1$s</string>
+    <string name="decrement_value">Уменьшить: %1$s</string>
+    <string name="backup_requires_7">Время тренировок и основные центры требуют JSON 7</string>
 </resources>

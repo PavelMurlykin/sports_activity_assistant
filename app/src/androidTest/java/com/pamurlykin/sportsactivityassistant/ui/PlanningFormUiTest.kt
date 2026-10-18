@@ -29,7 +29,7 @@ class PlanningFormUiTest {
             AddPlannedTrainingDialog(listOf(sport),listOf(center),{}, { input,_ -> saved = input }, initialDate = date)
         } }
         compose.onNodeWithTag("plan-date").assertTextContains(date.toString())
-        compose.onNodeWithText("По неделям").performClick()
+        compose.onNodeWithText("По неделям").performScrollTo().performClick()
         compose.onNodeWithTag("plan-interval").performScrollTo().performTextReplacement("0")
         save()
         compose.runOnIdle { assertNull(saved) }

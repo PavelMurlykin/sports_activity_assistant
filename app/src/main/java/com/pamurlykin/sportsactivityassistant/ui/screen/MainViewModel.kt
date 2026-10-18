@@ -1,4 +1,4 @@
-﻿package com.pamurlykin.sportsactivityassistant.ui.screen
+package com.pamurlykin.sportsactivityassistant.ui.screen
 
 import com.pamurlykin.sportsactivityassistant.R
 
@@ -168,8 +168,18 @@ class MainViewModel(
         savedState["scheduleDate"] = date.toString()
         if (YearMonth.from(date) != visibleMonth.value) {
             visibleMonth.value = YearMonth.from(date)
+            refreshSchedule()
+        } else {
+            _scheduleState.value?.let { publishSchedule(it) }
+            if (_scheduleState.value == null) refreshSchedule()
         }
-        refreshSchedule()
+    }
+
+    private fun publishSchedule(month: ScheduleMonthUiModel) {
+        val date = selectedDate.value
+        val next = month.copy(selectedDate = date, selectedDayEvents = month.days.firstOrNull { it.date == date }?.events.orEmpty())
+        _scheduleState.value = next
+        _scheduleReadState.value = ReadState(data = next)
     }
 
     suspend fun addPlannedTraining(input: AddPlannedTrainingInput, requestId: String) {
@@ -242,6 +252,8 @@ class MainViewModel(
             refreshSchedule()
         }
     }
+
+    suspend fun setPrimaryCenter(sportId: Int, centerId: Long?) = repository.setPrimaryCenter(sportId, centerId)
 
     suspend fun loadComplexesForSport(sportId: Int): List<ComplexOptionUiModel> {
         return repository.getComplexOptionsForSport(sportId)
@@ -417,14 +429,13 @@ class MainViewModel(
             try {
                 repository.observeScheduleMonth(repository.localProfileId(), month, date, today).collect { next ->
                     kotlinx.coroutines.currentCoroutineContext().ensureActive()
-                    if (month == visibleMonth.value && date == selectedDate.value) {
-                        _scheduleState.value = next
-                        _scheduleReadState.value = ReadState(data = next)
+                    if (month == visibleMonth.value) {
+                        publishSchedule(next)
                     }
                 }
             } catch (e: CancellationException) { throw e }
             catch (e: Exception) {
-                if (month == visibleMonth.value && date == selectedDate.value) {
+                if (month == visibleMonth.value) {
                     _scheduleState.value = null
                     _scheduleReadState.value = ReadState(failed = true)
                 }

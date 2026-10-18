@@ -72,10 +72,22 @@ private object FootballEditor : SportEditor {
                 Text(AppText.get(R.string.sport_editors_futbolnaya_statistika), style = MaterialTheme.typography.titleMedium)
                 val labels = listOf(AppText.get(R.string.sport_editors_golov_zabito), AppText.get(R.string.sport_editors_golov_propuscheno), AppText.get(R.string.football_module_lichnye_goly), AppText.get(R.string.football_module_golevye_peredachi),
                     AppText.get(R.string.sport_editors_distantsiya_km_neobyazatelno), AppText.get(R.string.sport_editors_igrokov_v_komande_neobyazatelno), AppText.get(R.string.sport_editors_vremya_igry_min_neobyazatelno))
-                labels.forEachIndexed { index, label ->
-                    NumberField(values[index], { text ->
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    labels.take(4).forEachIndexed { index, label ->
+                        Column(Modifier.weight(1f)) {
+                            val options = (0..99).map(Int::toString) + listOfNotNull(values[index].takeIf { (it.toIntOrNull() ?: 0) > 99 })
+                            WheelPicker(label, options, options.indexOf(values[index]),
+                                { next -> values = values.mapIndexed { i, value -> if (i == index) options[next] else value } },
+                                Modifier.fillMaxWidth().testTag("football-$index"), enabled)
+                            if (attempted) parsed.errors[index]?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
+                        }
+                    }
+                }
+                labels.drop(4).forEachIndexed { offset, label ->
+                    val index = offset + 4
+                    StepNumberField(values[index], { text ->
                         values = values.mapIndexed { i, value -> if (i == index) text else value }
-                    }, label, "football-${index}", if (attempted) parsed.errors[index] else null, enabled, index == 4)
+                    }, label, "football-$index", if (attempted) parsed.errors[index] else null, enabled, index == 4)
                 }
             }
             override fun input(sportId: Int, complexId: Long, date: LocalDate): AddCompletedTrainingInput {
@@ -110,7 +122,7 @@ private object ClimbingEditor : SportEditor {
     @Composable
     override fun rememberDraft(initial: AddCompletedTrainingInput?): SportDraft {
         var routes by rememberSaveable(stateSaver = routeSaver) {
-            mutableStateOf(initial?.climbingRoutes?.map(RouteDraft::from) ?: listOf(RouteDraft.fresh()))
+            mutableStateOf(initial?.climbingRoutes?.map(RouteDraft::from)?.takeIf { it.isNotEmpty() } ?: listOf(RouteDraft.fresh()))
         }
         var attempted by rememberSaveable { mutableStateOf(false) }
         return object : SportDraft {
@@ -163,16 +175,23 @@ private fun ClimbingFields(routes: List<RouteDraft>, onChange: (List<RouteDraft>
                         Text(AppText.get(R.string.sport_editors_istoricheskaya_kategoriya_shkala_ne_podtverzhdena),
                             style = MaterialTheme.typography.bodySmall)
                     } else {
-                        DropdownSelector(AppText.get(R.string.sport_editors_tip), type.title, ClimbingWorkoutType.supported, { it.title }, { next ->
-                            val difficulty = when (next) {
-                                ClimbingWorkoutType.DIFFICULTY -> "6a"
-                                ClimbingWorkoutType.BOULDERING -> "6A"
-                                else -> ""
+                        Text(AppText.get(R.string.sport_editors_tip), style = MaterialTheme.typography.labelLarge)
+                        FlowRow(Modifier.testTag("route-${index}-type"), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            ClimbingWorkoutType.supported.forEach { next ->
+                                FilterChip(selected = type == next, enabled = enabled, label = { Text(next.title) }, onClick = {
+                                    if (type != next) {
+                                        val difficulty = when (next) {
+                                            ClimbingWorkoutType.DIFFICULTY -> "6a"
+                                            ClimbingWorkoutType.BOULDERING -> "6A"
+                                            else -> ""
+                                        }
+                                        val system = ClimbingDifficultyCatalog.systemFor(next)
+                                        update(draft.copy(route = route.copy(workoutType = next.storageValue, routeDifficulty = difficulty,
+                                            gradingSystem = system, gradeCode = ClimbingDifficultyCatalog.find(system, difficulty)?.code, speedCourse = null)))
+                                    }
+                                })
                             }
-                            val system = ClimbingDifficultyCatalog.systemFor(next)
-                            update(draft.copy(route = route.copy(workoutType = next.storageValue, routeDifficulty = difficulty,
-                                gradingSystem = system, gradeCode = ClimbingDifficultyCatalog.find(system, difficulty)?.code, speedCourse = null)))
-                        }, Modifier.testTag("route-${index}-type"), enabled)
+                        }
                         if (type == ClimbingWorkoutType.SPEED) {
                             DropdownSelector(AppText.get(R.string.sport_editors_trassa_skorosti),
                                 SpeedCourse.entries.firstOrNull { it.code == route.speedCourse }?.title ?: AppText.get(R.string.sport_editors_vyberite_trassu),
@@ -183,10 +202,11 @@ private fun ClimbingFields(routes: List<RouteDraft>, onChange: (List<RouteDraft>
                                 style = MaterialTheme.typography.bodySmall)
                         } else {
                             val system = ClimbingDifficultyCatalog.systemFor(type)
-                            DropdownSelector(AppText.get(R.string.sport_editors_slozhnost, ClimbingDifficultyCatalog.title(system)), route.routeDifficulty,
-                                ClimbingDifficultyCatalog.grades(system), { it.label },
-                                { update(draft.copy(route = route.copy(routeDifficulty = it.label, gradeCode = it.code))) },
-                                Modifier.testTag("route-${index}-grade"), enabled)
+                            val grades = ClimbingDifficultyCatalog.grades(system)
+                            WheelPicker(AppText.get(R.string.sport_editors_slozhnost, ClimbingDifficultyCatalog.title(system)),
+                                grades.map { it.label }, grades.indexOfFirst { it.code == route.gradeCode },
+                                { next -> update(draft.copy(route = route.copy(routeDifficulty = grades[next].label, gradeCode = grades[next].code))) },
+                                Modifier.fillMaxWidth().testTag("route-${index}-grade"), enabled)
                         }
                     }
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {

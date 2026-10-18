@@ -9,6 +9,9 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.material3.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Edit
+import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
@@ -22,9 +25,9 @@ import com.pamurlykin.sportsactivityassistant.R
 
 @Composable
 fun TrainingActions(sportSlug: String, onEdit: () -> Unit, onDelete: () -> Unit) {
-    if (SportEditors.find(sportSlug) != null) FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        TextButton(onClick = onEdit) { Text(AppText.get(R.string.add_completed_training_dialog_izmenit_trenirovku)) }
-        TextButton(onClick = onDelete) { Text(AppText.get(R.string.training_actions_udalit_trenirovku)) }
+    if (SportEditors.find(sportSlug) != null) Row {
+        IconButton(onClick = onEdit) { Icon(Icons.Rounded.Edit, AppText.get(R.string.add_completed_training_dialog_izmenit_trenirovku)) }
+        IconButton(onClick = onDelete) { Icon(Icons.Rounded.Delete, AppText.get(R.string.training_actions_udalit_trenirovku)) }
     }
 }
 

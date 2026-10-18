@@ -102,12 +102,15 @@ fun TrainingCenterSelector(
         // The application seeds centers before emitting its first directory snapshot.
         // Do not destroy a restored selection while that initial snapshot is loading.
         if (centers.isEmpty()) return@LaunchedEffect
-        if (available.none { it.id == centerId }) onCenterSelected(available.firstOrNull()?.id ?: 0L)
+        if (available.none { it.id == centerId }) onCenterSelected(available.firstOrNull { sportId in it.primarySportIds }?.id ?: available.firstOrNull()?.id ?: 0L)
     }
     DropdownSelector(AppText.get(R.string.sports_center_dialog_vid_sporta), sports.firstOrNull { it.id == sportId }?.title ?: AppText.get(R.string.sports_center_dialog_vyberite_sport),
         sports, { it.title }, { next ->
-            if (centers.none { it.id == centerId && !it.isArchived && it.sports.any { sport -> sport.id == next.id } })
-                onCenterSelected(0L)
+            if (next.id != sportId) {
+                val preferred = centers.firstOrNull { !it.isArchived && next.id in it.primarySportIds && it.sports.any { sport -> sport.id == next.id } }
+                if (preferred != null) onCenterSelected(preferred.id)
+                else if (centers.none { it.id == centerId && !it.isArchived && it.sports.any { sport -> sport.id == next.id } }) onCenterSelected(0L)
+            }
             onSportSelected(next.id)
         }, Modifier.testTag("training-sport"), enabled = enabled && !sportLocked)
     DropdownSelector(AppText.get(R.string.sports_center_dialog_sportivnyy_tsentr), available.firstOrNull { it.id == centerId }?.fullTitle ?: AppText.get(R.string.sports_center_dialog_vyberite_tsentr),

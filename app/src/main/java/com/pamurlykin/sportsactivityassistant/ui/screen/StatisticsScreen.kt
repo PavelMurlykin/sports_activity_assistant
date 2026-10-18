@@ -1,4 +1,4 @@
-﻿package com.pamurlykin.sportsactivityassistant.ui.screen
+package com.pamurlykin.sportsactivityassistant.ui.screen
 
 import com.pamurlykin.sportsactivityassistant.text.AppText
 
@@ -16,6 +16,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.ExpandLess
 import androidx.compose.material.icons.rounded.ExpandMore
 import androidx.compose.material3.Card
@@ -66,6 +67,7 @@ import com.pamurlykin.sportsactivityassistant.data.model.StatisticsOverviewUiMod
 fun StatisticsScreen(
     viewModel: MainViewModel,
     onOpenSport: (Int) -> Unit,
+    onAddTraining: (Int) -> Unit = {},
 ) {
     val readState by viewModel.statisticsReadState.collectAsStateWithLifecycle()
     val statisticsState = readState.data ?: StatisticsOverviewUiModel(0, emptyList())
@@ -142,7 +144,9 @@ fun StatisticsScreen(
                                     )
                                 }
                             }
-                            Text(text = AppText.get(R.string.statistics_screen_otkryt), color = MaterialTheme.colorScheme.primary)
+                            IconButton(onClick = { onAddTraining(sport.id) }) {
+                                Icon(Icons.Rounded.Add, stringResource(R.string.add_sport_training, sport.title))
+                            }
                         }
                     }
                 }
@@ -164,7 +168,7 @@ fun StatisticsScreen(
                                     fontWeight = FontWeight.SemiBold,
                                 )
                                 Text(AppText.get(R.string.statistics_screen_vsego, month.totalTrainings))
-                                Text(month.countsBySport.joinToString(" · ").ifEmpty { AppText.get(R.string.statistics_screen_net_trenirovok) }, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(month.countsBySport.joinToString(" Р’В· ").ifEmpty { AppText.get(R.string.statistics_screen_net_trenirovok) }, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                         }
                     }
@@ -180,6 +184,8 @@ fun StatisticsDetailScreen(
     sportId: Int,
     viewModel: MainViewModel,
     onBack: () -> Unit,
+    onAddTraining: () -> Unit = {},
+    onEditTraining: (Long) -> Unit = {},
 ) {
     val filter by viewModel.statisticsFilter.collectAsStateWithLifecycle()
     val centersRead by viewModel.centersReadState.collectAsStateWithLifecycle()
@@ -217,6 +223,7 @@ fun StatisticsDetailScreen(
                         Icon(imageVector = Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = stringResource(R.string.back_to_statistics))
                     }
                 },
+                actions = { IconButton(onClick = onAddTraining) { Icon(Icons.Rounded.Add, stringResource(R.string.add_sport_training, title)) } },
                 title = {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(text = title)
@@ -281,7 +288,7 @@ fun StatisticsDetailScreen(
                 item { TrainingPageControls(trainingPage, { scrollToTrainings = true; pageIndex = it }) }
                 items(trainings, key = { it.id }) { item ->
                     ExpandableTrainingCard(item = item,
-                        onEdit = { deleting = false; actionId = item.id },
+                        onEdit = { onEditTraining(item.id) },
                         onDelete = { deleting = true; actionId = item.id })
                 }
                 item { TrainingPageControls(trainingPage, { pageIndex = it }) }

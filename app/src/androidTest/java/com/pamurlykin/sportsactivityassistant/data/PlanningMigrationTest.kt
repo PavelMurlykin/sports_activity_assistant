@@ -29,7 +29,7 @@ class PlanningMigrationTest {
         helper.runMigrationsAndValidate(name,7,true,AppDatabase.MIGRATION_6_7).use {
             it.query("PRAGMA foreign_key_check").use { cursor -> assertFalse(cursor.moveToFirst()) }
         }
-        val db = Room.databaseBuilder(context,AppDatabase::class.java,name).build()
+        val db = Room.databaseBuilder(context,AppDatabase::class.java,name).addMigrations(AppDatabase.MIGRATION_7_8).build()
         try {
             val plans = db.planningDao().getAllPlannedTrainings()
             assertEquals(listOf(4L,5L),plans.map { it.id })

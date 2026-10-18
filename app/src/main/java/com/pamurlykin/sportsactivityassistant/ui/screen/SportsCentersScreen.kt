@@ -24,6 +24,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.pamurlykin.sportsactivityassistant.data.model.SportsCenterUiModel
 import com.pamurlykin.sportsactivityassistant.ui.components.SportsCenterDialog
+import com.pamurlykin.sportsactivityassistant.ui.components.DropdownSelector
+import androidx.compose.ui.platform.testTag
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import androidx.compose.material.icons.Icons
@@ -41,6 +43,7 @@ fun SportsCentersScreen(viewModel: MainViewModel) {
     val statistics by viewModel.statisticsState.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+    var primaryBusy by remember { mutableStateOf(false) }
     var editedId by rememberSaveable { mutableStateOf<Long?>(null) }
     var showDialog by rememberSaveable { mutableStateOf(false) }
     var showArchive by rememberSaveable { mutableStateOf(false) }
@@ -106,6 +109,28 @@ fun SportsCentersScreen(viewModel: MainViewModel) {
                 top = padding.calculateTopPadding() + 12.dp, bottom = padding.calculateBottomPadding() + 92.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
+            if (centersRead.data != null && statisticsRead.data != null) item(key = "primary-centers") {
+                Card(Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(stringResource(R.string.primary_centers), style = MaterialTheme.typography.titleMedium)
+                        statistics.sports.forEach { sport ->
+                            val available = centers.filter { !it.isArchived && it.sports.any { s -> s.id == sport.id } }
+                            val primary = available.firstOrNull { sport.id in it.primarySportIds }
+                            DropdownSelector(sport.title, primary?.fullTitle ?: stringResource(R.string.primary_center_none),
+                                listOf<SportsCenterUiModel?>(null) + available,
+                                { it?.fullTitle ?: AppText.get(R.string.primary_center_none) }, { selected ->
+                                    primaryBusy = true
+                                    scope.launch {
+                                        try { viewModel.setPrimaryCenter(sport.id, selected?.id) }
+                                        catch (e: CancellationException) { throw e }
+                                        catch (_: Exception) { snackbar.showSnackbar(AppText.get(R.string.sports_centers_screen_ne_udalos_izmenit_tsentr)) }
+                                        finally { primaryBusy = false }
+                                    }
+                                }, Modifier.testTag("primary-center-${sport.slug}"), enabled = !primaryBusy)
+                        }
+                    }
+                }
+            }
             item { FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 FilterChip(!showArchive, { showArchive = false }, label = { Text(AppText.get(R.string.sports_centers_screen_aktivnye)) })
                 FilterChip(showArchive, { showArchive = true }, label = { Text(AppText.get(R.string.sports_centers_screen_arhiv)) })
