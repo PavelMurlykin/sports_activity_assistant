@@ -34,6 +34,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.ui.text.style.TextAlign
 import com.pamurlykin.sportsactivityassistant.ui.components.StatisticsFilters
+import com.pamurlykin.sportsactivityassistant.ui.components.FootballStatisticsCards
+import com.pamurlykin.sportsactivityassistant.ui.components.TrainingDetails
 import com.pamurlykin.sportsactivityassistant.data.model.TrainingPageUiModel
 import androidx.compose.runtime.Composable
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -48,6 +50,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.testTag
 import android.content.res.Configuration
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.ui.text.font.FontWeight
@@ -68,6 +71,7 @@ fun StatisticsScreen(
     viewModel: MainViewModel,
     onOpenSport: (Int) -> Unit,
     onAddTraining: (Int) -> Unit = {},
+    onOpenSettings: () -> Unit = {},
 ) {
     val readState by viewModel.statisticsReadState.collectAsStateWithLifecycle()
     val statisticsState = readState.data ?: StatisticsOverviewUiModel(0, emptyList())
@@ -79,6 +83,7 @@ fun StatisticsScreen(
         topBar = {
             CenterAlignedTopAppBar(
                 title = { Text(stringResource(R.string.nav_statistics)) },
+                actions = { com.pamurlykin.sportsactivityassistant.ui.components.SettingsAction(onOpenSettings) },
             )
         },
     ) { innerPadding ->
@@ -115,6 +120,9 @@ fun StatisticsScreen(
                     }
                 }
 
+                if (statisticsState.sports.isEmpty()) item {
+                    TextButton(onClick = onOpenSettings) { Text(stringResource(R.string.settings_choose_sports)) }
+                }
                 items(statisticsState.sports, key = { it.id }) { sport ->
                     val openLabel = stringResource(R.string.open_sport, sport.title)
                     Card(
@@ -239,7 +247,7 @@ fun StatisticsDetailScreen(
     ) { innerPadding ->
         LazyColumn(
             state = listState,
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier.fillMaxSize().testTag("statistics-history"),
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = innerPadding.calculateTopPadding() + 12.dp, bottom = innerPadding.calculateBottomPadding() + 24.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
@@ -251,7 +259,8 @@ fun StatisticsDetailScreen(
             }
             sportStatistics?.takeIf { it.filter == filter }?.let { statistics ->
                 item {
-                    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+                    if (statistics.football != null) FootballStatisticsCards(statistics.football)
+                    else Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
                         Column(
                             modifier = Modifier.fillMaxWidth().padding(16.dp),
                             verticalArrangement = Arrangement.spacedBy(10.dp),
@@ -320,11 +329,11 @@ private fun ExpandableTrainingCard(item: TrainingSessionUiModel, onEdit: () -> U
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable(role = Role.Button, onClickLabel = expandLabel) { expanded = !expanded }
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(Modifier.fillMaxWidth().clickable(role = Role.Button, onClickLabel = expandLabel) { expanded = !expanded },
+                verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 SportBadge(slug = item.sportSlug)
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
@@ -347,12 +356,7 @@ private fun ExpandableTrainingCard(item: TrainingSessionUiModel, onEdit: () -> U
             if (expanded) {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     TrainingActions(item.sportSlug, onEdit, onDelete)
-                    item.details.forEach { detail ->
-                        Text(
-                            text = detail,
-                            style = MaterialTheme.typography.bodyMedium,
-                        )
-                    }
+                    TrainingDetails(item.details, item.football)
                 }
             }
         }

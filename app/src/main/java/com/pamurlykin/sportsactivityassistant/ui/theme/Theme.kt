@@ -2,13 +2,20 @@
 
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Typography
+import androidx.compose.material3.Shapes
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 
 private val LightScheme = lightColorScheme(
     primary = Pine,
-    onPrimary = Mist,
-    secondary = Clay,
+    onPrimary = Color.White,
+    primaryContainer = Sky,
+    onPrimaryContainer = Pine,
+    secondary = PineSoft,
     onSecondary = Mist,
     tertiary = Sky,
     background = Sand,
@@ -18,6 +25,12 @@ private val LightScheme = lightColorScheme(
     surfaceVariant = SandDark,
     onSurfaceVariant = PineSoft,
     outline = PineSoft,
+    outlineVariant = SandDark,
+    surfaceContainer = Mist,
+    surfaceContainerLow = Color.White,
+    surfaceContainerHigh = SandDark,
+    secondaryContainer = Sky,
+    onSecondaryContainer = Pine,
 )
 
 @Composable
@@ -26,7 +39,16 @@ fun SportsActivityTheme(
 ) {
     MaterialTheme(
         colorScheme = LightScheme,
-        typography = Typography(),
+        typography = Typography().let { type -> type.copy(
+            headlineLarge = type.headlineLarge.copy(fontWeight = FontWeight.ExtraBold),
+            headlineMedium = type.headlineMedium.copy(fontWeight = FontWeight.Bold),
+            headlineSmall = type.headlineSmall.copy(fontWeight = FontWeight.Bold),
+            titleLarge = type.titleLarge.copy(fontWeight = FontWeight.SemiBold),
+        ) },
+        shapes = Shapes(
+            small = RoundedCornerShape(12.dp), medium = RoundedCornerShape(20.dp),
+            large = RoundedCornerShape(28.dp), extraLarge = RoundedCornerShape(32.dp),
+        ),
         content = content,
     )
 }

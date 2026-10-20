@@ -60,6 +60,7 @@ fun AddPlannedTrainingDialog(
     var selectedComplexId by rememberSaveable { mutableLongStateOf(initial?.complexId ?: 0L) }
     var startTime by rememberSaveable { mutableStateOf(initial?.startTime.orEmpty()) }
     var endTime by rememberSaveable { mutableStateOf(initial?.endTime.orEmpty()) }
+    var choosingDate by rememberSaveable { mutableStateOf<String?>(null) }
     var dateText by rememberSaveable { mutableStateOf((initial?.date ?: initialDate).toString()) }
     var repeatWeekly by rememberSaveable { mutableStateOf(initial?.repeatWeekly ?: false) }
     var intervalText by rememberSaveable { mutableStateOf((initial?.intervalWeeks ?: 1).toString()) }
@@ -107,8 +108,9 @@ fun AddPlannedTrainingDialog(
                     { selectedSportId = it }, { selectedComplexId = it }, onSaveCenter, enabled = !saving,
                     retainedCenterId = initial?.complexId.takeIf { initial?.sportId == selectedSportId },
                     onCreateCenter = { creatingCenter = true })
-                OutlinedTextField(dateText, { dateText = it }, Modifier.fillMaxWidth().testTag("plan-date"),
-                    enabled = !saving, label = { Text(if (repeatWeekly) AppText.get(R.string.add_training_dialog_nachalo_serii_yyyy_mm_dd) else AppText.get(R.string.add_training_dialog_data_yyyy_mm_dd)) }, singleLine = true)
+                TrainingDateField(LocalDate.parse(dateText),
+                    if (repeatWeekly) AppText.get(R.string.add_training_dialog_nachalo_serii_yyyy_mm_dd) else AppText.get(R.string.add_training_dialog_data_yyyy_mm_dd),
+                    { choosingDate = "start" }, Modifier.testTag("plan-date"), enabled = !saving, calendarTag = "plan-date-picker")
                 OutlinedTextField(startTime, { startTime = it }, Modifier.fillMaxWidth().testTag("plan-start-time"),
                     enabled = !saving, label = { Text(AppText.get(R.string.time_start)) }, singleLine = true,
                     keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Text))
@@ -124,15 +126,24 @@ fun AddPlannedTrainingDialog(
                     OutlinedTextField(intervalText, { intervalText = it }, Modifier.fillMaxWidth().testTag("plan-interval"),
                         enabled = !saving, label = { Text(AppText.get(R.string.add_training_dialog_interval_v_nedelyah)) }, singleLine = true,
                         keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number))
-                    OutlinedTextField(endDateText, { endDateText = it }, Modifier.fillMaxWidth().testTag("plan-end"),
-                        enabled = !saving, label = { Text(AppText.get(R.string.add_training_dialog_povtoryat_do_yyyy_mm_dd)) },
-                        supportingText = { Text(AppText.get(R.string.add_training_dialog_vklyuchitelno_pusto_bez_ogranicheniya)) }, singleLine = true)
+                    TrainingDateField(endDateText.takeIf { it.isNotBlank() }?.let(LocalDate::parse),
+                        AppText.get(R.string.add_training_dialog_povtoryat_do_yyyy_mm_dd), { choosingDate = "end" },
+                        Modifier.testTag("plan-end"), enabled = !saving, calendarTag = "plan-end-picker", onClear = { endDateText = "" })
                     if (initial != null) Text(AppText.get(R.string.add_training_dialog_izmenyatsya_sobytiya_bez_individualnyh_isklyucheniy))
                 }
                 errorText?.let { Text(it, Modifier.testTag("plan-error"), color = MaterialTheme.colorScheme.error) }
             }
         },
     )
+    choosingDate?.let { target ->
+        androidx.compose.runtime.key(target) {
+            TrainingDatePickerDialog(
+                initialDate = (if (target == "end") endDateText.takeIf { it.isNotBlank() } else null)?.let(LocalDate::parse) ?: LocalDate.parse(dateText),
+                onDismiss = { choosingDate = null },
+                onSelected = { date -> if (target == "start") dateText = date.toString() else endDateText = date.toString(); choosingDate = null },
+                earliestDate = if (target == "end") LocalDate.parse(dateText) else null)
+        }
+    }
     if (creatingCenter && onSaveCenter != null) SportsCenterDialog(null, sports, { creatingCenter = false },
         onSaveCenter, { selectedComplexId = it; creatingCenter = false }, initialSportId = selectedSportId)
 }
@@ -159,7 +170,10 @@ fun <T> DropdownSelector(
         OutlinedButton(
             onClick = { focusManager.clearFocus(); keyboard?.hide(); expanded = true },
             enabled = enabled,
-            modifier = modifier.fillMaxWidth().heightIn(min = 48.dp).semantics { contentDescription = AppText.get(R.string.selector_description, label, selectedText) },
+            shape = androidx.compose.foundation.shape.RoundedCornerShape(20.dp),
+            colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(containerColor = androidx.compose.material3.MaterialTheme.colorScheme.surface),
+            border = androidx.compose.foundation.BorderStroke(1.dp, androidx.compose.material3.MaterialTheme.colorScheme.outlineVariant),
+            modifier = modifier.fillMaxWidth().heightIn(min = 56.dp).semantics { contentDescription = AppText.get(R.string.selector_description, label, selectedText) },
         ) {
             Text(
                 text = selectedText,

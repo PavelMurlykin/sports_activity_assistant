@@ -1,6 +1,7 @@
 package com.pamurlykin.sportsactivityassistant.data.dao
 
 import com.pamurlykin.sportsactivityassistant.data.entity.SportPrimaryCenterEntity
+import com.pamurlykin.sportsactivityassistant.data.entity.SportVisibilityEntity
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
@@ -18,6 +19,15 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface ReferenceDao {
+    @Query("SELECT * FROM sport_visibility")
+    fun observeSportVisibility(): Flow<List<SportVisibilityEntity>>
+    @Query("SELECT * FROM sport_visibility")
+    suspend fun getSportVisibility(): List<SportVisibilityEntity>
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun setSportVisibility(item: SportVisibilityEntity)
+    @Query("DELETE FROM sport_primary_centers WHERE user_id = :userId")
+    suspend fun clearPrimaryCenters(userId: Long)
+
     @Query("SELECT * FROM sport_primary_centers")
     fun observePrimaryCenters(): Flow<List<SportPrimaryCenterEntity>>
     @Query("SELECT * FROM sport_primary_centers")

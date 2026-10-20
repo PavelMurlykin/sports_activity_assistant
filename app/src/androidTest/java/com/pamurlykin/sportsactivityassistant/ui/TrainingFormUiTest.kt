@@ -101,11 +101,11 @@ class TrainingFormUiTest {
         compose.onNodeWithText("Сохранить").performSemanticsAction(SemanticsActions.OnClick) { it() }
         compose.onNodeWithTag("training-date").performScrollTo().assertExists()
         compose.runOnIdle { assertNull(saved) }
-        compose.onNodeWithTag("training-date").performTextReplacement(date.toString())
         compose.onNodeWithTag("training-date-picker").performScrollTo().performClick()
+        compose.onNode(hasText(LocalDate.now().format(java.time.format.DateTimeFormatter.ofLocalizedDate(java.time.format.FormatStyle.LONG)), substring = true) or hasContentDescription(LocalDate.now().format(java.time.format.DateTimeFormatter.ofLocalizedDate(java.time.format.FormatStyle.LONG)), substring = true)).performClick()
         compose.onNodeWithText("Выбрать").assertExists().performClick()
         compose.onNodeWithText("Сохранить").performSemanticsAction(SemanticsActions.OnClick) { it() }
-        compose.runOnIdle { assertEquals(date, saved!!.date) }
+        compose.runOnIdle { assertEquals(LocalDate.now(), saved!!.date) }
     }
 
     @Test fun historicalEditRetainsGradeAndUuidAndArchivedCenter() {

@@ -395,3 +395,19 @@ data class SportPrimaryCenterEntity(
     @ColumnInfo(name = "sport_id") val sportId: Int,
     @ColumnInfo(name = "sports_complex_id") val sportsComplexId: Long,
 )
+
+
+@Entity(
+    tableName = "sport_visibility",
+    primaryKeys = ["user_id", "sport_id"],
+    foreignKeys = [
+        ForeignKey(entity = UserEntity::class, parentColumns = ["id"], childColumns = ["user_id"], onDelete = ForeignKey.CASCADE),
+        ForeignKey(entity = SportEntity::class, parentColumns = ["id"], childColumns = ["sport_id"], onDelete = ForeignKey.CASCADE),
+    ],
+    indices = [Index("sport_id")],
+)
+data class SportVisibilityEntity(
+    @ColumnInfo(name = "user_id") val userId: Long,
+    @ColumnInfo(name = "sport_id") val sportId: Int,
+    @ColumnInfo(name = "is_visible") val isVisible: Boolean,
+)

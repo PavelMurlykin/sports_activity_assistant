@@ -118,4 +118,19 @@ class BackupCodecTest : com.pamurlykin.sportsactivityassistant.ResourceTextTest(
         val text = "Футбол;Москва"
         assertEquals(text, BackupCodec.decodeText(text.toByteArray(charset("windows-1251"))))
     }
+    @Test fun sportSelectionsRequireVersion8IncludingExplicitEmptySelections() {
+        for (slugs in listOf(listOf("football"), emptyList())) {
+            val document = climbingDocument(8, emptyList()).copy(sportSelections = listOf(SportSelectionBackup("profile", slugs)))
+            val raw = BackupCodec.encode(document)
+            assertEquals(document, BackupCodec.decode(raw))
+            assertTrue(runCatching { BackupCodec.encode(document.copy(schemaVersion = 7)) }.isFailure)
+            assertTrue(runCatching { BackupCodec.decode(raw.replace("\"schemaVersion\": 8", "\"schemaVersion\": 7")) }.isFailure)
+        }
+        for (version in 1..7) {
+            val raw = BackupCodec.encode(climbingDocument(version, emptyList()))
+            assertFalse(raw.contains("sportSelections"))
+            assertTrue(BackupCodec.decode(raw).sportSelections.isEmpty())
+        }
+    }
+
 }

@@ -80,15 +80,21 @@ object FootballModule : SportModule {
         val totals = dao.footballTotals(user, sport, filter.firstDate, filter.lastDate, filter.centerId)
         if (!includeMetrics) return SportAggregate(emptyList(), listOf(AppText.get(R.string.football_module_golov, totals.personalGoals), AppText.get(R.string.football_module_peredach, totals.assists)))
         var sum = BigDecimal.ZERO
+        var minimum: BigDecimal? = null
+        var maximum: BigDecimal? = null
         var afterId = 0L
         while (totals.distanceCount > 0) {
             currentCoroutineContext().ensureActive()
             val batch = dao.distanceSamples(user, sport, filter.firstDate, filter.lastDate, filter.centerId, afterId)
             if (batch.isEmpty()) break
-            batch.forEach { sum = sum.add(it.distanceKm) }
+            batch.forEach {
+                sum = sum.add(it.distanceKm)
+                minimum = minimum?.min(it.distanceKm) ?: it.distanceKm
+                maximum = maximum?.max(it.distanceKm) ?: it.distanceKm
+            }
             afterId = batch.last().id
         }
-        return result(totals, sum)
+        return result(totals, sum, minimum, maximum)
     }
 
     private fun fromItems(items: List<TrainingBundle>): SportAggregate {
@@ -108,16 +114,45 @@ object FootballModule : SportModule {
             distanceCount = distances.size.toLong(),
             minutes = durations.sumOf { it.toLong() }, durationCount = durations.size.toLong(),
             players = players.sumOf { it.toLong() }, playersCount = players.size.toLong(),
-        ), distances.fold(BigDecimal.ZERO, BigDecimal::add))
+            teamScoredMax = rows.maxOfOrNull { it.teamGoalsScored },
+            teamScoredMin = rows.minOfOrNull { it.teamGoalsScored },
+            teamConcededMax = rows.maxOfOrNull { it.teamGoalsConceded },
+            teamConcededMin = rows.minOfOrNull { it.teamGoalsConceded },
+            personalGoalsMax = rows.maxOfOrNull { it.userGoalsScored },
+            personalGoalsMin = rows.minOfOrNull { it.userGoalsScored },
+            assistsMax = rows.maxOfOrNull { it.userAssists },
+            assistsMin = rows.minOfOrNull { it.userAssists },
+        ), distances.fold(BigDecimal.ZERO, BigDecimal::add), distances.minOrNull(), distances.maxOrNull())
     }
 
     override fun highlights(items: List<TrainingBundle>) = fromItems(items).highlights
     override fun metrics(items: List<TrainingBundle>) = fromItems(items).metrics
+    fun statistics(items: List<TrainingBundle>) = requireNotNull(fromItems(items).football)
 
-    private fun result(t: FootballTotals, distance: BigDecimal): SportAggregate {
+    fun match(bundle: TrainingBundle): FootballTrainingInput? = bundle.football?.let {
+        FootballTrainingInput(it.teamGoalsScored, it.teamGoalsConceded, it.userGoalsScored,
+            it.userAssists, it.distanceKm, it.playersPerTeam, it.durationMinutes)
+    }
+
+    private fun result(t: FootballTotals, distance: BigDecimal, distanceMin: BigDecimal?, distanceMax: BigDecimal?): SportAggregate {
         fun decimal(value: BigDecimal) = value.setScale(2, RoundingMode.HALF_UP).stripTrailingZeros().toPlainString()
         fun average(value: BigDecimal, count: Long, unit: String) =
             if (count == 0L) AppText.get(R.string.football_module_net_dannyh) else "${decimal(value.divide(BigDecimal.valueOf(count), 2, RoundingMode.HALF_UP))} ${unit}"
+        fun fixed(value: BigDecimal) = value.setScale(2, RoundingMode.HALF_UP).toPlainString().replace('.', ',')
+        fun summary(metric: FootballMetric, sum: Long, max: Int?, min: Int?) = FootballMetricSummary(
+            metric, sum.toString(), max?.toString() ?: "—", min?.toString() ?: "—",
+            if (t.games == 0L) "—" else fixed(BigDecimal.valueOf(sum).divide(BigDecimal.valueOf(t.games), 2, RoundingMode.HALF_UP)),
+        )
+        val football = FootballStatisticsUiModel(t.games, t.wins, t.draws, t.losses, listOf(
+            summary(FootballMetric.TEAM_SCORED, t.teamScored, t.teamScoredMax, t.teamScoredMin),
+            summary(FootballMetric.TEAM_CONCEDED, t.teamConceded, t.teamConcededMax, t.teamConcededMin),
+            summary(FootballMetric.PERSONAL_GOALS, t.personalGoals, t.personalGoalsMax, t.personalGoalsMin),
+            summary(FootballMetric.ASSISTS, t.assists, t.assistsMax, t.assistsMin),
+            FootballMetricSummary(FootballMetric.DISTANCE,
+                if (t.distanceCount == 0L) "—" else fixed(distance),
+                distanceMax?.let(::fixed) ?: "—", distanceMin?.let(::fixed) ?: "—",
+                if (t.distanceCount == 0L) "—" else fixed(distance.divide(BigDecimal.valueOf(t.distanceCount), 2, RoundingMode.HALF_UP))),
+        ), t.distanceCount)
         return SportAggregate(listOf(
             MetricUiModel(AppText.get(R.string.football_module_igry), t.games.toString()),
             MetricUiModel(AppText.get(R.string.football_module_pobedy_nichi_porazheniya), "${t.wins} / ${t.draws} / ${t.losses}"),
@@ -132,7 +167,7 @@ object FootballModule : SportModule {
             MetricUiModel(AppText.get(R.string.football_module_igr_so_vremenem), AppText.get(R.string.football_module_iz, t.durationCount, t.games)),
             MetricUiModel(AppText.get(R.string.football_module_sredniy_sostav_komandy), average(BigDecimal.valueOf(t.players), t.playersCount, AppText.get(R.string.football_module_igrokov))),
             MetricUiModel(AppText.get(R.string.football_module_igr_s_chislom_igrokov), AppText.get(R.string.football_module_iz, t.playersCount, t.games)),
-        ), listOf(AppText.get(R.string.football_module_golov, t.personalGoals), AppText.get(R.string.football_module_peredach, t.assists)))
+        ), listOf(AppText.get(R.string.football_module_golov, t.personalGoals), AppText.get(R.string.football_module_peredach, t.assists)), football)
     }
 
     override fun details(bundle: TrainingBundle): List<String> = buildList {

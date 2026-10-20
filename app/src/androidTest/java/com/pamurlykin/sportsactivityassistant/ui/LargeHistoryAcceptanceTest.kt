@@ -100,7 +100,7 @@ class LargeHistoryAcceptanceTest {
             }
             measured("football-screen",5000) {
                 compose.onNodeWithText("Футбол").performScrollTo().performClick()
-                compose.waitUntil(5000) { compose.onAllNodesWithText("Игр с числом игроков").fetchSemanticsNodes().isNotEmpty() }
+                compose.waitUntil(5000) { compose.onAllNodesWithText("Общие показатели").fetchSemanticsNodes().isNotEmpty() }
             }
             compose.onNodeWithContentDescription("Назад к общей статистике").performClick()
             measured("climbing-screen",5000) {

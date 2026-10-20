@@ -5,7 +5,6 @@ import com.pamurlykin.sportsactivityassistant.R
 import com.pamurlykin.sportsactivityassistant.text.AppText
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.SportsSoccer
@@ -15,7 +14,6 @@ import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.pamurlykin.sportsactivityassistant.data.backup.ClimbingRouteBackup
 import com.pamurlykin.sportsactivityassistant.data.model.*
@@ -69,25 +67,39 @@ private object FootballEditor : SportEditor {
         val parsed = FootballFormValues.parse(values)
         return object : SportDraft {
             @Composable override fun Content(enabled: Boolean) {
-                Text(AppText.get(R.string.sport_editors_futbolnaya_statistika), style = MaterialTheme.typography.titleMedium)
-                val labels = listOf(AppText.get(R.string.sport_editors_golov_zabito), AppText.get(R.string.sport_editors_golov_propuscheno), AppText.get(R.string.football_module_lichnye_goly), AppText.get(R.string.football_module_golevye_peredachi),
-                    AppText.get(R.string.sport_editors_distantsiya_km_neobyazatelno), AppText.get(R.string.sport_editors_igrokov_v_komande_neobyazatelno), AppText.get(R.string.sport_editors_vremya_igry_min_neobyazatelno))
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    labels.take(4).forEachIndexed { index, label ->
-                        Column(Modifier.weight(1f)) {
-                            val options = (0..99).map(Int::toString) + listOfNotNull(values[index].takeIf { (it.toIntOrNull() ?: 0) > 99 })
-                            WheelPicker(label, options, options.indexOf(values[index]),
-                                { next -> values = values.mapIndexed { i, value -> if (i == index) options[next] else value } },
-                                Modifier.fillMaxWidth().testTag("football-$index"), enabled)
+                val labels = listOf(AppText.get(R.string.score_scored), AppText.get(R.string.score_conceded),
+                    AppText.get(R.string.personal_goals_short), AppText.get(R.string.football_module_golevye_peredachi),
+                    AppText.get(R.string.sport_editors_distantsiya_km_neobyazatelno), AppText.get(R.string.sport_editors_igrokov_v_komande_neobyazatelno),
+                    AppText.get(R.string.sport_editors_vremya_igry_min_neobyazatelno))
+                fun update(index: Int, next: Int) { values = values.mapIndexed { i, value -> if (i == index) next.toString() else value } }
+                Text(AppText.get(R.string.score_title), style = MaterialTheme.typography.headlineMedium)
+                WorkoutCard(Modifier.testTag("football-score-card")) {
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        ScoreWheelPicker(labels[0], values[0].toIntOrNull() ?: 0, { update(0, it) }, Modifier.weight(1f), enabled, "football-0")
+                        Box(Modifier.height(138.dp).width(14.dp), contentAlignment = androidx.compose.ui.Alignment.Center) {
+                            Text(":", style = MaterialTheme.typography.headlineLarge)
+                        }
+                        ScoreWheelPicker(labels[1], values[1].toIntOrNull() ?: 0, { update(1, it) }, Modifier.weight(1f), enabled, "football-1")
+                    }
+                    if (attempted) (0..1).mapNotNull { parsed.errors[it] }.forEach { Text(it, color = MaterialTheme.colorScheme.error) }
+                }
+                Spacer(Modifier.height(8.dp))
+                Text(AppText.get(R.string.personal_statistics), style = MaterialTheme.typography.headlineSmall)
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    (2..3).forEach { index ->
+                        WorkoutCard(Modifier.weight(1f).testTag("football-personal-$index")) {
+                            ScoreWheelPicker(labels[index], values[index].toIntOrNull() ?: 0, { update(index, it) },
+                                Modifier.fillMaxWidth(), enabled, "football-$index")
                             if (attempted) parsed.errors[index]?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
                         }
                     }
                 }
+                Spacer(Modifier.height(8.dp))
                 labels.drop(4).forEachIndexed { offset, label ->
                     val index = offset + 4
                     StepNumberField(values[index], { text ->
                         values = values.mapIndexed { i, value -> if (i == index) text else value }
-                    }, label, "football-$index", if (attempted) parsed.errors[index] else null, enabled, index == 4)
+                    }, label, "football-$index", if (attempted) parsed.errors[index] else null, enabled, index == 4, increment = if (index == 6) 5 else 1)
                 }
             }
             override fun input(sportId: Int, complexId: Long, date: LocalDate): AddCompletedTrainingInput {
@@ -147,28 +159,17 @@ private object ClimbingEditor : SportEditor {
 }
 
 @Composable
-private fun NumberField(
-    value: String, onValueChange: (String) -> Unit, label: String, tag: String,
-    error: String?, enabled: Boolean, decimal: Boolean = false,
-) {
-    OutlinedTextField(value, onValueChange, Modifier.fillMaxWidth().testTag(tag),
-        enabled = enabled, label = { Text(label) }, singleLine = true, isError = error != null,
-        supportingText = error?.let { { Text(it) } },
-        keyboardOptions = KeyboardOptions(keyboardType = if (decimal) KeyboardType.Decimal else KeyboardType.Number))
-}
-
-@Composable
 private fun ClimbingFields(routes: List<RouteDraft>, onChange: (List<RouteDraft>) -> Unit, attempted: Boolean, enabled: Boolean) {
-    Text(AppText.get(R.string.sport_editors_trassy), style = MaterialTheme.typography.titleMedium)
+    Text(AppText.get(R.string.sport_editors_trassy), style = MaterialTheme.typography.headlineMedium)
     routes.forEachIndexed { index, draft ->
         key(draft.route.publicId) {
             val route = draft.route
             fun update(next: RouteDraft) = onChange(routes.toMutableList().also { it[index] = next })
             val type = ClimbingWorkoutType.fromStorage(route.workoutType)
             val historical = route.gradingSystem == ClimbingDifficultyCatalog.LEGACY
-            Card(Modifier.fillMaxWidth()) {
-                Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(AppText.get(R.string.sport_editors_trassa, index + 1), style = MaterialTheme.typography.titleSmall)
+            WorkoutCard {
+                Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(AppText.get(R.string.sport_editors_trassa, index + 1), style = MaterialTheme.typography.titleLarge)
                     if (historical) {
                         Text(AppText.get(R.string.details_pair, route.workoutType,
                             route.routeDifficulty.ifEmpty { AppText.get(R.string.climbing_module_bez_kategorii) }))
@@ -217,7 +218,7 @@ private fun ClimbingFields(routes: List<RouteDraft>, onChange: (List<RouteDraft>
                     }
                     val countError = if (attempted && (draft.repeatText.trim().toIntOrNull() ?: 0) <= 0)
                         AppText.get(R.string.sport_editors_vvedite_polozhitelnoe_tseloe_chislo) else null
-                    NumberField(draft.repeatText, { update(draft.copy(repeatText = it)) },
+                    StepNumberField(draft.repeatText, { update(draft.copy(repeatText = it)) },
                         AppText.get(R.string.sport_editors_kolichestvo_popytok_s_etim_rezultatom), "route-${index}-repeat", countError, enabled)
                     Text(AppText.get(R.string.sport_editors_vse_popytki_etoy_stroki_imeyut),
                         style = MaterialTheme.typography.bodySmall)

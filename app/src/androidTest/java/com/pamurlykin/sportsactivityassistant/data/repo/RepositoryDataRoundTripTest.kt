@@ -38,7 +38,7 @@ class RepositoryDataRoundTripTest {
             val first = targetRepository.importData(backup.toByteArray(), 1)
             val second = targetRepository.importData(backup.toByteArray(), 1)
 
-            assertTrue(backup.contains("\"schemaVersion\": 7"))
+            assertTrue(backup.contains("\"schemaVersion\": ${com.pamurlykin.sportsactivityassistant.data.backup.BackupDocument.CURRENT_SCHEMA_VERSION}"))
             assertEquals(4, first.importedTrainings)
             assertEquals(0, first.skippedTrainings)
             assertEquals(0, second.importedTrainings)

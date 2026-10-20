@@ -28,9 +28,8 @@ fun TrainingEntryScreen(
     planKey: String?,
     onBack: () -> Unit,
 ) {
-    val sports by viewModel.statisticsState.collectAsStateWithLifecycle()
     val centers by viewModel.sportsCenters.collectAsStateWithLifecycle()
-    val sportsRead by viewModel.statisticsReadState.collectAsStateWithLifecycle()
+    val sportsRead by viewModel.sportPreferencesReadState.collectAsStateWithLifecycle()
     val centersRead by viewModel.centersReadState.collectAsStateWithLifecycle()
     var revision by rememberSaveable { mutableStateOf<String?>(null) }
     var sportId by rememberSaveable { mutableIntStateOf(initialSportId) }
@@ -51,7 +50,8 @@ fun TrainingEntryScreen(
     }
     val snapshot = revision?.let { TrainingEditSnapshot.restore(trainingId, sportId, centerId, it) }
     val plan = planJson?.let { Json.decodeFromString(PlanSnapshot.serializer(), it) }
-    if (sports.sports.isEmpty() || centersRead.data == null || sportsRead.failed || centersRead.failed ||
+    val sports = sportsRead.data.orEmpty().filter { it.isVisible || it.sport.id == snapshot?.input?.sportId || it.sport.id == plan?.sportId }.map { it.sport }
+    if (sportsRead.data == null || centersRead.data == null || sportsRead.failed || centersRead.failed ||
         trainingId != 0L && snapshot == null || planKey != null && plan == null) {
         TrainingFormScreen(onBack, {}, title = { Text(stringResource(R.string.add_completed_training_dialog_zapisat_trenirovku)) },
             text = { ReadStateNotice(failed || sportsRead.failed || centersRead.failed, {
@@ -59,19 +59,24 @@ fun TrainingEntryScreen(
             }) })
         return
     }
+    if (sports.isEmpty()) {
+        TrainingFormScreen(onBack, {}, title = { Text(stringResource(R.string.add_completed_training_dialog_zapisat_trenirovku)) },
+            text = { Text(stringResource(R.string.settings_choose_sports)) })
+        return
+    }
     val duration = plan?.let { TrainingTimes.duration(it.startTime, it.endTime) }
     val initial = snapshot?.input ?: plan?.let {
-        val football = sports.sports.firstOrNull { s -> s.id == it.sportId }?.slug == "football"
+        val football = sports.firstOrNull { s -> s.id == it.sportId }?.slug == "football"
         AddCompletedTrainingInput(it.sportId, it.complexId, LocalDate.parse(it.date),
             football = if (football) FootballTrainingInput(0, 0, 0, 0, null, null, duration) else null,
             durationMinutes = if (football) null else duration)
     }
-    AddCompletedTrainingDialog(sports.sports, initialDate, centers, onBack,
+    AddCompletedTrainingDialog(sports, initialDate, centers, onBack,
         onSave = { input, request ->
             if (plan != null) viewModel.completePlan(plan, input, request)
             else viewModel.saveCompletedTraining(input, request, snapshot)
         }, onSaveCenter = viewModel::saveSportsCenter, initial = initial, onSaved = onBack,
-        fromPlan = plan != null, initialSportId = initialSportId.takeIf { it != 0 }, plannedDurationMinutes = duration)
+        fromPlan = plan != null, initialSportId = initialSportId.takeIf { id -> sports.any { it.id == id } }, plannedDurationMinutes = duration)
 }
 
 /** A regular navigation destination, with its actions available above the keyboard. */
@@ -93,7 +98,7 @@ fun TrainingFormScreen(
             }
         })
     }, bottomBar = {
-        Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), horizontalArrangement = Arrangement.End) {
+        Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(12.dp, androidx.compose.ui.Alignment.End)) {
             dismissButton?.invoke(); confirmButton()
         }
     }) { padding ->

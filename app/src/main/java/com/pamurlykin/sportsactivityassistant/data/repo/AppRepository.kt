@@ -69,7 +69,7 @@ class AppRepository(private val database: AppDatabase) {
     }
 
     private fun observeStatisticsChanges() = database.invalidationTracker.createFlow(
-        "trainings", "football_trainings", "climbing_routes", "sports", "sports_complexes",
+        "trainings", "football_trainings", "climbing_routes", "sports", "sports_complexes", "sport_visibility",
     )
 
     fun observeStatisticsOverview(filter: StatisticsFilter = StatisticsFilter()): Flow<StatisticsOverviewUiModel> =
@@ -77,13 +77,14 @@ class AppRepository(private val database: AppDatabase) {
             readyTransaction {
                 val user = localProfileId()
                 val dao = database.trainingDao()
-                val sports = database.referenceDao().getSports()
-                val counts = dao.sportCounts(user, filter.firstDate, filter.lastDate, filter.centerId)
+                val visibleIds = visibleSportIds(user)
+                val sports = database.referenceDao().getSports().filter { it.id in visibleIds }
+                val counts = dao.sportCounts(user, filter.firstDate, filter.lastDate, filter.centerId).filter { it.sportId in visibleIds }
                 val highlights = sports.associate { sport ->
                     sport.id to SportModules.find(sport.slug)?.aggregate(dao, StatisticsSelection(user, sport.id, filter), includeMetrics = false)?.highlights.orEmpty()
                 }
                 StatisticsMapper.aggregatedOverview(sports, counts,
-                    dao.monthCounts(user, filter.firstDate, filter.lastDate, filter.centerId), highlights, filter)
+                    dao.monthCounts(user, filter.firstDate, filter.lastDate, filter.centerId).filter { it.sportId in visibleIds }, highlights, filter)
             }
         } }.flowOn(Dispatchers.IO)
 
@@ -112,15 +113,33 @@ class AppRepository(private val database: AppDatabase) {
                 database.referenceDao().getSport(sportId)?.let { sport ->
                     val module = SportModules.find(sport.slug)
                     val selection = StatisticsSelection(localProfileId(), sport.id, filter)
-                    val metrics = module?.aggregate(database.trainingDao(), selection)?.metrics ?: listOf(
+                    val aggregate = module?.aggregate(database.trainingDao(), selection)
+                    val metrics = aggregate?.metrics ?: listOf(
                         MetricUiModel(AppText.get(R.string.app_repository_istoricheskie_trenirovki), database.trainingDao().trainingCount(
                             selection.userId, sportId, filter.firstDate, filter.lastDate, filter.centerId).toString()),
                         MetricUiModel(AppText.get(R.string.app_repository_statistika), AppText.get(R.string.app_repository_vid_sporta_ne_podderzhivaetsya)),
                     )
-                    SportStatisticsUiModel(sport.id, sport.slug, sport.title, metrics, filter)
+                    SportStatisticsUiModel(sport.id, sport.slug, sport.title, metrics, filter, aggregate?.football)
                 }
             }
         } }.flowOn(Dispatchers.IO)
+
+    private suspend fun visibleSportIds(userId: Long): Set<Int> {
+        val hidden = database.referenceDao().getSportVisibility().filter { it.userId == userId && !it.isVisible }.map { it.sportId }.toSet()
+        return database.referenceDao().getSports().map { it.id }.filterNot { it in hidden }.toSet()
+    }
+
+    fun observeSportPreferences(): Flow<List<SportPreferenceUiModel>> = readyFlow {
+        combine(database.referenceDao().observeSports(), database.referenceDao().observeSportVisibility()) { sports, preferences ->
+            val hidden = preferences.filter { it.userId == localProfileId() && !it.isVisible }.map { it.sportId }.toSet()
+            sports.map { SportPreferenceUiModel(SportSummaryUiModel(it.id, it.slug, it.title, 0), it.id !in hidden) }
+        }
+    }
+
+    suspend fun setSportVisible(sportId: Int, visible: Boolean) = readyTransaction {
+        requireNotNull(database.referenceDao().getSport(sportId)) { AppText.get(R.string.app_repository_vid_sporta_ne_nayden) }
+        database.referenceDao().setSportVisibility(com.pamurlykin.sportsactivityassistant.data.entity.SportVisibilityEntity(localProfileId(), sportId, visible))
+    }
 
     fun observeSportsCenters(): Flow<List<SportsCenterUiModel>> =
         readyFlow { kotlinx.coroutines.flow.combine(database.referenceDao().observeComplexesWithSports(),
@@ -311,6 +330,7 @@ class AppRepository(private val database: AppDatabase) {
                 isRecurring = planned.any { it.completedTrainingId == bundle.training.id && it.recurrenceRuleId != null },
                 details = mapTrainingBundle(bundle).details,
                 linkedPlan = planned.any { it.completedTrainingId == bundle.training.id },
+                football = com.pamurlykin.sportsactivityassistant.data.sport.FootballModule.match(bundle),
             )
         }
         planned.filter { it.plannedDate in gridStart..gridEnd && it.completedTrainingId == null }.forEach { item ->
@@ -341,6 +361,8 @@ class AppRepository(private val database: AppDatabase) {
                 )
             }
         }
+        val visibleIds = visibleSportIds(userId)
+        eventsByDate.values.forEach { events -> events.removeAll { it.sportId !in visibleIds } }
         val comparator = compareBy<ScheduleEventUiModel>({ it.state }, { it.sportTitle }, { it.complexName })
         val days = gridDates.map { date ->
             ScheduleDayUiModel(
@@ -356,7 +378,7 @@ class AppRepository(private val database: AppDatabase) {
 
     fun observeScheduleMonth(userId: Long, month: YearMonth, selectedDate: LocalDate, today: LocalDate): Flow<ScheduleMonthUiModel> =
         readyFlow { database.invalidationTracker.createFlow("planned_trainings", "recurrence_rules",
-            "trainings", "football_trainings", "climbing_routes", "sports_complexes", "sports").map {
+            "trainings", "football_trainings", "climbing_routes", "sports_complexes", "sports", "sport_visibility").map {
                 getScheduleMonth(userId, month, selectedDate, today)
             } }.flowOn(Dispatchers.IO)
 
@@ -411,6 +433,7 @@ class AppRepository(private val database: AppDatabase) {
         complexTitle = listOfNotNull(bundle.complex.name, bundle.complex.city).joinToString(", "),
         date = bundle.training.trainingDate,
         details = trainingDetails(bundle),
+        football = com.pamurlykin.sportsactivityassistant.data.sport.FootballModule.match(bundle),
     )
 
     private fun trainingDetails(bundle: TrainingBundle): List<String> =

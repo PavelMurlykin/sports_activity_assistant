@@ -35,7 +35,7 @@ import java.time.LocalDate
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DataManagementScreen(viewModel: MainViewModel) {
+fun DataManagementScreen(viewModel: MainViewModel, onOpenSettings: () -> Unit = {}) {
     val context = LocalContext.current
     val state by viewModel.dataOperationState.collectAsStateWithLifecycle()
     val busy by viewModel.fileBusy.collectAsStateWithLifecycle()
@@ -60,7 +60,7 @@ fun DataManagementScreen(viewModel: MainViewModel) {
         return
     }
 
-    Scaffold(topBar = { TopAppBar(title = { Text(AppText.get(R.string.data_management_screen_dannye), fontWeight = FontWeight.Bold) }) }) { padding ->
+    Scaffold(topBar = { TopAppBar(title = { Text(AppText.get(R.string.data_management_screen_dannye), fontWeight = FontWeight.Bold) }, actions = { com.pamurlykin.sportsactivityassistant.ui.components.SettingsAction(onOpenSettings) }) }) { padding ->
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(

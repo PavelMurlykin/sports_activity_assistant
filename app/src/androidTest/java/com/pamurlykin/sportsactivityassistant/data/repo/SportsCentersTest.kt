@@ -148,7 +148,7 @@ class SportsCentersTest {
             val center = database.referenceDao().getComplexesForSport(f).first()
             repo.addCompletedTraining(user, football(f, center.id))
             val current = BackupCodec.decode(repo.createBackup())
-            val v4 = repo.prepareImport(BackupCodec.encode(current.copy(schemaVersion = 4)).toByteArray())
+            val v4 = repo.prepareImport(BackupCodec.encode(current.copy(schemaVersion = 4, sportSelections = emptyList())).toByteArray())
             repo.setSportsCenterArchived(center.id, true)
             val oldPreview = repo.previewImport(v4)
             assertTrue(oldPreview.errors.toString(), oldPreview.canApply)

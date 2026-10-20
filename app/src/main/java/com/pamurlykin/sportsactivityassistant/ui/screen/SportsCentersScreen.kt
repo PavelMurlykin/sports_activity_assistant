@@ -36,11 +36,12 @@ import com.pamurlykin.sportsactivityassistant.ui.components.ReadStateNotice
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SportsCentersScreen(viewModel: MainViewModel) {
+fun SportsCentersScreen(viewModel: MainViewModel, onOpenSettings: () -> Unit = {}) {
     val centersRead by viewModel.centersReadState.collectAsStateWithLifecycle()
     val centers by viewModel.sportsCenters.collectAsStateWithLifecycle()
-    val statisticsRead by viewModel.statisticsReadState.collectAsStateWithLifecycle()
-    val statistics by viewModel.statisticsState.collectAsStateWithLifecycle()
+    val statisticsRead by viewModel.sportPreferencesReadState.collectAsStateWithLifecycle()
+    val allSports = statisticsRead.data.orEmpty().map { it.sport }
+    val visibleIds = statisticsRead.data.orEmpty().filter { it.isVisible }.map { it.sport.id }.toSet()
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     var primaryBusy by remember { mutableStateOf(false) }
@@ -67,7 +68,7 @@ fun SportsCentersScreen(viewModel: MainViewModel) {
         }
     }
     if (showDialog && (editedId == null || centers.any { it.id == editedId })) SportsCenterDialog(
-        center = centers.firstOrNull { it.id == editedId }, sports = statistics.sports,
+        center = centers.firstOrNull { it.id == editedId }, sports = allSports,
         onDismiss = { showDialog = false }, onSave = viewModel::saveSportsCenter,
         onSaved = { showDialog = false; scope.launch { snackbar.showSnackbar(AppText.get(R.string.sports_centers_screen_sportivnyy_tsentr_sohranyon)) } },
     )
@@ -94,7 +95,7 @@ fun SportsCentersScreen(viewModel: MainViewModel) {
             Text(AppText.get(R.string.sports_centers_screen_sportivnye_tsentry), fontWeight = FontWeight.Bold)
             if (LocalConfiguration.current.orientation != Configuration.ORIENTATION_LANDSCAPE)
                 Text(AppText.get(R.string.sports_centers_screen_mesta_i_dostupnye_vidy_sporta), style = MaterialTheme.typography.bodySmall)
-        } }) },
+        } }, actions = { com.pamurlykin.sportsactivityassistant.ui.components.SettingsAction(onOpenSettings) }) },
         floatingActionButton = {
             if (centersRead.data != null && statisticsRead.data != null) {
                 FloatingActionButton(onClick = { editedId = null; showDialog = true }) {
@@ -109,11 +110,11 @@ fun SportsCentersScreen(viewModel: MainViewModel) {
                 top = padding.calculateTopPadding() + 12.dp, bottom = padding.calculateBottomPadding() + 92.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            if (centersRead.data != null && statisticsRead.data != null) item(key = "primary-centers") {
+            if (centersRead.data != null && statisticsRead.data != null && visibleIds.isNotEmpty()) item(key = "primary-centers") {
                 Card(Modifier.fillMaxWidth()) {
                     Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text(stringResource(R.string.primary_centers), style = MaterialTheme.typography.titleMedium)
-                        statistics.sports.forEach { sport ->
+                        allSports.filter { it.id in visibleIds }.forEach { sport ->
                             val available = centers.filter { !it.isArchived && it.sports.any { s -> s.id == sport.id } }
                             val primary = available.firstOrNull { sport.id in it.primarySportIds }
                             DropdownSelector(sport.title, primary?.fullTitle ?: stringResource(R.string.primary_center_none),
@@ -135,15 +136,18 @@ fun SportsCentersScreen(viewModel: MainViewModel) {
                 FilterChip(!showArchive, { showArchive = false }, label = { Text(AppText.get(R.string.sports_centers_screen_aktivnye)) })
                 FilterChip(showArchive, { showArchive = true }, label = { Text(AppText.get(R.string.sports_centers_screen_arhiv)) })
             } }
-            val visible = centers.filter { it.isArchived == showArchive }
+            val visible = centers.filter { it.isArchived == showArchive && (it.sports.isEmpty() || it.sports.any { sport -> sport.id in visibleIds }) }
             if (centersRead.failed || statisticsRead.failed) item { ReadStateNotice(true, viewModel::retryReads) }
             else if (centersRead.loading || statisticsRead.loading) item { ReadStateNotice(false, viewModel::retryReads) }
+            else if (visibleIds.isEmpty()) item {
+                TextButton(onClick = onOpenSettings) { Text(stringResource(R.string.settings_choose_sports)) }
+            }
             else if (visible.isEmpty()) item { Text(if (showArchive) AppText.get(R.string.sports_centers_screen_arhiv_pust) else AppText.get(R.string.sports_centers_screen_dobavte_sportivnyy_tsentr)) }
             items(visible, key = { it.id }) { center ->
                 Card(Modifier.fillMaxWidth()) {
                     Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text(center.fullTitle, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                        Text(center.sports.joinToString { it.title }.ifBlank { AppText.get(R.string.sports_centers_screen_vidy_sporta_ne_ukazany) })
+                        Text(center.sports.filter { it.id in visibleIds }.joinToString { it.title }.ifBlank { AppText.get(R.string.sports_centers_screen_vidy_sporta_ne_ukazany) })
                         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             TextButton(onClick = { editedId = center.id; showDialog = true }) { Text(AppText.get(R.string.sports_centers_screen_izmenit)) }
                             TextButton(onClick = { archiveError = null; archiveTarget = !center.isArchived; archiveId = center.id }) {

@@ -38,6 +38,7 @@ object BackupValidation {
             ids.forEach(::uuid); distinct(ids)
             distinct(d.aliases.map { it.kind to it.sourceKey })
             distinct(d.primaryCenters.map { it.profilePublicId to it.sportSlug })
+            distinct(d.sportSelections.map { it.profilePublicId })
             distinct(d.favorites.map { it.profilePublicId to it.centerPublicId })
         }
         val sports = d.sports.map { it.slug }.toSet()
@@ -98,6 +99,12 @@ object BackupValidation {
                 }
             }
         }
+        d.sportSelections.forEachIndexed { i, selection -> check("sportSelections[$i]") {
+            require(selection.profilePublicId in profiles && selection.visibleSportSlugs.all { it in sports }) {
+                AppText.get(R.string.backup_validation_otsutstvuyuschaya_ssylka)
+            }
+            distinct(selection.visibleSportSlugs)
+        } }
         d.primaryCenters.forEachIndexed { i, item -> check("primaryCenters[$i]") {
             refs(item.profilePublicId, item.centerPublicId, item.sportSlug)
             require(centers.getValue(item.centerPublicId).let { !it.isArchived && item.sportSlug in it.sportSlugs }) { AppText.get(R.string.primary_center_invalid) }

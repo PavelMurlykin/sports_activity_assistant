@@ -45,7 +45,7 @@ fun SportsActivityApp(
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = backStackEntry?.destination
-    val showBottomBar = currentDestination?.hierarchy?.none { it.route == Destination.StatisticsDetails.route || it.route == Destination.TrainingEntry.route } != false
+    val showBottomBar = currentDestination?.hierarchy?.none { it.route == Destination.StatisticsDetails.route || it.route == Destination.TrainingEntry.route || it.route == Destination.Settings.route } != false
     val landscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
     val items = listOf(
         Triple(Destination.Schedule.route, stringResource(R.string.nav_schedule), Icons.Rounded.CalendarMonth),
@@ -98,6 +98,7 @@ fun SportsActivityApp(
         ) {
             composable(Destination.Schedule.route) {
                 ScheduleScreen(viewModel = viewModel,
+                    onOpenSettings = { navController.navigate(Destination.Settings.route) },
                     onAddResult = { navController.navigate(Destination.TrainingEntry.createRoute(date = it)) },
                     onEditResult = { navController.navigate(Destination.TrainingEntry.createRoute(trainingId = it)) },
                     onCompletePlan = { navController.navigate(Destination.TrainingEntry.createRoute(planKey = it)) })
@@ -106,6 +107,7 @@ fun SportsActivityApp(
                 StatisticsScreen(
                     viewModel = viewModel,
                     onAddTraining = { navController.navigate(Destination.TrainingEntry.createRoute(sportId = it)) },
+                    onOpenSettings = { navController.navigate(Destination.Settings.route) },
                     onOpenSport = { sportId ->
                         navController.navigate(Destination.StatisticsDetails.createRoute(sportId))
                     },
@@ -122,11 +124,14 @@ fun SportsActivityApp(
                     entry.arguments?.getInt("sportId") ?: 0, entry.arguments?.getLong("trainingId") ?: 0L,
                     entry.arguments?.getString("planKey")?.takeIf { it.isNotEmpty() }, { navController.popBackStack() })
             }
+            composable(Destination.Settings.route) {
+                com.pamurlykin.sportsactivityassistant.ui.screen.SettingsScreen(viewModel) { navController.popBackStack() }
+            }
             composable(Destination.SportsCenters.route) {
-                SportsCentersScreen(viewModel = viewModel)
+                SportsCentersScreen(viewModel = viewModel, onOpenSettings = { navController.navigate(Destination.Settings.route) })
             }
             composable(Destination.DataManagement.route) {
-                DataManagementScreen(viewModel = viewModel)
+                DataManagementScreen(viewModel = viewModel, onOpenSettings = { navController.navigate(Destination.Settings.route) })
             }
             composable(
                 route = Destination.StatisticsDetails.route,

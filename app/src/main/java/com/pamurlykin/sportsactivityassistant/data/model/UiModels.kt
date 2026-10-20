@@ -61,6 +61,8 @@ data class SportSummaryUiModel(
     val highlights: List<String> = emptyList(),
 )
 
+data class SportPreferenceUiModel(val sport: SportSummaryUiModel, val isVisible: Boolean)
+
 data class MonthStatisticsUiModel(
     val month: YearMonth,
     val totalTrainings: Int,
@@ -85,6 +87,7 @@ data class SportStatisticsUiModel(
     val sportTitle: String,
     val metrics: List<MetricUiModel>,
     val filter: StatisticsFilter = StatisticsFilter(),
+    val football: FootballStatisticsUiModel? = null,
 )
 
 data class ComplexOptionUiModel(
@@ -118,6 +121,7 @@ data class ScheduleEventUiModel(
     val details: List<String> = emptyList(),
     val planKey: String? = null,
     val linkedPlan: Boolean = false,
+    val football: FootballTrainingInput? = null,
 )
 
 data class ScheduleDayUiModel(
@@ -141,6 +145,7 @@ data class TrainingSessionUiModel(
     val complexTitle: String,
     val date: LocalDate,
     val details: List<String>,
+    val football: FootballTrainingInput? = null,
 )
 
 data class AddPlannedTrainingInput(

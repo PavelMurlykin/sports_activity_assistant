@@ -2,12 +2,12 @@
 
 import androidx.compose.ui.graphics.Color
 
-val Sand = Color(0xFFF5F0E6)
-val SandDark = Color(0xFFE5D9C7)
-val Pine = Color(0xFF183A2B)
-val PineSoft = Color(0xFF2B5B43)
-val Clay = Color(0xFFD96F3D)
-val ClaySoft = Color(0xFFF2B99E)
-val Sky = Color(0xFFBBD8E6)
-val Ink = Color(0xFF1D1D1D)
-val Mist = Color(0xFFFAF8F3)
+val Sand = Color(0xFFF3F6F7)
+val SandDark = Color(0xFFE6ECEE)
+val Pine = Color(0xFF087A59)
+val PineSoft = Color(0xFF68747D)
+val Clay = Color(0xFF0AA777)
+val ClaySoft = Color(0xFFDCEFE7)
+val Sky = Color(0xFFE1EFEB)
+val Ink = Color(0xFF10191F)
+val Mist = Color(0xFFFCFDFD)

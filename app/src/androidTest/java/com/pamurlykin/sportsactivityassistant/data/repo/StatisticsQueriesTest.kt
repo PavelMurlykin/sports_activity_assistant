@@ -65,6 +65,17 @@ class StatisticsQueriesTest {
             assertEquals("81 мин",details["Учтённое время"])
             assertEquals("40.5 мин",details["Средняя длительность"])
             assertEquals("2 из 3",details["Игр со временем"])
+            val footballStats = requireNotNull(repo.observeSportStatistics(sport, filter).first()!!.football)
+            assertEquals(listOf(3L, 1L, 1L, 1L), listOf(footballStats.games, footballStats.wins, footballStats.draws, footballStats.losses))
+            assertEquals(listOf("2", "3", "1", "1", "0,30"), footballStats.metrics.map { it.sum })
+            assertEquals(listOf("2", "2", "1", "1", "0,30"), footballStats.metrics.map { it.maximum })
+            assertEquals(listOf("0", "0", "0", "0", "0,00"), footballStats.metrics.map { it.minimum })
+            assertEquals(listOf("0,67", "1,00", "0,33", "0,33", "0,15"), footballStats.metrics.map { it.average })
+            assertEquals(2L, footballStats.distanceCount)
+            assertNotNull(page.items.first().football)
+            assertEquals(page.items.first().football,
+                repo.observeScheduleMonth(user, java.time.YearMonth.of(2020, 2), date("2020-02-29"), date("2020-02-29"))
+                    .first().selectedDayEvents.single().football)
             assertEquals(5,repo.observeStatisticsOverview().first().totalTrainings)
             val empty = repo.observeStatisticsOverview(StatisticsFilter(date("2017-12-15"),date("2018-03-01"),center)).first()
             assertEquals(listOf(0,0,0,0),empty.months.map { it.totalTrainings })
@@ -173,6 +184,8 @@ class StatisticsQueriesTest {
             db.referenceDao().getSports().forEach { sport ->
                 assertEquals(StatisticsMapper.sport(sport,bundles.filter { it.sport.id == sport.id }).metrics,
                     repo.observeSportStatistics(sport.id).first()!!.metrics)
+                assertEquals(StatisticsMapper.sport(sport,bundles.filter { it.sport.id == sport.id }).football,
+                    repo.observeSportStatistics(sport.id).first()!!.football)
             }
             val sport = db.referenceDao().getSportBySlug("football")!!.id
             val center = db.referenceDao().getComplexesForSport(sport).first().id

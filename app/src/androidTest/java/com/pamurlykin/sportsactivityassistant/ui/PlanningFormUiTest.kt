@@ -28,18 +28,19 @@ class PlanningFormUiTest {
         restoration.setContent { MaterialTheme {
             AddPlannedTrainingDialog(listOf(sport),listOf(center),{}, { input,_ -> saved = input }, initialDate = date)
         } }
-        compose.onNodeWithTag("plan-date").assertTextContains(date.toString())
+        compose.onNodeWithTag("plan-date").assertTextContains("29.02.2020")
         compose.onNodeWithText("По неделям").performScrollTo().performClick()
         compose.onNodeWithTag("plan-interval").performScrollTo().performTextReplacement("0")
         save()
         compose.runOnIdle { assertNull(saved) }
         compose.onNodeWithTag("plan-interval").performScrollTo().performTextReplacement("2")
-        compose.onNodeWithTag("plan-end").performScrollTo().performTextReplacement("2020-05-01")
+        compose.onNodeWithTag("plan-end-picker").performScrollTo().performClick()
+        compose.onNodeWithText("Выбрать").performClick()
         restoration.emulateSavedInstanceStateRestore()
         compose.onNodeWithTag("plan-interval").assertTextContains("2")
-        compose.onNodeWithTag("plan-end").performScrollTo().assertTextContains("2020-05-01")
+        compose.onNodeWithTag("plan-end").performScrollTo().assertTextContains("29.02.2020")
         save()
-        compose.runOnIdle { val value = requireNotNull(saved); assertEquals(date,value.date); assertEquals(2,value.intervalWeeks); assertEquals(LocalDate.parse("2020-05-01"),value.endDate) }
+        compose.runOnIdle { val value = requireNotNull(saved); assertEquals(date,value.date); assertEquals(2,value.intervalWeeks); assertEquals(date,value.endDate) }
     }
     @Test fun failedWriteKeepsPlanAndStableTokenAndPendingSaveCannotRepeat() {
         var calls = 0
@@ -73,9 +74,11 @@ class PlanningFormUiTest {
         compose.onNodeWithTag("training-sport").assertIsNotEnabled()
         save()
         compose.runOnIdle { assertNull(saved) }
-        compose.onNodeWithTag("training-date").performScrollTo().performTextReplacement(date.toString())
+        compose.onNodeWithTag("training-date-picker").performScrollTo().performClick()
+        compose.onNode(hasText(LocalDate.now().format(java.time.format.DateTimeFormatter.ofLocalizedDate(java.time.format.FormatStyle.LONG)), substring = true) or hasContentDescription(LocalDate.now().format(java.time.format.DateTimeFormatter.ofLocalizedDate(java.time.format.FormatStyle.LONG)), substring = true)).performClick()
+        compose.onNodeWithText("Выбрать").performClick()
         save()
-        compose.runOnIdle { val value = requireNotNull(saved); assertEquals(date,value.date); assertEquals(8L,value.complexId) }
+        compose.runOnIdle { val value = requireNotNull(saved); assertEquals(LocalDate.now(),value.date); assertEquals(8L,value.complexId) }
     }
     @Test fun calendarHasLegendNavigationLabelsAndNonColorStateDescriptions() {
         val planned = ScheduleEventUiModel("p",date,1,"football","Футбол","Арена",ScheduleEventState.PLANNED,false)

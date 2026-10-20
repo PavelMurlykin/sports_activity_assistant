@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="import_invalid_json">Файл JSON повреждён или содержит неподдерживаемые поля. Выберите проверенную копию JSON 1–7. Данные на устройстве не изменены.</string>
+    <string name="import_invalid_json">Файл JSON повреждён или содержит неподдерживаемые поля. Выберите проверенную копию JSON 1–8. Данные на устройстве не изменены.</string>
     <string name="app_name">Sports Activity Assistant</string>
     <string name="nav_schedule">Расписание</string>
     <string name="nav_statistics">Статистика</string>
@@ -44,7 +44,7 @@
     <string name="time_end_value">Окончание: %1$s</string>
     <string name="time_hint">ЧЧ:ММ. Окончание раньше начала — на следующий день.</string>
     <string name="planned_duration">По плану: %1$d мин. Длительность результата можно изменить.</string>
-    <string name="duration_minutes">Длительность, мин (необязательно)</string>
+    <string name="duration_minutes">Длительность, мин</string>
     <string name="duration_value">Длительность: %1$d мин</string>
     <string name="duration_invalid">Длительность должна быть положительным целым числом</string>
     <string name="primary_centers">Основной центр для каждого вида спорта</string>
@@ -54,4 +54,44 @@
     <string name="increment_value">Увеличить: %1$s</string>
     <string name="decrement_value">Уменьшить: %1$s</string>
     <string name="backup_requires_7">Время тренировок и основные центры требуют JSON 7</string>
+    <string name="score_title">Счёт</string>
+    <string name="score_scored">Забито</string>
+    <string name="score_conceded">Пропущено</string>
+    <string name="personal_statistics">Личная статистика</string>
+    <string name="personal_goals_short">Голы</string>
+    <string name="date_unlimited">Без ограничения</string>
+    <string name="date_clear">Убрать дату окончания</string>
+    <string name="settings_title">Настройки</string>
+    <string name="settings_back">Назад</string>
+    <string name="settings_sports">Мои виды спорта</string>
+    <string name="settings_sports_hint">Выберите виды спорта для расписания, статистики и новых тренировок. Скрытие не удаляет историю. Изменения сохраняются сразу.</string>
+    <string name="settings_primary_center">Основной спортивный центр</string>
+    <string name="settings_backup_hint">Выбранные виды спорта и основные центры сохраняются в резервной копии вместе со всей историей, включая скрытые виды спорта.</string>
+    <string name="settings_save_error">Не удалось сохранить настройки. Попробуйте ещё раз.</string>
+    <string name="settings_choose_sports">Выберите виды спорта в настройках</string>
+    <string name="backup_requires_8">Выбор видов спорта требует JSON 8</string>
+    <string name="import_restores_settings">Выбор отображаемых видов спорта и основные центры выбранного профиля будут восстановлены из копии.</string>
+    <string name="football_statistics_general">Общие показатели</string>
+    <string name="football_statistics_detailed">Детальная статистика</string>
+    <string name="football_statistics_matches">Сыграно матчей</string>
+    <string name="football_statistics_win">Победа</string>
+    <string name="football_statistics_draw">Ничья</string>
+    <string name="football_statistics_loss">Поражение</string>
+    <string name="football_statistics_sum">Сумма</string>
+    <string name="football_statistics_max">Макс</string>
+    <string name="football_statistics_min">Мин</string>
+    <string name="football_statistics_average">Среднее</string>
+    <string name="football_statistics_scored">Всего забито</string>
+    <string name="football_statistics_conceded">Всего пропущено</string>
+    <string name="football_statistics_distance">Преодолено за игру, км</string>
+    <string name="football_statistics_distance_coverage">Дистанция указана в %1$d из %2$d матчей. Среднее — по этим матчам.</string>
+    <string name="football_statistics_result">Результат</string>
+    <string name="football_statistics_players">Игроков в команде</string>
+    <string name="football_statistics_minutes">Время игры, мин</string>
+    <string name="statistics_period">Период</string>
+    <string name="statistics_dates">Даты</string>
+    <string name="statistics_date_from">С даты</string>
+    <string name="statistics_date_to">По дату</string>
+    <string name="statistics_period_month">Месяц</string>
+    <string name="statistics_period_year">Год</string>
 </resources>

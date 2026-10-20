@@ -8,7 +8,7 @@
     <string name="backup_codec_metadannye_kalendarya_dostupny_tolko_v" formatted="false">"Метаданные календаря доступны в JSON 6 и выше"</string>
     <string name="backup_codec_centers_isarchived_dostupno_tolko_v_json" formatted="false">"centers.isArchived доступно только в JSON 5"</string>
     <string name="backup_codec_versiya_rezervnoy_kopii_ne_podderzhivaetsya">"Версия резервной копии %1$s не поддерживается"</string>
-    <string name="backup_codec_v_kopii_versii_3_6_dolzhna" formatted="false">"В копии версии 3–7 должна быть указана шкала каждой трассы"</string>
+    <string name="backup_codec_v_kopii_versii_3_6_dolzhna" formatted="false">"В копии версии 3–8 должна быть указана шкала каждой трассы"</string>
     <string name="backup_codec_dannye_shkaly_ne_sootvetstvuyut_versii" formatted="false">"Данные шкалы не соответствуют версии копии"</string>
     <string name="backup_codec_json_pole_schemaversion_obyazatelno" formatted="false">"JSON: поле schemaVersion обязательно"</string>
     <string name="backup_codec_json_schemaversion_dolzhno_byt_tselym" formatted="false">"JSON: schemaVersion должно быть целым числом, не строкой"</string>
@@ -253,7 +253,7 @@
     <string name="football_module_igrokov_v_komande">"Игроков в команде: %1$s"</string>
     <string name="football_module_vremya_igry_min">"Время игры: %1$s мин"</string>
     <string name="sport_module_vid_sporta_ne_podderzhivaetsya">"Вид спорта «%1$s» не поддерживается этой версией приложения; данные не изменены"</string>
-    <string name="add_completed_training_dialog_vvedite_datu_yyyy_mm_dd_god_0001_9999" formatted="false">"Введите дату YYYY-MM-DD (год 0001–9999)"</string>
+    <string name="add_completed_training_dialog_vvedite_datu_yyyy_mm_dd_god_0001_9999" formatted="false">"Выберите дату в календаре (год 0001–9999)"</string>
     <string name="add_completed_training_dialog_proverte_datu" formatted="false">"Проверьте дату"</string>
     <string name="add_completed_training_dialog_vyberite_vid_sporta_i_sportivnyy" formatted="false">"Выберите вид спорта и спортивный центр"</string>
     <string name="add_completed_training_dialog_dlya_etogo_vida_sporta_forma" formatted="false">"Для этого вида спорта форма пока не настроена"</string>
@@ -268,7 +268,6 @@
     <string name="add_completed_training_dialog_vid_sporta_iz_plana_ukazhite" formatted="false">"Вид спорта из плана. Укажите фактическую дату и доступный центр; будущий результат записать нельзя."</string>
     <string name="add_completed_training_dialog_vid_sporta_menyat_nelzya_prezhniy" formatted="false">"Вид спорта менять нельзя. Прежний центр можно оставить, даже если он в архиве."</string>
     <string name="add_completed_training_dialog_data" formatted="false">"Дата"</string>
-    <string name="add_completed_training_dialog_yyyy_mm_dd_buduschie_trenirovki_dobavlyayte" formatted="false">"YYYY-MM-DD · будущие тренировки добавляйте в план"</string>
     <string name="add_completed_training_dialog_vybrat_datu" formatted="false">"Выбрать дату"</string>
     <string name="add_completed_training_dialog_zapis_dlya_etogo_vida_sporta" formatted="false">"Запись для этого вида спорта пока недоступна"</string>
     <string name="add_completed_training_dialog_vybrat" formatted="false">"Выбрать"</string>
@@ -278,13 +277,12 @@
     <string name="add_training_dialog_plan_trenirovki" formatted="false">"План тренировки"</string>
     <string name="add_training_dialog_izmenit_vsyu_seriyu" formatted="false">"Изменить всю серию"</string>
     <string name="add_training_dialog_izmenit_odno_sobytie" formatted="false">"Изменить одно событие"</string>
-    <string name="add_training_dialog_nachalo_serii_yyyy_mm_dd" formatted="false">"Начало серии · YYYY-MM-DD"</string>
-    <string name="add_training_dialog_data_yyyy_mm_dd" formatted="false">"Дата · YYYY-MM-DD"</string>
+    <string name="add_training_dialog_nachalo_serii_yyyy_mm_dd" formatted="false">"Начало серии"</string>
+    <string name="add_training_dialog_data_yyyy_mm_dd" formatted="false">"Дата"</string>
     <string name="add_training_dialog_razovaya" formatted="false">"Разовая"</string>
     <string name="add_training_dialog_po_nedelyam" formatted="false">"По неделям"</string>
     <string name="add_training_dialog_interval_v_nedelyah" formatted="false">"Интервал в неделях"</string>
-    <string name="add_training_dialog_povtoryat_do_yyyy_mm_dd" formatted="false">"Повторять до · YYYY-MM-DD"</string>
-    <string name="add_training_dialog_vklyuchitelno_pusto_bez_ogranicheniya" formatted="false">"Включительно; пусто — без ограничения"</string>
+    <string name="add_training_dialog_povtoryat_do_yyyy_mm_dd" formatted="false">"Повторять до"</string>
     <string name="add_training_dialog_izmenyatsya_sobytiya_bez_individualnyh_isklyucheniy" formatted="false">"Изменятся события без индивидуальных исключений. Переносы, отмены и записанные результаты сохранятся."</string>
     <string name="import_preview_content_proverka_importa" formatted="false">"Проверка импорта"</string>
     <string name="import_preview_content_primenit_import" formatted="false">"Применить импорт"</string>
@@ -317,12 +315,9 @@
     <string name="plan_actions_otmena" formatted="false">"Отмена…"</string>
     <string name="plan_actions_podtverdit_otmenu" formatted="false">"Подтвердить отмену"</string>
     <string name="plan_actions_ostavit_plan" formatted="false">"Оставить план"</string>
-    <string name="sport_editors_futbolnaya_statistika" formatted="false">"Футбольная статистика"</string>
-    <string name="sport_editors_golov_zabito" formatted="false">"Голов забито"</string>
-    <string name="sport_editors_golov_propuscheno" formatted="false">"Голов пропущено"</string>
-    <string name="sport_editors_distantsiya_km_neobyazatelno" formatted="false">"Дистанция, км (необязательно)"</string>
-    <string name="sport_editors_igrokov_v_komande_neobyazatelno" formatted="false">"Игроков в команде (необязательно)"</string>
-    <string name="sport_editors_vremya_igry_min_neobyazatelno" formatted="false">"Время игры, мин (необязательно)"</string>
+    <string name="sport_editors_distantsiya_km_neobyazatelno" formatted="false">"Дистанция, км"</string>
+    <string name="sport_editors_igrokov_v_komande_neobyazatelno" formatted="false">"Игроков в команде"</string>
+    <string name="sport_editors_vremya_igry_min_neobyazatelno" formatted="false">"Время игры, мин"</string>
     <string name="sport_editors_ispravte_otmechennye_polya_futbolnoy_statistiki" formatted="false">"Исправьте отмеченные поля футбольной статистики"</string>
     <string name="sport_editors_kolichestvo_popytok_dolzhno_byt_tselym" formatted="false">"Количество попыток должно быть целым числом"</string>
     <string name="sport_editors_trassy" formatted="false">"Трассы"</string>
@@ -382,7 +377,7 @@
     <string name="data_management_screen_fayl_ne_zashifrovan_dlya_raboty" formatted="false">"Файл не зашифрован. Для работы без интернета выбирайте хранилище устройства в системном диалоге."</string>
     <string name="data_management_screen_sohranit_kopiyu_v_fayl" formatted="false">"Сохранить копию в файл"</string>
     <string name="data_management_screen_import" formatted="false">"Импорт"</string>
-    <string name="data_management_screen_json_versiy_1_6_i_futbolnyy" formatted="false">"JSON версий 1–7 и футбольный CSV: перед применением — проверка, выбор профиля и центров. Совпадения UUID пропускаются; одинаковые тренировки с разными UUID сохраняются. Лимит файла — 16 МиБ."</string>
+    <string name="data_management_screen_json_versiy_1_6_i_futbolnyy" formatted="false">"JSON версий 1–8 и футбольный CSV: перед применением — проверка, выбор профиля и центров. Совпадения UUID пропускаются; одинаковые тренировки с разными UUID сохраняются. Лимит файла — 16 МиБ."</string>
     <string name="data_management_screen_vybrat_fayl" formatted="false">"Выбрать файл"</string>
     <string name="main_view_model_rabota_s_faylom" formatted="false">"Работа с файлом…"</string>
     <string name="main_view_model_vybor_fayla_prervan_vyberite_fayl" formatted="false">"Выбор файла прерван. Выберите файл ещё раз; база не изменена."</string>

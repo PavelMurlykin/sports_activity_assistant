@@ -89,7 +89,7 @@ fun AddCompletedTrainingDialog(
             modifier = Modifier.imePadding(),
             onDismissRequest = { if (!saving) onDismiss() },
             confirmButton = {
-                TextButton(enabled = !saving, onClick = {
+                Button(enabled = !saving, modifier = Modifier.heightIn(min = 48.dp), onClick = {
                     if (!saving) {
                         attempted = true
                         runCatching { input() }.onSuccess { errorText = null; saving = true }
@@ -97,25 +97,22 @@ fun AddCompletedTrainingDialog(
                     }
                 }) { Text(if (saving) AppText.get(R.string.add_completed_training_dialog_sohranenie) else AppText.get(R.string.add_completed_training_dialog_sohranit)) }
             },
-            dismissButton = { TextButton(enabled = !saving, onClick = onDismiss) { Text(AppText.get(R.string.add_completed_training_dialog_otmena)) } },
+            dismissButton = { OutlinedButton(enabled = !saving, onClick = onDismiss) { Text(AppText.get(R.string.add_completed_training_dialog_otmena)) } },
             title = { Text(if (fromPlan) AppText.get(R.string.add_completed_training_dialog_rezultat_po_planu) else if (initial == null) AppText.get(R.string.add_completed_training_dialog_zapisat_trenirovku) else AppText.get(R.string.add_completed_training_dialog_izmenit_trenirovku)) },
             text = {
-                Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(bottom = 20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     TrainingCenterSelector(sports, centers, selectedSportId, selectedComplexId,
                         { selectedSportId = it }, { selectedComplexId = it }, onSaveCenter,
                         enabled = !saving, sportLocked = initial != null, retainedCenterId = initial?.complexId.takeUnless { fromPlan },
                         onCreateCenter = { creatingCenter = true })
                     if (initial != null) Text(if (fromPlan) AppText.get(R.string.add_completed_training_dialog_vid_sporta_iz_plana_ukazhite) else AppText.get(R.string.add_completed_training_dialog_vid_sporta_menyat_nelzya_prezhniy),
                         style = MaterialTheme.typography.bodySmall)
-                    OutlinedTextField(dateText, { dateText = it }, Modifier.fillMaxWidth().testTag("training-date"),
-                        enabled = !saving, label = { Text(AppText.get(R.string.add_completed_training_dialog_data)) },
-                        supportingText = { Text(dateError ?: AppText.get(R.string.add_completed_training_dialog_yyyy_mm_dd_buduschie_trenirovki_dobavlyayte)) },
-                        isError = dateError != null, singleLine = true)
-                    TextButton(enabled = !saving, onClick = { datePickerOpen = true },
-                        modifier = Modifier.testTag("training-date-picker")) { Text(AppText.get(R.string.add_completed_training_dialog_vybrat_datu)) }
+                    TrainingDateField(runCatching { TrainingValidation.parseDate(dateText) }.getOrNull(), AppText.get(R.string.add_completed_training_dialog_data),
+                        { datePickerOpen = true }, Modifier.testTag("training-date"), enabled = !saving, calendarTag = "training-date-picker")
+                    dateError?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
                     plannedDurationMinutes?.let { Text(AppText.get(R.string.planned_duration, it), style = MaterialTheme.typography.bodyMedium) }
                     if (selectedSport?.slug != "football") StepNumberField(durationText, { durationText = it },
-                        AppText.get(R.string.duration_minutes), "training-duration", enabled = !saving)
+                        AppText.get(R.string.duration_minutes), "training-duration", enabled = !saving, increment = 5)
                     HorizontalDivider()
                     draft?.Content(enabled = !saving) ?: Text(AppText.get(R.string.add_completed_training_dialog_zapis_dlya_etogo_vida_sporta))
                     errorText?.let { Text(it, Modifier.testTag("training-error"),
@@ -145,7 +142,7 @@ fun AddCompletedTrainingDialog(
                 datePickerOpen = false
             }) { Text(AppText.get(R.string.add_completed_training_dialog_vybrat)) } },
             dismissButton = { TextButton(onClick = { datePickerOpen = false }) { Text(AppText.get(R.string.add_completed_training_dialog_otmena)) } }) {
-            DatePicker(picker)
+            DatePicker(picker, showModeToggle = false)
         }
     }
 }

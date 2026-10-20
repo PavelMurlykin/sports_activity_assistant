@@ -16,12 +16,13 @@ data class BackupDocument(
     val favorites: List<FavoriteBackup> = emptyList(),
     val aliases: List<AliasBackup> = emptyList(),
     val primaryCenters: List<PrimaryCenterBackup> = emptyList(),
+    val sportSelections: List<SportSelectionBackup> = emptyList(),
 ) {
     fun objectCount(): Long = sports.size.toLong() + centers.size + profiles.size + trainings.size +
-        trainings.sumOf { it.climbingRoutes.size.toLong() } + plannedTrainings.size + recurrenceRules.size + favorites.size + aliases.size + primaryCenters.size
+        trainings.sumOf { it.climbingRoutes.size.toLong() } + plannedTrainings.size + recurrenceRules.size + favorites.size + aliases.size + primaryCenters.size + sportSelections.sumOf { 1L + it.visibleSportSlugs.size }
 
     companion object {
-        const val CURRENT_SCHEMA_VERSION = 7
+        const val CURRENT_SCHEMA_VERSION = 8
     }
 }
 
@@ -127,6 +128,9 @@ data class FavoriteBackup(val profilePublicId: String, val centerPublicId: Strin
 
 @Serializable
 data class PrimaryCenterBackup(val profilePublicId: String, val sportSlug: String, val centerPublicId: String)
+
+@Serializable
+data class SportSelectionBackup(val profilePublicId: String, val visibleSportSlugs: List<String>)
 
 @Serializable
 data class AliasBackup(val kind: String, val sourceKey: String, val targetPublicId: String)

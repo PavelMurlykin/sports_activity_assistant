@@ -9,6 +9,7 @@ import com.pamurlykin.sportsactivityassistant.data.entity.SportsComplexEntity
 import com.pamurlykin.sportsactivityassistant.data.entity.TrainingBundle
 import com.pamurlykin.sportsactivityassistant.data.entity.TrainingEntity
 import com.pamurlykin.sportsactivityassistant.data.model.ClimbingWorkoutType
+import com.pamurlykin.sportsactivityassistant.data.model.FootballMetric
 import java.math.BigDecimal
 import java.time.LocalDate
 import org.junit.Assert.assertEquals
@@ -33,6 +34,42 @@ class StatisticsMapperTest : com.pamurlykin.sportsactivityassistant.ResourceText
         assertEquals("3", values["Личные голы"])
         assertEquals("3", values["Голевые передачи"])
         assertEquals("7.3 км", values["Учтённая дистанция"])
+    }
+
+    @Test fun footballTableUsesPerMatchExtremaAndExcludesMissingDistanceButIncludesZero() {
+        val sport = SportEntity(1, "football", "Футбол")
+        val stats = requireNotNull(StatisticsMapper.sport(sport, listOf(
+            footballBundle(1, sport, "2026-01-01", 5, 3, 2, 1, "10.125"),
+            footballBundle(2, sport, "2026-02-01", 2, 2, 1, 2, null),
+            footballBundle(3, sport, "2026-02-02", 0, 4, 0, 0, "0"),
+        )).football)
+        assertEquals(listOf(3L, 1L, 1L, 1L), listOf(stats.games, stats.wins, stats.draws, stats.losses))
+        assertEquals(FootballMetric.entries, stats.metrics.map { it.metric })
+        val scored = stats.metrics.first()
+        assertEquals(listOf("7", "5", "0", "2,33"), listOf(scored.sum, scored.maximum, scored.minimum, scored.average))
+        val conceded = stats.metrics[1]
+        assertEquals(listOf("9", "4", "2", "3,00"), listOf(conceded.sum, conceded.maximum, conceded.minimum, conceded.average))
+        val distance = stats.metrics.last()
+        assertEquals(2L, stats.distanceCount)
+        assertEquals(listOf("10,13", "10,13", "0,00", "5,06"), listOf(distance.sum, distance.maximum, distance.minimum, distance.average))
+    }
+
+    @Test fun emptyFootballTableHasNoInventedExtremaOrAverages() {
+        val stats = requireNotNull(StatisticsMapper.sport(SportEntity(1, "football", "Футбол"), emptyList()).football)
+        assertEquals(0L, stats.games)
+        assertTrue(stats.metrics.all { it.maximum == "—" && it.minimum == "—" && it.average == "—" })
+        assertEquals(listOf("0", "0", "0", "0", "—"), stats.metrics.map { it.sum })
+    }
+
+    @Test fun distanceExtremaCompareNumericDecimalsAndMissingDistanceIsNotZero() {
+        val sport = SportEntity(1, "football", "Футбол")
+        val stats = requireNotNull(StatisticsMapper.sport(sport, listOf(
+            footballBundle(1, sport, "2026-01-01", 0, 0, 0, 0, "9.1"),
+            footballBundle(2, sport, "2026-01-02", 0, 0, 0, 0, "10"),
+            footballBundle(3, sport, "2026-01-03", 0, 0, 0, 0, null),
+        )).football)
+        val distance = stats.metrics.last()
+        assertEquals(listOf("19,10", "10,00", "9,10", "9,55"), listOf(distance.sum, distance.maximum, distance.minimum, distance.average))
     }
 
     @Test

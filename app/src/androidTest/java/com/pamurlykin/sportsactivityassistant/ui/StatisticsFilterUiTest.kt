@@ -1,6 +1,7 @@
 package com.pamurlykin.sportsactivityassistant.ui
 
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.StateRestorationTester
@@ -18,6 +19,23 @@ class StatisticsFilterUiTest {
     private val date = LocalDate.parse("2020-02-29")
     private val center = SportsCenterUiModel(7,"Старый центр","Москва",emptyList(),isArchived=true)
     private fun apply() = compose.onNodeWithTag("statistics-apply").performSemanticsAction(SemanticsActions.OnClick) { it() }
+
+    @Test fun quickPeriodsKeepCenterAndDateBlocksOpenCustomRange() {
+        val selected = mutableStateOf(StatisticsFilter(centerId = 7))
+        compose.setContent { MaterialTheme { StatisticsFilters(selected.value, listOf(center), { selected.value = it }, date) } }
+        compose.onNodeWithTag("statistics-period-card").assertExists()
+        compose.onNodeWithTag("statistics-dates-card").assertExists()
+        compose.onNodeWithText("Месяц").performClick()
+        compose.runOnIdle { assertEquals(StatisticsFilter(LocalDate.parse("2020-02-01"), date, 7), selected.value) }
+        compose.onNodeWithText("Год").performClick()
+        compose.runOnIdle { assertEquals(StatisticsFilter(LocalDate.parse("2020-01-01"), LocalDate.parse("2020-12-31"), 7), selected.value) }
+        compose.onNodeWithText("Всё время").performClick()
+        compose.onNodeWithText("С даты").performClick()
+        compose.onNodeWithTag("statistics-start").assertTextContains("2020-01-01", substring = true)
+        compose.onNodeWithTag("statistics-end").performScrollTo().assertTextContains("2020-02-29", substring = true)
+        compose.onNodeWithText("Отмена").performClick()
+        compose.runOnIdle { assertEquals(StatisticsFilter(centerId = 7), selected.value) }
+    }
 
     @Test fun invalidAndReversedDatesDoNotApplyAndDraftSurvivesRestore() {
         var selected: StatisticsFilter? = null

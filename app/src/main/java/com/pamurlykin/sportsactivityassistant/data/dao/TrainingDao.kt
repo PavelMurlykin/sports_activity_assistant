@@ -103,7 +103,11 @@ interface TrainingDao {
           COALESCE(SUM(f.duration_minutes), 0) AS minutes,
           COUNT(f.duration_minutes) AS durationCount,
           COALESCE(SUM(f.players_per_team), 0) AS players,
-          COUNT(f.players_per_team) AS playersCount
+          COUNT(f.players_per_team) AS playersCount,
+          MAX(f.team_goals_scored) AS teamScoredMax, MIN(f.team_goals_scored) AS teamScoredMin,
+          MAX(f.team_goals_conceded) AS teamConcededMax, MIN(f.team_goals_conceded) AS teamConcededMin,
+          MAX(f.user_goals_scored) AS personalGoalsMax, MIN(f.user_goals_scored) AS personalGoalsMin,
+          MAX(f.user_assists) AS assistsMax, MIN(f.user_assists) AS assistsMin
         FROM trainings t JOIN football_trainings f ON f.training_id = t.id
         WHERE t.user_id = :userId AND t.sport_id = :sportId AND t.training_date BETWEEN :start AND :end
           AND (:centerId IS NULL OR t.sports_complex_id = :centerId)

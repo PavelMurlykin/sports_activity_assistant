@@ -20,6 +20,14 @@ data class FootballTotals(
     val durationCount: Long = 0,
     val players: Long = 0,
     val playersCount: Long = 0,
+    val teamScoredMax: Int? = null,
+    val teamScoredMin: Int? = null,
+    val teamConcededMax: Int? = null,
+    val teamConcededMin: Int? = null,
+    val personalGoalsMax: Int? = null,
+    val personalGoalsMin: Int? = null,
+    val assistsMax: Int? = null,
+    val assistsMin: Int? = null,
 )
 
 /** A bounded aggregate group, not a loaded route or training. */
@@ -34,7 +42,11 @@ data class ClimbingBucket(
     val completed: Long,
 )
 
-data class SportAggregate(val metrics: List<MetricUiModel>, val highlights: List<String>)
+data class SportAggregate(
+    val metrics: List<MetricUiModel>,
+    val highlights: List<String>,
+    val football: FootballStatisticsUiModel? = null,
+)
 
 /** Match the same Unicode trim predicate as the offline grade catalog. */
 val gradeWhitespace: String = buildString {

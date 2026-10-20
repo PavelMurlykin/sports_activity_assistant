@@ -35,6 +35,7 @@ fun ScheduleScreen(
     onAddResult: (LocalDate) -> Unit = {},
     onEditResult: (Long) -> Unit = {},
     onCompletePlan: (String) -> Unit = {},
+    onOpenSettings: () -> Unit = {},
 ) {
     val readState by viewModel.scheduleReadState.collectAsStateWithLifecycle()
     val statisticsRead by viewModel.statisticsReadState.collectAsStateWithLifecycle()
@@ -60,9 +61,9 @@ fun ScheduleScreen(
     if (planning) AddPlannedTrainingDialog(statistics.sports, centers, { planning = false }, viewModel::addPlannedTraining,
         viewModel::saveSportsCenter, initialDate = state?.selectedDate ?: LocalDate.now(), onSaved = { planning = false })
 
-    Scaffold(topBar = { TopAppBar(title = { Text(stringResource(R.string.nav_schedule), fontWeight = FontWeight.Bold) }) },
+    Scaffold(topBar = { TopAppBar(title = { Text(stringResource(R.string.nav_schedule), fontWeight = FontWeight.Bold) }, actions = { SettingsAction(onOpenSettings) }) },
         floatingActionButton = {
-            if (state != null && !readState.failed && statisticsRead.data != null && centersRead.data != null) {
+            if (state != null && !readState.failed && statisticsRead.data != null && centersRead.data != null && statistics.sports.isNotEmpty()) {
                 FloatingActionButton(onClick = { choice = true }) { Icon(Icons.Rounded.Add, stringResource(R.string.add_workout)) }
             }
         }) { padding ->
@@ -99,6 +100,9 @@ fun ScheduleScreen(
                         height = fullHeight * (1f - collapsed / 2), collapseFraction = collapsed)
                     LazyColumn(Modifier.fillMaxWidth().weight(1f).testTag("schedule-trainings"), state = list,
                         contentPadding = PaddingValues(top = 12.dp, bottom = 88.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        if (statisticsRead.data != null && statistics.sports.isEmpty()) item(key = "no-sports") {
+                            TextButton(onClick = onOpenSettings) { Text(stringResource(R.string.settings_choose_sports)) }
+                        }
                         item(key = "day-heading") {
                             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                                 Text("${state.selectedDate.dayOfMonth}.${state.selectedDate.monthValue}.${state.selectedDate.year}",
@@ -115,7 +119,7 @@ fun ScheduleScreen(
                         }
                         items(state.selectedDayEvents, key = { it.id }) { event ->
                             Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
-                                Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                                         SportBadge(event.sportSlug, size = 24.dp)
                                         Icon(event.state.icon(), stringResource(when (event.state) {
@@ -137,8 +141,8 @@ fun ScheduleScreen(
                                             }) { Icon(Icons.Rounded.Delete, stringResource(R.string.schedule_screen_otmenit_trenirovku)) }
                                         }
                                     }
-                                    event.details.forEach { Text(it, style = MaterialTheme.typography.bodyLarge) }
-                                    Text(event.complexName, style = MaterialTheme.typography.bodyLarge)
+                                    Text(event.complexName, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    TrainingDetails(event.details, event.football)
                                     if (event.linkedPlan) Text(stringResource(R.string.schedule_screen_rezultat_svyazan_s_planom), style = MaterialTheme.typography.bodyMedium)
                                     Text(stringResource(when {
                                         event.state == ScheduleEventState.COMPLETED -> R.string.schedule_screen_sostoyavshayasya_trenirovka

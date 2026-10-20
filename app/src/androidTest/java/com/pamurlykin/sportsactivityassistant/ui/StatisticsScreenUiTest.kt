@@ -46,8 +46,8 @@ class StatisticsScreenUiTest {
             compose.waitUntil(5000) { compose.onAllNodesWithText("21 тренировок").fetchSemanticsNodes().isNotEmpty() }
             compose.onNodeWithText("Футбол").performScrollTo().performClick()
             compose.onNodeWithTag("active-statistics-period").assertTextEquals("2020-02-29 — 2020-02-29")
-            compose.waitUntil(5000) { compose.onAllNodesWithText("Игр с числом игроков").fetchSemanticsNodes().isNotEmpty() }
-            compose.onNode(hasScrollAction()).performScrollToNode(hasText("Показано 1–20 из 21"))
+            compose.waitUntil(5000) { compose.onAllNodesWithText("Общие показатели").fetchSemanticsNodes().isNotEmpty() }
+            compose.onNodeWithTag("statistics-history").performScrollToNode(hasText("Показано 1–20 из 21"))
             compose.onAllNodesWithText("Следующая").onFirst().performScrollTo().performClick()
             compose.waitUntil(5000) { compose.onAllNodesWithText("Показано 21–21 из 21").fetchSemanticsNodes().isNotEmpty() }
             compose.onAllNodesWithText("Следующая").onFirst().assertIsNotEnabled()

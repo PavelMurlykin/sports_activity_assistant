@@ -106,6 +106,14 @@ class MainViewModel(
         started = SharingStarted.WhileSubscribed(5_000),
         initialValue = StatisticsOverviewUiModel(totalTrainings = 0, sports = emptyList()),
     )
+    val sportPreferencesReadState = readRevision.flatMapLatest {
+        repository.observeSportPreferences().readStates()
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ReadState())
+
+    // A navigation change must not cancel an already requested settings write.
+    suspend fun setSportVisible(sportId: Int, visible: Boolean) =
+        viewModelScope.async { repository.setSportVisible(sportId, visible) }.await()
+
     val centersReadState = readRevision.flatMapLatest {
         repository.observeSportsCenters().readStates()
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ReadState())
@@ -253,7 +261,8 @@ class MainViewModel(
         }
     }
 
-    suspend fun setPrimaryCenter(sportId: Int, centerId: Long?) = repository.setPrimaryCenter(sportId, centerId)
+    suspend fun setPrimaryCenter(sportId: Int, centerId: Long?) =
+        viewModelScope.async { repository.setPrimaryCenter(sportId, centerId) }.await()
 
     suspend fun loadComplexesForSport(sportId: Int): List<ComplexOptionUiModel> {
         return repository.getComplexOptionsForSport(sportId)

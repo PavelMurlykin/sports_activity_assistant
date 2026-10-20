@@ -25,6 +25,10 @@ object BackupCodec {
 
     fun encode(document: BackupDocument): String {
         var encoded = json.encodeToJsonElement(BackupDocument.serializer(), document).jsonObject
+        if (document.schemaVersion < 8) {
+            require(document.sportSelections.isEmpty()) { AppText.get(R.string.backup_requires_8) }
+            encoded = JsonObject(encoded - "sportSelections")
+        }
         if (document.schemaVersion < 7) {
             require(document.primaryCenters.isEmpty() && document.trainings.all { it.durationMinutes == null } &&
                 document.plannedTrainings.all { it.startTime == null && it.endTime == null } &&
@@ -59,6 +63,9 @@ object BackupCodec {
 
     fun decode(raw: String): BackupDocument {
         val version = sourceVersion(raw)
+        if (version < 8) {
+            require("sportSelections" !in json.parseToJsonElement(raw).jsonObject) { AppText.get(R.string.backup_requires_8) }
+        }
         if (version < 7) {
             val root = json.parseToJsonElement(raw).jsonObject
             require("primaryCenters" !in root && listOf("plannedTrainings", "recurrenceRules", "trainings").all { key ->

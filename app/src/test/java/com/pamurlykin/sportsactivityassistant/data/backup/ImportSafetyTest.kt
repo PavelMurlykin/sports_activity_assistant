@@ -77,8 +77,8 @@ class ImportSafetyTest : com.pamurlykin.sportsactivityassistant.ResourceTextTest
 
     @Test fun refusesUnknownFieldsMissingOrFutureVersionAndDuplicateIdentity() {
         val raw = BackupCodec.encode(document())
-        assertTrue(runCatching { ImportParser.parse(raw.replace("\"schemaVersion\": 7", "\"schemaVersion\": 999").toByteArray()) }.isFailure)
-        assertTrue(runCatching { ImportParser.parse(raw.replace("\"schemaVersion\": 7,", "").toByteArray()) }.isFailure)
+        assertTrue(runCatching { ImportParser.parse(raw.replace("\"schemaVersion\": ${BackupDocument.CURRENT_SCHEMA_VERSION}", "\"schemaVersion\": 999").toByteArray()) }.isFailure)
+        assertTrue(runCatching { ImportParser.parse(raw.replace("\"schemaVersion\": ${BackupDocument.CURRENT_SCHEMA_VERSION},", "").toByteArray()) }.isFailure)
         assertTrue(runCatching { ImportParser.parse(raw.replace("\"schemaVersion\"", "\"unknown\"").toByteArray()) }.isFailure)
         assertTrue(BackupValidation.errors(parse(document().copy(trainings = document().trainings + document().trainings))).isNotEmpty())
     }
@@ -86,7 +86,7 @@ class ImportSafetyTest : com.pamurlykin.sportsactivityassistant.ResourceTextTest
     @Test fun damagedAndUnknownFieldJsonHasActionableMessageWithoutFileContents() {
         val privateText = "PRIVATE_HISTORY_NOT_FOR_ERROR_UI"
         listOf("{\"schemaVersion\":6,\"trainings\":[\"$privateText\"",
-            BackupCodec.encode(document()).replace("\"schemaVersion\": 7", "\"schemaVersion\": 7, \"$privateText\": 1")).forEach { raw ->
+            BackupCodec.encode(document()).replace("\"schemaVersion\": ${BackupDocument.CURRENT_SCHEMA_VERSION}", "\"schemaVersion\": ${BackupDocument.CURRENT_SCHEMA_VERSION}, \"$privateText\": 1")).forEach { raw ->
             val error = runCatching { ImportParser.parse(raw.toByteArray()) }.exceptionOrNull()!!
             assertTrue(error.message!!,error.message!!.startsWith("Файл JSON повреждён"))
             assertTrue(error.message!!.contains("Данные на устройстве не изменены"))

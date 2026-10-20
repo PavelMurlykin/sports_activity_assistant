@@ -23,6 +23,7 @@ class DataExchange(private val db: AppDatabase) {
         val centers = refs.getComplexesWithSports().associateBy { it.complex.id }
         val trainings = db.trainingDao().getAllTrainingBundles().associateBy { it.training.id }
         val rules = db.planningDao().getAllRecurrenceRules().associateBy { it.id }
+        val visibility = refs.getSportVisibility().groupBy { it.userId }
         fun center(id: Long) = requireNotNull(centers[id]).complex
         fun profile(id: Long) = requireNotNull(users[id]).publicId
         return BackupDocument(
@@ -56,6 +57,10 @@ class DataExchange(private val db: AppDatabase) {
             },
             favorites = refs.getFavoriteComplexes().map { FavoriteBackup(profile(it.userId), center(it.sportsComplexId).publicId, it.createdAt.toString()) },
             primaryCenters = refs.getPrimaryCenters().map { PrimaryCenterBackup(profile(it.userId), requireNotNull(sports[it.sportId]).slug, center(it.sportsComplexId).publicId) },
+            sportSelections = users.values.map { user ->
+                val hidden = visibility[user.id].orEmpty().filterNot { it.isVisible }.map { it.sportId }.toSet()
+                SportSelectionBackup(user.publicId, sports.values.filterNot { it.id in hidden }.map { it.slug })
+            },
             aliases = refs.getImportAliases().map { AliasBackup(it.kind, it.sourceKey, it.targetPublicId) },
         )
     }
@@ -99,10 +104,12 @@ class DataExchange(private val db: AppDatabase) {
         if (errors.isNotEmpty()) return result(initial)
         if (!initial.preserveAllProfiles && initial.selectedProfile !in d.profiles.map { it.publicId })
             errors += AppText.get(R.string.data_exchange_vyberite_odin_profil_dlya_tekuschey)
+        if (d.sportSelections.isNotEmpty()) warnings += AppText.get(R.string.import_restores_settings)
         val selectedProfiles = d.profiles.filter { initial.preserveAllProfiles || it.publicId == initial.selectedProfile }
         val primary = if (initial.preserveAllProfiles) d.primaryProfilePublicId else initial.selectedProfile
         val freshProfile = users.size == 1 && active.displayName == null && current.trainings.isEmpty() &&
-            current.plannedTrainings.isEmpty() && current.recurrenceRules.isEmpty() && current.favorites.isEmpty() && current.primaryCenters.isEmpty() && current.aliases.isEmpty()
+            current.plannedTrainings.isEmpty() && current.recurrenceRules.isEmpty() && current.favorites.isEmpty() && current.primaryCenters.isEmpty() && current.aliases.isEmpty() &&
+            current.sportSelections.all { it.visibleSportSlugs.toSet() == current.sports.map { sport -> sport.slug }.toSet() }
         val adoptProfile = primary?.takeIf { freshProfile && it != active.publicId }
         val profileMap = selectedProfiles.associate { p ->
             val fixed = localAliases["profile" to p.publicId] ?: usersById[p.publicId]?.publicId
@@ -337,10 +344,16 @@ class DataExchange(private val db: AppDatabase) {
                 importedPlans++
             }
         }
+        // A JSON 8 selection marks a complete settings snapshot for that profile, including no default center.
+        d.sportSelections.filter { it.profilePublicId in plan.profiles }.forEach { selection ->
+            val u = profile(selection.profilePublicId)
+            sports.values.forEach { sport -> refs.setSportVisibility(SportVisibilityEntity(u, sport.id, sport.slug in selection.visibleSportSlugs)) }
+            refs.clearPrimaryCenters(u)
+        }
         val primaryCenters = refs.getPrimaryCenters().map { it.userId to it.sportId }.toMutableSet()
         d.primaryCenters.filter { it.profilePublicId in plan.profiles }.forEach { p ->
             val u = profile(p.profilePublicId); val s = sports.getValue(p.sportSlug).id; val c = center(p.centerPublicId)
-            // Keep an explicit local preference when restoring into an existing diary.
+            // Older backups without a settings snapshot retain explicit local defaults.
             if (primaryCenters.add(u to s) && refs.getComplexesForSport(s).any { it.id == c })
                 refs.setPrimaryCenter(SportPrimaryCenterEntity(u, s, c))
         }
