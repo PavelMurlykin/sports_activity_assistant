@@ -1,5 +1,7 @@
 package com.pamurlykin.sportsactivityassistant.ui
 
+import com.pamurlykin.sportsactivityassistant.data.seed.testCenterForSport
+
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.semantics.SemanticsActions
@@ -30,7 +32,7 @@ class ScheduleInteractionUiTest {
         runBlocking {
             val owner = repo.localProfileId()
             val sport = db.referenceDao().getSports().first { it.slug == "football" }.id
-            val center = repo.getComplexOptionsForSport(sport).first().id
+            val center = repo.testCenterForSport(sport).id
             repeat(workouts) { repo.addCompletedTraining(owner, AddCompletedTrainingInput(sport, center, LocalDate.now(),
                 FootballTrainingInput(0, 0, 0, 0, null, null, null))) }
         }

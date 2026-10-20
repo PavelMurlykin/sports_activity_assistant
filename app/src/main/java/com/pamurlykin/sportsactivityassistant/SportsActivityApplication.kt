@@ -15,6 +15,7 @@ class SportsActivityApplication : Application() {
     val database: AppDatabase by lazy { AppDatabase.getInstance(this) }
 
     val repository: AppRepository by lazy {
-        AppRepository(database)
+        AppRepository(database, com.pamurlykin.sportsactivityassistant.data.StoredThemePreferences(
+            getSharedPreferences("appearance", MODE_PRIVATE)))
     }
 }

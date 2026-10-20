@@ -1,5 +1,7 @@
 package com.pamurlykin.sportsactivityassistant.data.repo
 
+import com.pamurlykin.sportsactivityassistant.data.seed.testCenterForSport
+
 import androidx.room.Room
 import androidx.test.platform.app.InstrumentationRegistry
 import com.pamurlykin.sportsactivityassistant.data.AppDatabase
@@ -31,7 +33,7 @@ class TrainingCrudTest {
     @Test fun footballEditPreservesIdentityAndUpdatesCalendarStatisticsAndBackup() = runBlocking {
         db { database, repo, user ->
             val sport = database.referenceDao().getSports().first { it.slug == "football" }
-            val center = repo.getComplexOptionsForSport(sport.id).first()
+            val center = repo.testCenterForSport(sport.id)
             val second = repo.saveSportsCenter(SaveSportsCenterInput(name = "Другой зал", city = null, sportIds = setOf(sport.id)))
             val id = repo.addCompletedTraining(user, football(sport.id, center.id))
             val original = database.trainingDao().getTrainingBundle(id)!!.training
@@ -58,7 +60,7 @@ class TrainingCrudTest {
     @Test fun climbingEditRetainsRouteIdsAndDeleteCascadesOnlyWorkoutDetails() = runBlocking {
         db { database, repo, user ->
             val sport = database.referenceDao().getSports().first { it.slug == "climbing" }
-            val center = repo.getComplexOptionsForSport(sport.id).first()
+            val center = repo.testCenterForSport(sport.id)
             val id = repo.addCompletedTraining(user, AddCompletedTrainingInput(sport.id, center.id, date, climbingRoutes = listOf(route(), route("7a"))))
             repo.addPlannedTraining(user, AddPlannedTrainingInput(sport.id, center.id, date, false, 1, null))
             val original = database.trainingDao().getTrainingBundle(id)!!
@@ -87,7 +89,7 @@ class TrainingCrudTest {
     @Test fun staleEditDeleteAndForeignProfileMutationsAreRejected() = runBlocking {
         db { database, repo, user ->
             val sport = database.referenceDao().getSports().first { it.slug == "football" }
-            val center = repo.getComplexOptionsForSport(sport.id).first()
+            val center = repo.testCenterForSport(sport.id)
             val id = repo.addCompletedTraining(user, football(sport.id, center.id))
             val stale = repo.loadTrainingForEdit(id)
             val updated = stale.input.copy(football = FootballTrainingInput(2, 0, 1, 0, null, null, null))
@@ -108,7 +110,7 @@ class TrainingCrudTest {
     @Test fun failureDuringRouteInsertRollsBackDateUpdatedAndDeletedRoutes() = runBlocking {
         db { database, repo, user ->
             val sport = database.referenceDao().getSports().first { it.slug == "climbing" }
-            val center = repo.getComplexOptionsForSport(sport.id).first()
+            val center = repo.testCenterForSport(sport.id)
             val id = repo.addCompletedTraining(user, AddCompletedTrainingInput(sport.id, center.id, date, climbingRoutes = listOf(route(), route("7a"))))
             val before = database.trainingDao().getTrainingBundle(id)!!
             val snapshot = repo.loadTrainingForEdit(id)
@@ -125,7 +127,7 @@ class TrainingCrudTest {
         db { database, repo, user ->
             val sports = database.referenceDao().getSports()
             val sport = sports.first { it.slug == "football" }
-            val center = repo.getComplexOptionsForSport(sport.id).first()
+            val center = repo.testCenterForSport(sport.id)
             val id = repo.addCompletedTraining(user, football(sport.id, center.id))
             val snapshot = repo.loadTrainingForEdit(id)
             repo.saveSportsCenter(SaveSportsCenterInput(center.id, "Переименован", null, setOf(sports.first { it.slug == "climbing" }.id)))
@@ -143,7 +145,7 @@ class TrainingCrudTest {
     @Test fun futureManualResultsRejectedButImportedFutureHistoryCanBeCorrected() = runBlocking {
         db { database, repo, user ->
             val sport = database.referenceDao().getSports().first { it.slug == "football" }
-            val center = repo.getComplexOptionsForSport(sport.id).first()
+            val center = repo.testCenterForSport(sport.id)
             val future = LocalDate.now().plusDays(10)
             assertTrue(runCatching { repo.addCompletedTraining(user, football(sport.id, center.id).copy(date = future)) }.isFailure)
             val backup = BackupDocument(schemaVersion = 3, exportedAt = "2020-01-01T00:00:00Z",
@@ -163,7 +165,7 @@ class TrainingCrudTest {
     @Test fun concurrentRetryWithSameRequestUuidDoesNotDuplicateWorkoutOrRoutes() = runBlocking {
         db { database, repo, user ->
             val sport = database.referenceDao().getSports().first { it.slug == "climbing" }
-            val center = repo.getComplexOptionsForSport(sport.id).first()
+            val center = repo.testCenterForSport(sport.id)
             val input = AddCompletedTrainingInput(sport.id, center.id, date, climbingRoutes = listOf(route()))
             val request = UUID.randomUUID().toString()
             val ids = coroutineScope { (1..2).map { async { AppRepository(database).addCompletedTraining(user, input, request) } }.awaitAll() }

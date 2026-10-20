@@ -1,5 +1,7 @@
 package com.pamurlykin.sportsactivityassistant.data.repo
 
+import com.pamurlykin.sportsactivityassistant.data.seed.testCenterForSport
+
 import androidx.room.Room
 import androidx.test.platform.app.InstrumentationRegistry
 import com.pamurlykin.sportsactivityassistant.data.AppDatabase
@@ -46,8 +48,8 @@ class RepositoryModelTest {
             }
             assertEquals(1, database.referenceDao().getUsers().size)
             assertEquals(2, database.referenceDao().getSports().size)
-            assertEquals(3, database.referenceDao().getAllComplexes().size)
-            assertEquals(3, database.referenceDao().getComplexSports().size)
+            assertEquals(0, database.referenceDao().getAllComplexes().size)
+            assertEquals(0, database.referenceDao().getComplexSports().size)
         }
     }
 
@@ -72,7 +74,7 @@ class RepositoryModelTest {
         withDatabase { database, repository ->
             val user = repository.localProfileId()
             val sport = database.referenceDao().getSportBySlug("football")!!
-            val center = database.referenceDao().getComplexesForSport(sport.id).first()
+            val center = database.testCenterForSport(sport.id)
             val input = AddCompletedTrainingInput(sport.id, center.id, LocalDate.parse("2026-10-01"), FootballTrainingInput(0, 0, 0, 0, null, null, null))
             repository.addCompletedTraining(user, input)
             repository.addCompletedTraining(user, input)
@@ -94,8 +96,8 @@ class RepositoryModelTest {
             val user = repository.localProfileId()
             val football = database.referenceDao().getSportBySlug("football")!!
             val climbing = database.referenceDao().getSportBySlug("climbing")!!
-            val footballCenter = database.referenceDao().getComplexesForSport(football.id).first().id
-            val climbingCenter = database.referenceDao().getComplexesForSport(climbing.id).first().id
+            val footballCenter = database.testCenterForSport(football.id).id
+            val climbingCenter = database.testCenterForSport(climbing.id).id
             val date = LocalDate.parse("2026-10-01")
             val details = FootballTrainingInput(0, 0, 1, 0, null, null, null)
             listOf(
@@ -138,7 +140,7 @@ class RepositoryModelTest {
             val failure = runCatching { repository.importData(BackupCodec.encode(backup).toByteArray(), user) }.exceptionOrNull()
             assertTrue(failure is IllegalArgumentException)
             assertTrue(database.trainingDao().getAllTrainingBundles().isEmpty())
-            assertEquals(3, database.referenceDao().getAllComplexes().size)
+            assertEquals(0, database.referenceDao().getAllComplexes().size)
         }
     }
 }

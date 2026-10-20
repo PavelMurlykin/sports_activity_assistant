@@ -88,6 +88,10 @@ class MainViewModel(
             values[1].takeIf { it.isNotEmpty() }?.let(LocalDate::parse), values[2].toLongOrNull())
     }.getOrDefault(StatisticsFilter()))
     val statisticsFilter = _statisticsFilter.asStateFlow()
+    val themeMode = repository.themeMode
+
+    suspend fun setThemeMode(mode: com.pamurlykin.sportsactivityassistant.data.model.ThemeMode) =
+        viewModelScope.async { repository.setThemeMode(mode) }.await()
 
     fun setStatisticsFilter(filter: StatisticsFilter) {
         savedState["statisticsFilter"] = arrayListOf(filter.startDate?.toString().orEmpty(),

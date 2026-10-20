@@ -99,8 +99,7 @@ fun TrainingCenterSelector(
     val available = centers.filter { it.id == retainedCenterId || !it.isArchived && it.sports.any { sport -> sport.id == sportId } }
     var creating by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(available, sportId) {
-        // The application seeds centers before emitting its first directory snapshot.
-        // Do not destroy a restored selection while that initial snapshot is loading.
+        // Do not destroy a restored selection while the initial directory snapshot is loading.
         if (centers.isEmpty()) return@LaunchedEffect
         if (available.none { it.id == centerId }) onCenterSelected(available.firstOrNull { sportId in it.primarySportIds }?.id ?: available.firstOrNull()?.id ?: 0L)
     }

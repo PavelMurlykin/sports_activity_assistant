@@ -1,5 +1,7 @@
 package com.pamurlykin.sportsactivityassistant.ui
 
+import com.pamurlykin.sportsactivityassistant.data.seed.testCenterForSport
+
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.test.*
@@ -30,7 +32,7 @@ class StatisticsScreenUiTest {
         try {
             val user = repo.localProfileId()
             val sport = db.referenceDao().getSportBySlug("football")!!.id
-            val center = db.referenceDao().getComplexesForSport(sport).first().id
+            val center = db.testCenterForSport(sport).id
             val day = LocalDate.parse("2020-02-29")
             repeat(21) { repo.addCompletedTraining(user,AddCompletedTrainingInput(sport,center,day,FootballTrainingInput(0,0,0,0,null,null,null))) }
             repo.addCompletedTraining(user,AddCompletedTrainingInput(sport,center,day.minusDays(1),FootballTrainingInput(0,0,0,0,null,null,null)))

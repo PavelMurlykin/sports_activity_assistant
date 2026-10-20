@@ -3,6 +3,8 @@ package com.pamurlykin.sportsactivityassistant.ui.screen
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material3.*
@@ -13,10 +15,12 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.pamurlykin.sportsactivityassistant.R
 import com.pamurlykin.sportsactivityassistant.data.model.SportsCenterUiModel
+import com.pamurlykin.sportsactivityassistant.data.model.ThemeMode
 import com.pamurlykin.sportsactivityassistant.text.AppText
 import com.pamurlykin.sportsactivityassistant.ui.components.*
 import kotlinx.coroutines.CancellationException
@@ -27,6 +31,7 @@ import kotlinx.coroutines.launch
 fun SettingsScreen(viewModel: MainViewModel, onBack: () -> Unit) {
     val read by viewModel.sportPreferencesReadState.collectAsStateWithLifecycle()
     val centersRead by viewModel.centersReadState.collectAsStateWithLifecycle()
+    val themeMode by viewModel.themeMode.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     var busy by remember { mutableStateOf(false) }
@@ -46,6 +51,29 @@ fun SettingsScreen(viewModel: MainViewModel, onBack: () -> Unit) {
     }, snackbarHost = { SnackbarHost(snackbar) }) { padding ->
         LazyColumn(Modifier.fillMaxSize().padding(padding), contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            item(key = "appearance") {
+                Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+                    Column(Modifier.fillMaxWidth().padding(16.dp).selectableGroup()) {
+                        Text(stringResource(R.string.settings_theme), style = MaterialTheme.typography.titleLarge)
+                        Spacer(Modifier.height(8.dp))
+                        ThemeMode.entries.forEach { mode ->
+                            Row(Modifier.fillMaxWidth().heightIn(min = 48.dp)
+                                .selectable(selected = mode == themeMode, enabled = !busy, role = Role.RadioButton,
+                                    onClick = { save { viewModel.setThemeMode(mode) } })
+                                .testTag("theme-mode-${mode.storageValue}"), verticalAlignment = Alignment.CenterVertically) {
+                                RadioButton(selected = mode == themeMode, onClick = null, enabled = !busy)
+                                Text(stringResource(when (mode) {
+                                    ThemeMode.LIGHT -> R.string.settings_theme_light
+                                    ThemeMode.DARK -> R.string.settings_theme_dark
+                                    ThemeMode.SYSTEM -> R.string.settings_theme_system
+                                }), Modifier.padding(start = 12.dp), style = MaterialTheme.typography.bodyLarge)
+                            }
+                        }
+                        Text(stringResource(R.string.settings_theme_hint), style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+            }
             item {
                 Text(stringResource(R.string.settings_sports), style = MaterialTheme.typography.titleLarge)
                 Spacer(Modifier.height(8.dp))

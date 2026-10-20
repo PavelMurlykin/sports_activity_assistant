@@ -1,5 +1,7 @@
 package com.pamurlykin.sportsactivityassistant.data.repo
 
+import com.pamurlykin.sportsactivityassistant.data.seed.testCenterForSport
+
 import androidx.room.Room
 import androidx.test.platform.app.InstrumentationRegistry
 import com.pamurlykin.sportsactivityassistant.data.AppDatabase
@@ -145,7 +147,7 @@ class SportsCentersTest {
         db { database, repo ->
             val user = repo.localProfileId()
             val f = database.referenceDao().getSportBySlug("football")!!.id
-            val center = database.referenceDao().getComplexesForSport(f).first()
+            val center = database.testCenterForSport(f)
             repo.addCompletedTraining(user, football(f, center.id))
             val current = BackupCodec.decode(repo.createBackup())
             val v4 = repo.prepareImport(BackupCodec.encode(current.copy(schemaVersion = 4, sportSelections = emptyList())).toByteArray())

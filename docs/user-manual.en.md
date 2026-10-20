@@ -4,7 +4,7 @@
 
 Sports Activity Assistant is a standalone local football and climbing log for Android 8.0 (API 26) and later. No account, server or internet connection is needed. The app does not send data elsewhere. Operations run on the device; automatic system backup is disabled and backups are created manually as files.
 
-Install the debug APK from `app/build/outputs/apk/debug/app-debug.apk`, built as described in README. Android may ask you to allow installation from the selected source. The debug build is intended for local testing, not publication. A fresh installation creates a local profile and initial reference data, but no sample workouts.
+Install the debug APK from `app/build/outputs/apk/debug/app-debug.apk`, built as described in README. Android may ask you to allow installation from the selected source. The debug build is intended for local testing, not publication. A fresh installation creates a local profile and sports; the center directory and workout history start empty. Add centers manually or through import. Updating the app retains previously created and preinstalled centers together with their history.
 
 Before uninstalling the app or clearing its data, save a backup: both actions remove the local database. Do not install test builds over your only copy of important history without first saving a file.
 
@@ -17,7 +17,9 @@ The app's “Sports Vortex” icon combines a football and a climber; the Androi
 Upgrading to the current database schema (version 9) preserves local keys, UUIDs, workouts, historical route repeat counts, centers, plans and their relationships. Inherited external profile identifiers are removed; an existing local name is retained. Reference initialization completes before data reads and writes without overwriting existing records. Broken references abort the migration; the database is not automatically recreated.
 
 
-## Sport settings
+## Theme and sport settings
+
+In Settings, open «Тема приложения» (App theme) and select «Светлая» (Light), «Тёмная» (Dark), or «Системная» (System). The theme applies immediately throughout the app, including the calendar, statistics, forms and dialogs, and survives restarts. System is the default: it follows the device's light or dark appearance, including changes while the app is running. Theme selection is stored locally, separately from history, and is excluded from JSON backups; importing does not change it.
 
 Open «Настройки» (Settings) using the gear at the top of any main tab. Switches under «Мои виды спорта» (My sports) control sports shown in Schedule, Statistics, the center list and the selectors for new workouts and plans. All sports are enabled initially. Changes are saved immediately and survive app restarts. When every switch is off, adding a workout is unavailable; enable a sport through the gear or «Выберите виды спорта в настройках» (Choose sports in settings).
 

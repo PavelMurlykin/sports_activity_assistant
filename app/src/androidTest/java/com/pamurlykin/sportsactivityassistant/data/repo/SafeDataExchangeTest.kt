@@ -1,5 +1,7 @@
 package com.pamurlykin.sportsactivityassistant.data.repo
 
+import com.pamurlykin.sportsactivityassistant.data.seed.testCenterForSport
+
 import androidx.room.Room
 import androidx.test.platform.app.InstrumentationRegistry
 import com.pamurlykin.sportsactivityassistant.data.AppDatabase
@@ -21,7 +23,7 @@ class SafeDataExchangeTest {
     private suspend fun workout(db: AppDatabase, repo: AppRepository, user: Long? = null): Long {
         val localUser = repo.localProfileId()
         val sport = db.referenceDao().getSportBySlug("football")!!
-        val center = db.referenceDao().getComplexesForSport(sport.id).first()
+        val center = db.testCenterForSport(sport.id)
         return repo.addCompletedTraining(user ?: localUser, AddCompletedTrainingInput(sport.id, center.id, date, FootballTrainingInput(2, 1, 1, 1, null, null, null)))
     }
     private suspend fun content(repo: AppRepository) = BackupCodec.decode(repo.createBackup()).copy(exportedAt = "")
@@ -116,7 +118,7 @@ class SafeDataExchangeTest {
             val repo = AppRepository(source); val user = repo.localProfileId()
             workout(source, repo); workout(source, repo)
             val climbing = source.referenceDao().getSportBySlug("climbing")!!
-            val center = source.referenceDao().getComplexesForSport(climbing.id).first()
+            val center = source.testCenterForSport(climbing.id)
             repo.addCompletedTraining(user, AddCompletedTrainingInput(climbing.id, center.id, date, climbingRoutes = listOf(
                 ClimbingRouteInput(ClimbingWorkoutType.BOULDERING, "6A", true, repeatCount = 2),
                 ClimbingRouteInput(ClimbingWorkoutType.SPEED, "", false, speedCourse = "other"))))
@@ -206,6 +208,9 @@ class SafeDataExchangeTest {
         val db = database()
         try {
             val repo = AppRepository(db); val user = repo.localProfileId()
+            val football = db.referenceDao().getSportBySlug("football")!!.id
+            db.referenceDao().insertComplex(SportsComplexEntity(id = 2, name = "Локальный центр", city = null))
+            db.referenceDao().insertComplexSports(listOf(SportsComplexSportEntity(sportsComplexId = 2, sportId = football)))
             val bytes = "$header\n10;2020-01-01;2;2;1;1;1\n20;2020-01-01;2;9;1;1;1".toByteArray()
             val parsed = repo.prepareImport(bytes)
             val preview = repo.previewImport(parsed)

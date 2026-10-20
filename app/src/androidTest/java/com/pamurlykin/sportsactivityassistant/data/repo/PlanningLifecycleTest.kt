@@ -1,5 +1,7 @@
 package com.pamurlykin.sportsactivityassistant.data.repo
 
+import com.pamurlykin.sportsactivityassistant.data.seed.testCenterForSport
+
 import androidx.room.Room
 import androidx.test.platform.app.InstrumentationRegistry
 import com.pamurlykin.sportsactivityassistant.data.AppDatabase
@@ -21,7 +23,7 @@ class PlanningLifecycleTest {
         try {
             val repo = AppRepository(db); val user = repo.localProfileId()
             val sport = db.referenceDao().getSports().first { it.slug == "football" }.id
-            test(db, repo, user, sport, repo.getComplexOptionsForSport(sport).first().id)
+            test(db, repo, user, sport, repo.testCenterForSport(sport).id)
         } finally { db.close() }
     }
     private fun plan(s: Int, c: Long, weekly: Boolean = false) = AddPlannedTrainingInput(s, c, date, weekly, 1, null)

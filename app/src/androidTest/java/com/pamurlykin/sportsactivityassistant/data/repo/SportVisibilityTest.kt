@@ -1,5 +1,7 @@
 package com.pamurlykin.sportsactivityassistant.data.repo
 
+import com.pamurlykin.sportsactivityassistant.data.seed.testCenterForSport
+
 import androidx.room.Room
 import androidx.test.platform.app.InstrumentationRegistry
 import com.pamurlykin.sportsactivityassistant.data.AppDatabase
@@ -22,11 +24,11 @@ class SportVisibilityTest {
             val repo = AppRepository(db); val owner = repo.localProfileId()
             val football = db.referenceDao().getSportBySlug("football")!!.id
             val climbing = db.referenceDao().getSportBySlug("climbing")!!.id
-            val center = repo.getComplexOptionsForSport(football).first().id
+            val center = repo.testCenterForSport(football).id
             repo.setPrimaryCenter(football, center)
             repo.addCompletedTraining(owner, AddCompletedTrainingInput(football, center, date, FootballTrainingInput(3, 1, 1, 1, null, null, null)))
             repo.addPlannedTraining(owner, AddPlannedTrainingInput(football, center, date, true, 1, null))
-            repo.addCompletedTraining(owner, AddCompletedTrainingInput(climbing, repo.getComplexOptionsForSport(climbing).first().id, date,
+            repo.addCompletedTraining(owner, AddCompletedTrainingInput(climbing, repo.testCenterForSport(climbing).id, date,
                 climbingRoutes = listOf(ClimbingRouteInput(ClimbingWorkoutType.DIFFICULTY, "6a", true))))
             assertTrue(repo.observeSportPreferences().first().all { it.isVisible })
             repo.setSportVisible(football, false)
@@ -60,7 +62,7 @@ class SportVisibilityTest {
             val sports = original.referenceDao().getSports()
             sports.forEach { source.setSportVisible(it.id, false) }
             val football = sports.first { it.slug == "football" }.id
-            val center = source.getComplexOptionsForSport(football).first().id
+            val center = source.testCenterForSport(football).id
             source.setPrimaryCenter(football, center)
             val backup = source.createBackup()
             target.importData(backup.toByteArray(), target.localProfileId())
@@ -87,7 +89,7 @@ class SportVisibilityTest {
             val repo = AppRepository(db); repo.localProfileId()
             val football = db.referenceDao().getSportBySlug("football")!!.id
             repo.setSportVisible(football, false)
-            repo.setPrimaryCenter(football, repo.getComplexOptionsForSport(football).first().id)
+            repo.setPrimaryCenter(football, repo.testCenterForSport(football).id)
             val document = BackupCodec.decode(repo.createBackup())
             val old = document.copy(schemaVersion = 7, sportSelections = emptyList(), primaryCenters = emptyList())
             repo.importData(BackupCodec.encode(old).toByteArray(), repo.localProfileId())

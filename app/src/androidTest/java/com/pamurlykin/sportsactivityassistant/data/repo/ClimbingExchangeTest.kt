@@ -1,5 +1,7 @@
 package com.pamurlykin.sportsactivityassistant.data.repo
 
+import com.pamurlykin.sportsactivityassistant.data.seed.testCenterForSport
+
 import androidx.room.Room
 import androidx.test.platform.app.InstrumentationRegistry
 import com.pamurlykin.sportsactivityassistant.data.AppDatabase
@@ -22,7 +24,7 @@ class ClimbingExchangeTest {
             val repository = AppRepository(source)
             val user = repository.localProfileId()
             val sport = source.referenceDao().getSportBySlug("climbing")!!
-            val center = repository.getComplexOptionsForSport(sport.id).first()
+            val center = repository.testCenterForSport(sport.id)
             repository.addCompletedTraining(user, AddCompletedTrainingInput(sport.id, center.id, LocalDate.parse("2026-10-07"), climbingRoutes = listOf(
                 ClimbingRouteInput(ClimbingWorkoutType.DIFFICULTY, "6b+", true),
                 ClimbingRouteInput(ClimbingWorkoutType.BOULDERING, "7A", false),

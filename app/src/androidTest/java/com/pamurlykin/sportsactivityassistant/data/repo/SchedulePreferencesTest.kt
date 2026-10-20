@@ -1,5 +1,7 @@
 package com.pamurlykin.sportsactivityassistant.data.repo
 
+import com.pamurlykin.sportsactivityassistant.data.seed.testCenterForSport
+
 import androidx.room.Room
 import androidx.test.platform.app.InstrumentationRegistry
 import com.pamurlykin.sportsactivityassistant.data.AppDatabase
@@ -19,7 +21,7 @@ class SchedulePreferencesTest {
         try {
             val repo = AppRepository(original); val owner = repo.localProfileId()
             val sport = original.referenceDao().getSports().first { it.slug == "football" }.id
-            val center = repo.getComplexOptionsForSport(sport).first().id
+            val center = repo.testCenterForSport(sport).id
             repo.setPrimaryCenter(sport, center)
             val date = LocalDate.parse("2020-02-29")
             val rule = repo.addPlannedTraining(owner, AddPlannedTrainingInput(sport, center, date, true, 1, null, "23:30", "01:00"))
@@ -27,7 +29,7 @@ class SchedulePreferencesTest {
             assertEquals(90, TrainingTimes.duration(snapshot.startTime, snapshot.endTime))
             repo.updatePlan(snapshot, PlanScope.EVENT, snapshot.input().copy(startTime = "22:30"))
             val climbing = original.referenceDao().getSports().first { it.slug == "climbing" }.id
-            val climbingCenter = repo.getComplexOptionsForSport(climbing).first().id
+            val climbingCenter = repo.testCenterForSport(climbing).id
             val training = repo.addCompletedTraining(owner, AddCompletedTrainingInput(climbing, climbingCenter, date,
                 climbingRoutes = listOf(ClimbingRouteInput(ClimbingWorkoutType.DIFFICULTY, "6a", true)), durationMinutes = 90))
             assertEquals(90, repo.loadTrainingForEdit(training).input.durationMinutes)

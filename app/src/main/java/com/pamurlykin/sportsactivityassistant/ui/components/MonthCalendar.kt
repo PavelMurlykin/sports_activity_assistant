@@ -49,21 +49,21 @@ fun MonthCalendar(
         detectHorizontalDragGestures(onDragStart = { distance = 0f }, onHorizontalDrag = { change, delta ->
             change.consume(); distance += delta
         }, onDragEnd = { if (distance < -threshold) next() else if (distance > threshold) previous() })
-    }, colors = CardDefaults.cardColors(containerColor = Mist), shape = RoundedCornerShape(24.dp)) {
+    }, colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), shape = RoundedCornerShape(24.dp)) {
         Column(Modifier.fillMaxSize().padding(horizontal = 6.dp, vertical = if (compact) 2.dp else 8.dp),
             verticalArrangement = Arrangement.spacedBy(if (compact) 1.dp else 4.dp)) {
             Row(Modifier.fillMaxWidth().height(if (compact) 40.dp else 48.dp), verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = onPreviousMonth, modifier = Modifier.size(48.dp)) { Icon(Icons.Rounded.ChevronLeft, stringResource(R.string.previous_month), tint = Pine) }
+                IconButton(onClick = onPreviousMonth, modifier = Modifier.size(48.dp)) { Icon(Icons.Rounded.ChevronLeft, stringResource(R.string.previous_month), tint = MaterialTheme.colorScheme.primary) }
                 Text(state.month.month.getDisplayName(TextStyle.FULL_STANDALONE, Locale.forLanguageTag("ru"))
                     .replaceFirstChar { it.uppercase() } + " " + state.month.year,
                     modifier = Modifier.weight(1f), style = MaterialTheme.typography.titleMedium,
-                    color = Pine, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center, maxLines = 1)
-                IconButton(onClick = onNextMonth, modifier = Modifier.size(48.dp)) { Icon(Icons.Rounded.ChevronRight, stringResource(R.string.next_month), tint = Pine) }
+                    color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center, maxLines = 1)
+                IconButton(onClick = onNextMonth, modifier = Modifier.size(48.dp)) { Icon(Icons.Rounded.ChevronRight, stringResource(R.string.next_month), tint = MaterialTheme.colorScheme.primary) }
             }
             if (!compact) Text(stringResource(R.string.calendar_legend), style = MaterialTheme.typography.labelSmall, maxLines = 1)
             Row(Modifier.fillMaxWidth()) {
                 stringArrayResource(R.array.calendar_weekdays).forEach { name ->
-                    Text(name, Modifier.weight(1f), style = MaterialTheme.typography.labelSmall, color = Pine, textAlign = TextAlign.Center)
+                    Text(name, Modifier.weight(1f), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary, textAlign = TextAlign.Center)
                 }
             }
             state.days.chunked(7).forEach { week ->
@@ -88,9 +88,9 @@ private fun CalendarDayCell(day: ScheduleDayUiModel, isSelected: Boolean, onClic
         if (day.isToday) add(todayLabel)
         day.events.forEach { add(stringResource(R.string.calendar_event, it.sportTitle, it.state.label())) }
     }.joinToString(", ")
-    val border = when { isSelected -> Pine; day.isToday -> Clay; else -> Pine.copy(alpha = 0.08f) }
+    val border = when { isSelected -> MaterialTheme.colorScheme.primary; day.isToday -> MaterialTheme.colorScheme.primary; else -> MaterialTheme.colorScheme.primary.copy(alpha = 0.08f) }
     Box(modifier.clip(RoundedCornerShape(10.dp))
-        .background(if (isSelected) Pine.copy(alpha = 0.09f) else MaterialTheme.colorScheme.surface)
+        .background(if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.09f) else MaterialTheme.colorScheme.surface)
         .border(1.dp, border, RoundedCornerShape(10.dp))
         .semantics(mergeDescendants = true) { selected = isSelected; contentDescription = description }
         .clickable(role = Role.Button, onClick = onClick).padding(2.dp)) {
@@ -98,25 +98,25 @@ private fun CalendarDayCell(day: ScheduleDayUiModel, isSelected: Boolean, onClic
             Row(Modifier.align(Alignment.Center), verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text(day.date.dayOfMonth.toString(), style = MaterialTheme.typography.labelSmall,
-                    color = if (day.inCurrentMonth) Pine else Pine.copy(alpha = 0.35f),
+                    color = if (day.inCurrentMonth) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primary.copy(alpha = 0.35f),
                     fontWeight = if (day.isToday || isSelected) FontWeight.Bold else FontWeight.Medium)
                 day.events.firstOrNull()?.let { event ->
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         SportBadge(event.sportSlug, size = 9.dp)
-                        Icon(event.state.icon(), null, Modifier.size(9.dp), tint = Pine)
+                        Icon(event.state.icon(), null, Modifier.size(9.dp), tint = MaterialTheme.colorScheme.primary)
                     }
                 }
             }
         } else {
             Text(day.date.dayOfMonth.toString(), Modifier.align(Alignment.TopCenter),
                 style = MaterialTheme.typography.titleSmall,
-                color = if (day.inCurrentMonth) Pine else Pine.copy(alpha = 0.35f),
+                color = if (day.inCurrentMonth) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primary.copy(alpha = 0.35f),
                 fontWeight = if (day.isToday || isSelected) FontWeight.Bold else FontWeight.Medium)
             Row(Modifier.align(Alignment.BottomCenter), horizontalArrangement = Arrangement.spacedBy(1.dp)) {
                 day.events.take(2).forEach { event ->
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         SportBadge(event.sportSlug, size = 10.dp)
-                        Icon(event.state.icon(), null, Modifier.size(10.dp), tint = Pine)
+                        Icon(event.state.icon(), null, Modifier.size(10.dp), tint = MaterialTheme.colorScheme.primary)
                     }
                 }
                 if (day.events.size > 2) Text("+", style = MaterialTheme.typography.labelSmall)

@@ -50,7 +50,14 @@ import kotlinx.coroutines.sync.withLock
 import com.pamurlykin.sportsactivityassistant.data.seed.LocalSeed
 import com.pamurlykin.sportsactivityassistant.data.sport.SportModules
 
-class AppRepository(private val database: AppDatabase) {
+class AppRepository(
+    private val database: AppDatabase,
+    private val themePreferences: com.pamurlykin.sportsactivityassistant.data.ThemePreferences =
+        com.pamurlykin.sportsactivityassistant.data.InMemoryThemePreferences(),
+) {
+    val themeMode = themePreferences.themeMode
+    suspend fun setThemeMode(mode: ThemeMode) = themePreferences.setThemeMode(mode)
+
     private val initializationLock = Mutex()
     private var profileId: Long? = null
 

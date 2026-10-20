@@ -1,4 +1,4 @@
-﻿package com.pamurlykin.sportsactivityassistant.data.seed
+package com.pamurlykin.sportsactivityassistant.data.seed
 
 import com.pamurlykin.sportsactivityassistant.data.AppDatabase
 import com.pamurlykin.sportsactivityassistant.data.entity.ClimbingRouteEntity
@@ -49,20 +49,20 @@ object DemoSeed {
             listOf(
                 SportsComplexEntity(
                     id = 1,
-                    name = "Энергия Высоты",
-                    city = "Санкт-Петербург",
+                    name = "Тестовый скалодром",
+                    city = "Тестовый город",
                     createdAt = createdAt,
                 ),
                 SportsComplexEntity(
                     id = 2,
-                    name = "Фабрика Футбола",
-                    city = "Санкт-Петербург",
+                    name = "Тестовый футбольный центр",
+                    city = "Тестовый город",
                     createdAt = createdAt,
                 ),
                 SportsComplexEntity(
                     id = 3,
-                    name = "Арена на горе",
-                    city = "Анталья",
+                    name = "Другой тестовый футбольный центр",
+                    city = "Другой тестовый город",
                     createdAt = createdAt,
                 ),
             ),

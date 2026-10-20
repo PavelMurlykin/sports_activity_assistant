@@ -94,4 +94,9 @@
     <string name="statistics_date_to">По дату</string>
     <string name="statistics_period_month">Месяц</string>
     <string name="statistics_period_year">Год</string>
+    <string name="settings_theme">Тема приложения</string>
+    <string name="settings_theme_light">Светлая</string>
+    <string name="settings_theme_dark">Тёмная</string>
+    <string name="settings_theme_system">Системная</string>
+    <string name="settings_theme_hint">Системная тема следует настройкам устройства. Выбор сохраняется автоматически.</string>
 </resources>

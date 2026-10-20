@@ -37,8 +37,9 @@ import kotlin.math.abs
 @Composable
 fun WorkoutCard(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
     Surface(modifier.fillMaxWidth(), shape = RoundedCornerShape(28.dp), shadowElevation = 8.dp,
-        border = BorderStroke(1.dp, Color.White), color = MaterialTheme.colorScheme.surface) {
-        Column(Modifier.background(Brush.verticalGradient(listOf(Color.White, Color(0xFFF0F5F6)))).padding(16.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant), color = MaterialTheme.colorScheme.surface) {
+        Column(Modifier.background(Brush.verticalGradient(listOf(MaterialTheme.colorScheme.surface,
+            MaterialTheme.colorScheme.surfaceContainerHigh))).padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp), content = content)
     }
 }

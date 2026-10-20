@@ -1,5 +1,7 @@
 package com.pamurlykin.sportsactivityassistant.data.repo
 
+import com.pamurlykin.sportsactivityassistant.data.seed.testCenterForSport
+
 import androidx.room.Room
 import androidx.room.withTransaction
 import androidx.test.platform.app.InstrumentationRegistry
@@ -37,7 +39,7 @@ class StatisticsQueriesTest {
         fixture { db,repo,_ ->
             val user = repo.localProfileId()
             val sport = db.referenceDao().getSportBySlug("football")!!.id
-            val center = db.referenceDao().getComplexesForSport(sport).first().id
+            val center = db.testCenterForSport(sport).id
             val otherCenter = repo.saveSportsCenter(SaveSportsCenterInput(name="Другой",city=null,sportIds=setOf(sport)))
             db.referenceDao().insertUsers(listOf(UserEntity(id=99,displayName="Другой профиль")))
             football(db,user,sport,center,"2020-02-01",null,null,2,1,1,1)
@@ -87,7 +89,7 @@ class StatisticsQueriesTest {
         fixture { db,repo,_ ->
             val user = repo.localProfileId()
             val sport = db.referenceDao().getSportBySlug("climbing")!!.id
-            val center = db.referenceDao().getComplexesForSport(sport).first().id
+            val center = db.testCenterForSport(sport).id
             val routes = listOf(
                 ClimbingRouteInput(ClimbingWorkoutType.DIFFICULTY,"\u00a06B+\u3000",true,3),
                 ClimbingRouteInput(ClimbingWorkoutType.DIFFICULTY,"9c",false,2),
@@ -122,7 +124,7 @@ class StatisticsQueriesTest {
         fixture { db,repo,_ ->
             val user = repo.localProfileId()
             val sport = db.referenceDao().getSportBySlug("football")!!.id
-            val center = db.referenceDao().getComplexesForSport(sport).first().id
+            val center = db.testCenterForSport(sport).id
             val ids = db.withTransaction { (1..61).map { football(db,user,sport,center,"2020-01-01") } }
             val pages = (0..3).map { repo.observeTrainingPage(sport,page=it).first() }
             assertEquals(listOf(20,20,20,1),pages.map { it.items.size })
@@ -147,7 +149,7 @@ class StatisticsQueriesTest {
         fixture { db,repo,queries ->
             val user = repo.localProfileId()
             val sport = db.referenceDao().getSportBySlug("football")!!.id
-            val center = db.referenceDao().getComplexesForSport(sport).first().id
+            val center = db.testCenterForSport(sport).id
             db.withTransaction { repeat(5000) { index ->
                 football(db,user,sport,center,"2020-01-01",if (index < 513) "1000000000000000000000" else null,
                     Int.MAX_VALUE,Int.MAX_VALUE,0,Int.MAX_VALUE,Int.MAX_VALUE)
@@ -188,7 +190,7 @@ class StatisticsQueriesTest {
                     repo.observeSportStatistics(sport.id).first()!!.football)
             }
             val sport = db.referenceDao().getSportBySlug("football")!!.id
-            val center = db.referenceDao().getComplexesForSport(sport).first().id
+            val center = db.testCenterForSport(sport).id
             football(db,repo.localProfileId(),sport,center,"9999-12-31")
             assertEquals(4,repo.observeStatisticsOverview().first().totalTrainings)
             assertEquals(1,repo.observeTrainingPage(sport,StatisticsFilter(date("9999-12-31"),date("9999-12-31"))).first().total)
@@ -198,7 +200,7 @@ class StatisticsQueriesTest {
         fixture { db,repo,_ ->
             val user = repo.localProfileId()
             val sport = db.referenceDao().getSportBySlug("football")!!.id
-            val center = db.referenceDao().getComplexesForSport(sport).first().id
+            val center = db.testCenterForSport(sport).id
             val input = AddCompletedTrainingInput(sport,center,date("2020-01-01"),
                 FootballTrainingInput(0,0,0,0,BigDecimal("1000000000000000E+6"),null,null))
             val token = java.util.UUID.randomUUID().toString()

@@ -14,6 +14,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
@@ -42,15 +43,19 @@ fun StatisticsCard(title: String, modifier: Modifier = Modifier, content: @Compo
 
 @Composable
 fun FootballStatisticsCards(statistics: FootballStatisticsUiModel) {
+    val dark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         StatisticsCard(stringResource(R.string.football_statistics_general), Modifier.testTag("football-general")) {
             ResultRow(Icons.Rounded.SportsSoccer, stringResource(R.string.football_statistics_matches), statistics.games)
             ResultRow(Icons.Rounded.EmojiEvents, stringResource(R.string.football_statistics_win), statistics.wins,
-                percentage(statistics.wins, statistics.games), Color(0xFFDDF5EC), Color(0xFF008767))
+                percentage(statistics.wins, statistics.games),
+                if (dark) Color(0xFF163F32) else Color(0xFFDDF5EC), if (dark) Color(0xFF7DE1B8) else Color(0xFF008767))
             ResultRow(Icons.Rounded.Handshake, stringResource(R.string.football_statistics_draw), statistics.draws,
-                percentage(statistics.draws, statistics.games), Color(0xFFE9EDF5), Color(0xFF46516D))
+                percentage(statistics.draws, statistics.games),
+                if (dark) Color(0xFF303B50) else Color(0xFFE9EDF5), if (dark) Color(0xFFCFDAF4) else Color(0xFF46516D))
             ResultRow(Icons.Rounded.Close, stringResource(R.string.football_statistics_loss), statistics.losses,
-                percentage(statistics.losses, statistics.games), Color(0xFFFFE2E3), Color(0xFFB71922))
+                percentage(statistics.losses, statistics.games),
+                if (dark) Color(0xFF52242B) else Color(0xFFFFE2E3), if (dark) Color(0xFFFFB8BD) else Color(0xFFB71922))
         }
         StatisticsCard(stringResource(R.string.football_statistics_detailed), Modifier.testTag("football-detailed")) {
             // Keep all four columns legible on narrow screens and with larger system fonts.
@@ -109,13 +114,16 @@ private fun ResultRow(icon: ImageVector, label: String, value: Long, percent: St
 
 @Composable
 private fun SummaryCell(value: String, modifier: Modifier, bold: Boolean = false, highlight: Boolean = false) {
+    val dark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     Box(modifier.padding(horizontal = 2.dp, vertical = 4.dp), contentAlignment = Alignment.Center) {
         val pill = if (highlight && value != "—") Modifier.widthIn(min = 34.dp).background(
-            Brush.horizontalGradient(listOf(Color(0xFFFFDABD), Color(0xFFFFC18B))), RoundedCornerShape(9.dp)) else Modifier
+            Brush.horizontalGradient(if (dark) listOf(Color(0xFF5D3726), Color(0xFF704127))
+                else listOf(Color(0xFFFFDABD), Color(0xFFFFC18B))), RoundedCornerShape(9.dp)) else Modifier
         Text(value, pill.padding(horizontal = 5.dp, vertical = 4.dp), textAlign = TextAlign.Center,
             style = MaterialTheme.typography.bodySmall,
             fontWeight = if (bold || highlight) FontWeight.Bold else FontWeight.Normal,
-            color = if (highlight && value != "—") Color(0xFFAB3619) else MaterialTheme.colorScheme.onSurface)
+            color = if (highlight && value != "—") { if (dark) Color(0xFFFFD5AA) else Color(0xFFAB3619) }
+                else MaterialTheme.colorScheme.onSurface)
     }
 }
 
