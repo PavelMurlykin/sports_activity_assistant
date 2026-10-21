@@ -42,7 +42,7 @@ import com.pamurlykin.sportsactivityassistant.data.entity.ImportAliasEntity
         SportPrimaryCenterEntity::class,
         SportVisibilityEntity::class,
     ],
-    version = 9,
+    version = 10,
     exportSchema = true,
 )
 @TypeConverters(Converters::class)
@@ -62,7 +62,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "sports_activity_assistant.db",
                 )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10)
                     .build()
                     .also { instance = it }
             }
@@ -71,6 +71,11 @@ abstract class AppDatabase : RoomDatabase() {
         val MIGRATION_2_3: Migration = LocalIdentityMigration()
         val MIGRATION_3_4: Migration = ClimbingGradesMigration()
         val MIGRATION_4_5: Migration = ExchangeIdentityMigration()
+        val MIGRATION_9_10 = object : Migration(9, 10) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE climbing_routes ADD COLUMN speed_time_millis INTEGER")
+            }
+        }
         val MIGRATION_8_9 = object : Migration(8, 9) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 // No rows means every sport is visible, preserving the previous experience.

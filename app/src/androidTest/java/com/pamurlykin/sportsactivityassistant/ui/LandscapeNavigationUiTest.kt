@@ -39,8 +39,12 @@ class LandscapeNavigationUiTest {
             compose.waitUntil(5000) { compose.onAllNodesWithText("Всего завершённых тренировок").fetchSemanticsNodes().isNotEmpty() }
             compose.onNodeWithContentDescription("Центры").performClick()
             compose.onNodeWithText("Спортивные центры").assertExists()
-            compose.onNodeWithContentDescription("Данные").performClick()
-            compose.onNodeWithText("Выбрать файл").assertExists()
+            compose.onNodeWithContentDescription("Данные").assertDoesNotExist()
+            compose.onNodeWithContentDescription("Настройки").performClick()
+            compose.onNodeWithTag("settings-list").performScrollToNode(hasTestTag("restore-backup"))
+            compose.onNodeWithText("Сохранить резервную копию").assertExists()
+            compose.onNodeWithText("Восстановить данные из файла").assertExists()
+            compose.onNodeWithContentDescription("Назад").performClick()
             compose.onNodeWithContentDescription("Расписание").performClick()
             compose.waitUntil(5000) { compose.onAllNodesWithContentDescription("Предыдущий месяц").fetchSemanticsNodes().isNotEmpty() }
         } finally {

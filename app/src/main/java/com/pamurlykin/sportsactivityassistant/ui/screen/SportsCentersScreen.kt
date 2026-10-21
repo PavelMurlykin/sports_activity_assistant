@@ -18,6 +18,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.platform.LocalConfiguration
 import android.content.res.Configuration
 import androidx.compose.ui.text.font.FontWeight
@@ -29,10 +31,12 @@ import androidx.compose.ui.platform.testTag
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.*
 import androidx.compose.ui.res.stringResource
 import com.pamurlykin.sportsactivityassistant.R
 import com.pamurlykin.sportsactivityassistant.ui.components.ReadStateNotice
+import com.pamurlykin.sportsactivityassistant.ui.components.StatisticsCard
+import com.pamurlykin.sportsactivityassistant.ui.components.SportBadge
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -105,15 +109,14 @@ fun SportsCentersScreen(viewModel: MainViewModel, onOpenSettings: () -> Unit = {
         },
     ) { padding ->
         LazyColumn(
-            Modifier.fillMaxSize(),
+            Modifier.fillMaxSize().testTag("centers-list"),
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp,
                 top = padding.calculateTopPadding() + 12.dp, bottom = padding.calculateBottomPadding() + 92.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             if (centersRead.data != null && statisticsRead.data != null && visibleIds.isNotEmpty()) item(key = "primary-centers") {
-                Card(Modifier.fillMaxWidth()) {
-                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text(stringResource(R.string.primary_centers), style = MaterialTheme.typography.titleMedium)
+                StatisticsCard(stringResource(R.string.primary_centers)) {
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         allSports.filter { it.id in visibleIds }.forEach { sport ->
                             val available = centers.filter { !it.isArchived && it.sports.any { s -> s.id == sport.id } }
                             val primary = available.firstOrNull { sport.id in it.primarySportIds }
@@ -132,26 +135,65 @@ fun SportsCentersScreen(viewModel: MainViewModel, onOpenSettings: () -> Unit = {
                     }
                 }
             }
-            item { FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                FilterChip(!showArchive, { showArchive = false }, label = { Text(AppText.get(R.string.sports_centers_screen_aktivnye)) })
-                FilterChip(showArchive, { showArchive = true }, label = { Text(AppText.get(R.string.sports_centers_screen_arhiv)) })
-            } }
+            item {
+                Card(Modifier.fillMaxWidth(), shape = RoundedCornerShape(24.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+                    FlowRow(Modifier.padding(horizontal = 14.dp, vertical = 6.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        FilterChip(!showArchive, { showArchive = false }, label = { Text(AppText.get(R.string.sports_centers_screen_aktivnye)) })
+                        FilterChip(showArchive, { showArchive = true }, label = { Text(AppText.get(R.string.sports_centers_screen_arhiv)) })
+                    }
+                }
+            }
             val visible = centers.filter { it.isArchived == showArchive && (it.sports.isEmpty() || it.sports.any { sport -> sport.id in visibleIds }) }
             if (centersRead.failed || statisticsRead.failed) item { ReadStateNotice(true, viewModel::retryReads) }
             else if (centersRead.loading || statisticsRead.loading) item { ReadStateNotice(false, viewModel::retryReads) }
             else if (visibleIds.isEmpty()) item {
                 TextButton(onClick = onOpenSettings) { Text(stringResource(R.string.settings_choose_sports)) }
             }
-            else if (visible.isEmpty()) item { Text(if (showArchive) AppText.get(R.string.sports_centers_screen_arhiv_pust) else AppText.get(R.string.sports_centers_screen_dobavte_sportivnyy_tsentr)) }
+            else if (visible.isEmpty()) item {
+                Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+                    Column(Modifier.fillMaxWidth().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Icon(if (showArchive) Icons.Rounded.Inventory2 else Icons.Rounded.LocationOn, null,
+                            Modifier.size(32.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(if (showArchive) AppText.get(R.string.sports_centers_screen_arhiv_pust) else AppText.get(R.string.sports_centers_screen_dobavte_sportivnyy_tsentr),
+                            style = MaterialTheme.typography.bodyMedium)
+                    }
+                }
+            }
             items(visible, key = { it.id }) { center ->
-                Card(Modifier.fillMaxWidth()) {
-                    Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text(center.fullTitle, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                        Text(center.sports.filter { it.id in visibleIds }.joinToString { it.title }.ifBlank { AppText.get(R.string.sports_centers_screen_vidy_sporta_ne_ukazany) })
-                        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            TextButton(onClick = { editedId = center.id; showDialog = true }) { Text(AppText.get(R.string.sports_centers_screen_izmenit)) }
-                            TextButton(onClick = { archiveError = null; archiveTarget = !center.isArchived; archiveId = center.id }) {
-                                Text(if (center.isArchived) AppText.get(R.string.sports_centers_screen_vernut) else AppText.get(R.string.sports_centers_screen_v_arhiv))
+                Card(Modifier.fillMaxWidth().testTag("center-${center.id}"), shape = RoundedCornerShape(24.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+                    Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Row(Modifier.fillMaxWidth().testTag("center-header-${center.id}"), verticalAlignment = Alignment.CenterVertically) {
+                            Text(center.name, Modifier.weight(1f), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
+                            IconButton(onClick = { editedId = center.id; showDialog = true }) {
+                                Icon(Icons.Rounded.Edit, stringResource(R.string.center_edit, center.fullTitle))
+                            }
+                            IconButton(onClick = { archiveError = null; archiveTarget = !center.isArchived; archiveId = center.id }) {
+                                Icon(if (center.isArchived) Icons.Rounded.Unarchive else Icons.Rounded.Archive,
+                                    stringResource(if (center.isArchived) R.string.center_restore else R.string.center_archive, center.fullTitle))
+                            }
+                        }
+                        center.city?.takeIf { it.isNotBlank() }?.let { city ->
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Icon(Icons.Rounded.LocationOn, null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(city, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
+                        val sports = center.sports.filter { it.id in visibleIds }
+                        if (sports.isEmpty()) Text(stringResource(R.string.sports_centers_screen_vidy_sporta_ne_ukazany),
+                            style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        sports.forEach { sport ->
+                            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f))
+                            Row(Modifier.fillMaxWidth().padding(vertical = 2.dp), verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                                SportBadge(sport.slug, size = 24.dp)
+                                Text(sport.title, Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
+                                if (!center.isArchived && sport.id in center.primarySportIds) {
+                                    Icon(Icons.Rounded.Star, stringResource(R.string.settings_primary_center), Modifier.size(20.dp),
+                                        tint = MaterialTheme.colorScheme.primary)
+                                }
                             }
                         }
                     }

@@ -88,6 +88,7 @@ data class SportStatisticsUiModel(
     val metrics: List<MetricUiModel>,
     val filter: StatisticsFilter = StatisticsFilter(),
     val football: FootballStatisticsUiModel? = null,
+    val climbing: ClimbingStatisticsUiModel? = null,
 )
 
 data class ComplexOptionUiModel(
@@ -179,6 +180,7 @@ data class ClimbingRouteInput(
     val speedCourse: String? = null,
     val legacyWorkoutType: String? = null,
     val publicId: String? = null,
+    val speedTimeMillis: Long? = null,
 )
 
 data class AddCompletedTrainingInput(

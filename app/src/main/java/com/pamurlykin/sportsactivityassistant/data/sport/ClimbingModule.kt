@@ -29,6 +29,10 @@ object ClimbingModule : SportModule {
         require(input.climbingRoutes.isNotEmpty()) { AppText.get(R.string.climbing_module_dobavte_hotya_by_odnu_trassu) }
         input.climbingRoutes.forEach { route ->
             require(route.repeatCount > 0) { AppText.get(R.string.climbing_module_kolichestvo_popytok_dolzhno_byt_polozhitelnym) }
+            require(route.speedTimeMillis == null || (route.speedTimeMillis > 0 && route.isCompleted &&
+                route.workoutType == ClimbingWorkoutType.SPEED && route.gradingSystem == Catalog.NONE)) {
+                AppText.get(R.string.climbing_time_invalid)
+            }
             if (route.gradingSystem == Catalog.LEGACY) {
                 require(allowHistorical) { AppText.get(R.string.climbing_module_dlya_novoy_trassy_vyberite_podtverzhdyonnuyu) }
                 require(route.gradeCode == null && route.speedCourse == null) { AppText.get(R.string.climbing_module_neodnoznachnaya_kategoriya_ne_mozhet_soderzhat) }
@@ -63,7 +67,8 @@ object ClimbingModule : SportModule {
             ClimbingRouteEntity(climbingTrainingId = trainingId, workoutType = it.workoutType,
                 routeDifficulty = it.routeDifficulty, isCompleted = it.isCompleted, repeatCount = it.repeatCount,
                 gradingSystem = it.gradingSystem, gradeCode = it.gradeCode, speedCourse = it.speedCourse,
-                legacyWorkoutType = it.legacyWorkoutType, publicId = it.publicId ?: java.util.UUID.randomUUID().toString())
+                legacyWorkoutType = it.legacyWorkoutType, publicId = it.publicId ?: java.util.UUID.randomUUID().toString(),
+                speedTimeMillis = it.speedTimeMillis)
         })
     }
 
@@ -92,6 +97,7 @@ object ClimbingModule : SportModule {
                 gradingSystem = route.gradingSystem, gradeCode = route.gradeCode,
                 speedCourse = route.speedCourse, legacyWorkoutType = route.legacyWorkoutType,
                 publicId = route.publicId ?: java.util.UUID.randomUUID().toString(),
+                speedTimeMillis = route.speedTimeMillis,
             )
         }
         dao.updateClimbingRoutes(items.filter { it.id != 0L })
@@ -109,14 +115,14 @@ object ClimbingModule : SportModule {
             ClimbingRouteInput(type, it.routeDifficulty, it.completed, it.repeatCount,
                 it.gradingSystem ?: historical.system,
                 if (it.gradingSystem == null) historical.code else it.gradeCode,
-                it.speedCourse, it.legacyWorkoutType, it.publicId)
+                it.speedCourse, it.legacyWorkoutType, it.publicId, it.speedTimeMillis)
         })
     }
 
     fun encodeRoute(route: ClimbingRouteEntity): ClimbingRouteBackup = ClimbingRouteBackup(
         route.legacyWorkoutType ?: route.workoutType.storageValue, route.routeDifficulty,
         route.isCompleted, route.repeatCount, route.gradingSystem, route.gradeCode,
-        route.speedCourse, route.legacyWorkoutType, route.publicId,
+        route.speedCourse, route.legacyWorkoutType, route.publicId, route.speedTimeMillis,
     )
 
     override fun encodeDetails(bundle: TrainingBundle, common: TrainingBackup): TrainingBackup = common.copy(
@@ -135,13 +141,43 @@ object ClimbingModule : SportModule {
         val buckets = items.flatMap { it.climbing?.routes.orEmpty() }.map { r ->
             ClimbingBucket(r.workoutType, r.gradingSystem, r.gradeCode, r.speedCourse,
                 r.gradeCode != null && Catalog.find(r.gradingSystem, r.routeDifficulty)?.code == r.gradeCode,
-                1L, r.repeatCount.toLong(), if (r.isCompleted) r.repeatCount.toLong() else 0L)
+                1L, r.repeatCount.toLong(), if (r.isCompleted) r.repeatCount.toLong() else 0L,
+                if (r.isCompleted && r.speedTimeMillis != null) r.repeatCount.toLong() else 0L,
+                if (r.isCompleted) (r.speedTimeMillis?.toDouble() ?: 0.0) * r.repeatCount else 0.0,
+                r.speedTimeMillis?.takeIf { r.isCompleted })
         }
         return result(items.size, buckets)
     }
 
     override fun highlights(items: List<TrainingBundle>) = fromItems(items).highlights
     override fun metrics(items: List<TrainingBundle>) = fromItems(items).metrics
+    fun statistics(items: List<TrainingBundle>) = requireNotNull(fromItems(items).climbing)
+
+    private fun buildStatistics(buckets: List<ClimbingBucket>): ClimbingStatisticsUiModel {
+        fun List<ClimbingBucket>.counts() = ClimbingAttemptCounts(sumOf { it.attempts }, sumOf { it.completed })
+        fun discipline(type: ClimbingWorkoutType): ClimbingDisciplineStatistics {
+            val system = Catalog.systemFor(type)
+            val groups = buckets.filter { it.workoutType == type }
+            val confirmed = groups.filter { it.gradingSystem == system && it.speedCourse == null && it.gradeMatches &&
+                Catalog.find(system, it.gradeCode.orEmpty()) != null }
+            val grades = confirmed.groupBy { it.gradeCode }.entries.sortedBy { Catalog.find(system, it.key!!)?.rank }
+                .map { (code, rows) -> ClimbingGradeStatistics(requireNotNull(Catalog.find(system, code!!)).label, rows.counts()) }
+            return ClimbingDisciplineStatistics(type, groups.counts(), grades, (groups - confirmed.toSet()).counts())
+        }
+        val speed = buckets.filter { it.workoutType == ClimbingWorkoutType.SPEED }
+        val courses: List<SpeedCourse?> = SpeedCourse.entries + null
+        val speedRows = courses.mapNotNull { course ->
+            val groups = speed.filter { if (course == null) it.gradingSystem != Catalog.NONE || SpeedCourse.entries.none { c -> c.code == it.speedCourse }
+                else it.gradingSystem == Catalog.NONE && it.speedCourse == course.code }
+            if (groups.isEmpty()) null else {
+                val timed = groups.sumOf { it.timedAttempts }
+                ClimbingSpeedStatistics(course, groups.counts(), timed, groups.mapNotNull { it.bestTimeMillis }.minOrNull(),
+                    if (timed > 0) groups.sumOf { it.totalTimeMillis } / timed else null)
+            }
+        }
+        return ClimbingStatisticsUiModel(speedRows, discipline(ClimbingWorkoutType.DIFFICULTY), discipline(ClimbingWorkoutType.BOULDERING),
+            buckets.filter { it.workoutType == ClimbingWorkoutType.UNKNOWN }.counts())
+    }
 
     private fun result(trainings: Int, buckets: List<ClimbingBucket>): SportAggregate {
         val attempts = buckets.sumOf { it.attempts }
@@ -176,7 +212,7 @@ object ClimbingModule : SportModule {
             val legacy = buckets.filter { it.gradingSystem == Catalog.LEGACY }.sumOf { it.attempts }
             if (legacy > 0) add(MetricUiModel(AppText.get(R.string.climbing_module_istoricheskie_kategorii_bez_sravneniya), legacy.toString()))
         }
-        return SportAggregate(metrics, listOf(AppText.get(R.string.climbing_module_iz_popytok_uspeshny, completed, attempts)))
+        return SportAggregate(metrics, listOf(AppText.get(R.string.climbing_module_iz_popytok_uspeshny, completed, attempts)), climbing = buildStatistics(buckets))
     }
 
     override fun details(bundle: TrainingBundle): List<String> = bundle.climbing?.routes.orEmpty().map {
@@ -188,6 +224,7 @@ object ClimbingModule : SportModule {
                 SpeedCourse.entries.firstOrNull { course -> course.code == it.speedCourse }?.title ?: AppText.get(R.string.climbing_module_neizvestnaya_trassa_skorosti)
             else -> "${it.gradeCode?.let { code -> Catalog.find(it.gradingSystem, code)?.label } ?: it.routeDifficulty} · ${Catalog.title(it.gradingSystem)}"
         }
-        "${it.legacyWorkoutType ?: it.workoutType.title} · ${category}${count} · ${if (it.isCompleted) AppText.get(R.string.climbing_module_proydena) else AppText.get(R.string.climbing_module_ne_proydena)}"
+        val time = it.speedTimeMillis?.let { millis -> " · ${formatSpeedTime(millis)} ${AppText.get(R.string.climbing_seconds)}" }.orEmpty()
+        "${it.legacyWorkoutType ?: it.workoutType.title} · ${category}${count} · ${if (it.isCompleted) AppText.get(R.string.climbing_module_proydena) else AppText.get(R.string.climbing_module_ne_proydena)}${time}"
     }
 }

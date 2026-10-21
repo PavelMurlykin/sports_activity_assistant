@@ -224,6 +224,7 @@ data class ClimbingRouteEntity(
     @ColumnInfo(name = "grade_code") val gradeCode: String? = null,
     @ColumnInfo(name = "speed_course") val speedCourse: String? = null,
     @ColumnInfo(name = "legacy_workout_type") val legacyWorkoutType: String? = null,
+    @ColumnInfo(name = "speed_time_millis") val speedTimeMillis: Long? = null,
 )
 
 @Entity(

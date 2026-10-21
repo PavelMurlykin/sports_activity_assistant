@@ -28,13 +28,14 @@ class ClimbingExchangeTest {
             repository.addCompletedTraining(user, AddCompletedTrainingInput(sport.id, center.id, LocalDate.parse("2026-10-07"), climbingRoutes = listOf(
                 ClimbingRouteInput(ClimbingWorkoutType.DIFFICULTY, "6b+", true),
                 ClimbingRouteInput(ClimbingWorkoutType.BOULDERING, "7A", false),
-                ClimbingRouteInput(ClimbingWorkoutType.SPEED, "", true, speedCourse = "standard_15m"),
+                ClimbingRouteInput(ClimbingWorkoutType.SPEED, "", true, speedCourse = "standard_15m", speedTimeMillis = 8530),
                 ClimbingRouteInput(ClimbingWorkoutType.SPEED, "", false, speedCourse = "other"),
             )))
             val backup = BackupCodec.decode(repository.createBackup())
             assertEquals(BackupDocument.CURRENT_SCHEMA_VERSION, backup.schemaVersion)
             val rows = backup.trainings.single().climbingRoutes
             assertEquals(listOf("french", "fontainebleau", "none", "none"), rows.map { it.gradingSystem })
+            assertEquals(8530L, rows[2].speedTimeMillis)
             val importer = AppRepository(target)
             val first = importer.importData(BackupCodec.encode(backup).toByteArray(), importer.localProfileId())
             assertEquals(1, first.importedTrainings)

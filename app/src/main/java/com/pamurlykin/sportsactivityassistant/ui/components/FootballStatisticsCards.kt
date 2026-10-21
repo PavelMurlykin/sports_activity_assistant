@@ -97,7 +97,7 @@ private fun percentage(value: Long, total: Long): String = if (total == 0L) "—
     "${BigDecimal.valueOf(value).multiply(BigDecimal(100)).divide(BigDecimal.valueOf(total), 0, RoundingMode.HALF_UP)}%"
 
 @Composable
-private fun ResultRow(icon: ImageVector, label: String, value: Long, percent: String? = null,
+internal fun ResultRow(icon: ImageVector, label: String, value: Long, percent: String? = null,
     badgeColor: Color = Color.Transparent, badgeText: Color = MaterialTheme.colorScheme.onSurface) {
     StatisticsDivider()
     Row(Modifier.fillMaxWidth().heightIn(min = 43.dp).semantics(mergeDescendants = true) {},
@@ -113,7 +113,7 @@ private fun ResultRow(icon: ImageVector, label: String, value: Long, percent: St
 }
 
 @Composable
-private fun SummaryCell(value: String, modifier: Modifier, bold: Boolean = false, highlight: Boolean = false) {
+internal fun SummaryCell(value: String, modifier: Modifier, bold: Boolean = false, highlight: Boolean = false) {
     val dark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     Box(modifier.padding(horizontal = 2.dp, vertical = 4.dp), contentAlignment = Alignment.Center) {
         val pill = if (highlight && value != "—") Modifier.widthIn(min = 34.dp).background(
@@ -153,7 +153,7 @@ private fun FootballMetric.label(): Int = when (this) {
 }
 
 @Composable
-private fun StatisticsDivider() = HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f))
+internal fun StatisticsDivider() = HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f))
 
 /** Shared by the expanded statistics history and the selected day in the schedule. */
 @Composable
@@ -183,7 +183,7 @@ fun TrainingDetails(details: List<String>, football: FootballTrainingInput?) {
 }
 
 @Composable
-private fun DetailValue(icon: ImageVector, label: String, value: String) {
+internal fun DetailValue(icon: ImageVector, label: String, value: String) {
     StatisticsDivider()
     Row(Modifier.fillMaxWidth().padding(vertical = 9.dp).semantics(mergeDescendants = true) {},
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {

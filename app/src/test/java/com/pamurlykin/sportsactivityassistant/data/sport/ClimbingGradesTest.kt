@@ -8,6 +8,23 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class ClimbingGradesTest : com.pamurlykin.sportsactivityassistant.ResourceTextTest() {
+    @Test fun speedTimeAcceptsDecimalSecondsAndOnlySuccessfulSpeedAttempts() {
+        assertEquals(8530L, parseSpeedTimeMillis("8,53"))
+        assertEquals(8531L, parseSpeedTimeMillis("8.531"))
+        assertNull(parseSpeedTimeMillis(" "))
+        listOf("0", "-1", "8.5312", "invalid", "999999999999999999999").forEach {
+            assertTrue(it, runCatching { parseSpeedTimeMillis(it) }.isFailure)
+        }
+        assertEquals("8,53", formatSpeedTime(8530))
+        assertEquals("8,531", formatSpeedTime(8531))
+        assertEquals("—", formatSpeedTime(null))
+        val timed = ClimbingRouteInput(ClimbingWorkoutType.SPEED, "", true, speedCourse = "standard_15m", speedTimeMillis = 8530)
+        ClimbingModule.validate(input(timed))
+        listOf(timed.copy(speedTimeMillis = 0), timed.copy(isCompleted = false),
+            ClimbingRouteInput(ClimbingWorkoutType.DIFFICULTY, "6a", true, speedTimeMillis = 8530)).forEach {
+            assertTrue(runCatching { ClimbingModule.validate(input(it)) }.isFailure)
+        }
+    }
     private val date = LocalDate.parse("2026-10-07")
     private fun input(route: ClimbingRouteInput) = AddCompletedTrainingInput(2, 1, date, climbingRoutes = listOf(route))
 

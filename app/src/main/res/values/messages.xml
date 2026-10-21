@@ -358,14 +358,6 @@
     <string name="training_actions_rezultat_i_vsya_ego_sportivnaya" formatted="false">"Результат и вся его спортивная статистика будут удалены. Центр, планы и серии останутся. Связанный план снова будет запланирован, а в отменённой серии — отменён. Отменить удаление нельзя; восстановление возможно из прежней копии файла."</string>
     <string name="training_actions_udalenie" formatted="false">"Удаление…"</string>
     <string name="training_actions_udalit" formatted="false">"Удалить"</string>
-    <string name="data_management_screen_dannye" formatted="false">"Данные"</string>
-    <string name="data_management_screen_rezervnaya_kopiya" formatted="false">"Резервная копия"</string>
-    <string name="data_management_screen_dannye_hranyatsya_tolko_na_ustroystve" formatted="false">"Данные хранятся только на устройстве. JSON содержит центры, тренировки, спортивную статистику и планы календаря. Автоматический системный бэкап отключён."</string>
-    <string name="data_management_screen_fayl_ne_zashifrovan_dlya_raboty" formatted="false">"Файл не зашифрован. Для работы без интернета выбирайте хранилище устройства в системном диалоге."</string>
-    <string name="data_management_screen_sohranit_kopiyu_v_fayl" formatted="false">"Сохранить копию в файл"</string>
-    <string name="data_management_screen_import" formatted="false">"Импорт"</string>
-    <string name="data_management_screen_json_versiy_1_6_i_futbolnyy" formatted="false">"JSON версий 1–8 и футбольный CSV: перед применением — проверка, выбор профиля и центров. Совпадения UUID пропускаются; одинаковые тренировки с разными UUID сохраняются. Лимит файла — 16 МиБ."</string>
-    <string name="data_management_screen_vybrat_fayl" formatted="false">"Выбрать файл"</string>
     <string name="main_view_model_rabota_s_faylom" formatted="false">"Работа с файлом…"</string>
     <string name="main_view_model_vybor_fayla_prervan_vyberite_fayl" formatted="false">"Выбор файла прерван. Выберите файл ещё раз; база не изменена."</string>
     <string name="main_view_model_proverka_vybora" formatted="false">"Проверка выбора…"</string>
@@ -409,7 +401,6 @@
     <string name="sports_centers_screen_arhiv_pust" formatted="false">"Архив пуст"</string>
     <string name="sports_centers_screen_dobavte_sportivnyy_tsentr" formatted="false">"Добавьте спортивный центр"</string>
     <string name="sports_centers_screen_vidy_sporta_ne_ukazany" formatted="false">"Виды спорта не указаны"</string>
-    <string name="sports_centers_screen_izmenit" formatted="false">"Изменить"</string>
     <string name="statistics_screen_vsego_zavershyonnyh_trenirovok" formatted="false">"Всего завершённых тренировок"</string>
     <string name="statistics_screen_trenirovok">"%1$s тренировок"</string>
     <string name="statistics_screen_po_mesyatsam" formatted="false">"По месяцам"</string>

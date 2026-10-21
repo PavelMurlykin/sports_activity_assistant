@@ -14,6 +14,8 @@ import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.pamurlykin.sportsactivityassistant.data.backup.ClimbingRouteBackup
 import com.pamurlykin.sportsactivityassistant.data.model.*
@@ -115,7 +117,8 @@ private object FootballEditor : SportEditor {
 }
 
 @Serializable
-private data class RouteDraft(val route: ClimbingRouteBackup, val repeatText: String = route.repeatCount.toString()) {
+private data class RouteDraft(val route: ClimbingRouteBackup, val repeatText: String = route.repeatCount.toString(),
+    val timeText: String = route.speedTimeMillis?.let { formatSpeedTime(it) }.orEmpty()) {
     companion object {
         fun fresh() = RouteDraft(ClimbingRouteBackup("difficulty", "6a", true,
             gradingSystem = ClimbingDifficultyCatalog.FRENCH, gradeCode = "6a", publicId = UUID.randomUUID().toString()))
@@ -123,6 +126,7 @@ private data class RouteDraft(val route: ClimbingRouteBackup, val repeatText: St
             input.legacyWorkoutType ?: input.workoutType.storageValue, input.routeDifficulty, input.isCompleted,
             input.repeatCount, input.gradingSystem, input.gradeCode, input.speedCourse, input.legacyWorkoutType,
             input.publicId ?: UUID.randomUUID().toString(),
+            input.speedTimeMillis,
         ))
     }
 }
@@ -148,9 +152,11 @@ private object ClimbingEditor : SportEditor {
                 val result = AddCompletedTrainingInput(sportId, complexId, date, climbingRoutes = routes.map { draft ->
                     val route = draft.route
                     val count = requireNotNull(draft.repeatText.trim().toIntOrNull()) { AppText.get(R.string.sport_editors_kolichestvo_popytok_dolzhno_byt_tselym) }
+                    val time = runCatching { parseSpeedTimeMillis(draft.timeText) }
+                    require(time.isSuccess) { AppText.get(R.string.climbing_time_format_error) }
                     ClimbingRouteInput(ClimbingWorkoutType.fromStorage(route.workoutType), route.routeDifficulty,
                         route.completed, count, requireNotNull(route.gradingSystem), route.gradeCode,
-                        route.speedCourse, route.legacyWorkoutType, route.publicId)
+                        route.speedCourse, route.legacyWorkoutType, route.publicId, time.getOrNull())
                 })
                 val module = SportModules.require("climbing")
                 if (initial == null) module.validate(result) else module.validateEdit(result, initial)
@@ -190,7 +196,8 @@ private fun ClimbingFields(routes: List<RouteDraft>, onChange: (List<RouteDraft>
                                         }
                                         val system = ClimbingDifficultyCatalog.systemFor(next)
                                         update(draft.copy(route = route.copy(workoutType = next.storageValue, routeDifficulty = difficulty,
-                                            gradingSystem = system, gradeCode = ClimbingDifficultyCatalog.find(system, difficulty)?.code, speedCourse = null)))
+                                            gradingSystem = system, gradeCode = ClimbingDifficultyCatalog.find(system, difficulty)?.code,
+                                            speedCourse = null, speedTimeMillis = null), timeText = ""))
                                     }
                                 })
                             }
@@ -215,14 +222,24 @@ private fun ClimbingFields(routes: List<RouteDraft>, onChange: (List<RouteDraft>
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         FilterChip(route.completed, { update(draft.copy(route = route.copy(completed = true))) },
                             enabled = enabled, label = { Text(AppText.get(R.string.sport_editors_proydena)) })
-                        FilterChip(!route.completed, { update(draft.copy(route = route.copy(completed = false))) },
+                        FilterChip(!route.completed, { update(draft.copy(route = route.copy(completed = false, speedTimeMillis = null), timeText = "")) },
                             enabled = enabled, label = { Text(AppText.get(R.string.sport_editors_ne_proydena)) })
+                    }
+                    if (type == ClimbingWorkoutType.SPEED && !historical && route.completed) {
+                        val invalid = attempted && runCatching { parseSpeedTimeMillis(draft.timeText) }.isFailure
+                        OutlinedTextField(value = draft.timeText, onValueChange = { update(draft.copy(timeText = it)) },
+                            label = { Text(AppText.get(R.string.climbing_time_input)) },
+                            supportingText = { Text(AppText.get(if (invalid) R.string.climbing_time_format_error else R.string.climbing_time_optional)) },
+                            isError = invalid, singleLine = true, enabled = enabled,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                            modifier = Modifier.fillMaxWidth().testTag("route-${index}-time"))
                     }
                     val countError = if (attempted && (draft.repeatText.trim().toIntOrNull() ?: 0) <= 0)
                         AppText.get(R.string.sport_editors_vvedite_polozhitelnoe_tseloe_chislo) else null
                     StepNumberField(draft.repeatText, { update(draft.copy(repeatText = it)) },
                         AppText.get(R.string.sport_editors_kolichestvo_popytok_s_etim_rezultatom), "route-${index}-repeat", countError, enabled)
-                    Text(AppText.get(R.string.sport_editors_vse_popytki_etoy_stroki_imeyut),
+                    Text(AppText.get(if (type == ClimbingWorkoutType.SPEED && !historical)
+                        R.string.climbing_time_repeat_hint else R.string.sport_editors_vse_popytki_etoy_stroki_imeyut),
                         style = MaterialTheme.typography.bodySmall)
                     if (routes.size > 1) TextButton(enabled = enabled, onClick = {
                         onChange(routes.filterIndexed { i, _ -> i != index })

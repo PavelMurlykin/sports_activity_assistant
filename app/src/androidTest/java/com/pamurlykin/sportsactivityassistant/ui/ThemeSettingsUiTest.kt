@@ -97,6 +97,7 @@ class ThemeSettingsUiTest {
         compose.onNodeWithTag("center-name").performTextInput("Мой первый центр")
         compose.onAllNodesWithText("Сохранить").onLast().performClick()
         compose.waitUntil(5000) { compose.onAllNodesWithTag("center-name").fetchSemanticsNodes().isEmpty() }
+        compose.waitUntil(5000) { compose.onAllNodesWithText("Мой первый центр").fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithText("Мой первый центр").performScrollTo().assertExists()
         compose.onNodeWithText("Сохранить").performClick()
         compose.waitUntil(5000) { compose.onAllNodesWithText("Всего завершённых тренировок").fetchSemanticsNodes().isNotEmpty() }

@@ -19,7 +19,7 @@ class SportVisibilityMigrationTest {
             execSQL("INSERT INTO sport_primary_centers VALUES (7,1,42)")
             close()
         }
-        helper.runMigrationsAndValidate(name, 9, true, AppDatabase.MIGRATION_8_9).use { db ->
+        helper.runMigrationsAndValidate(name, 10, true, AppDatabase.MIGRATION_8_9, AppDatabase.MIGRATION_9_10).use { db ->
             db.query("SELECT * FROM sport_visibility").use { assertFalse(it.moveToFirst()) }
             db.query("SELECT sports_complex_id FROM sport_primary_centers WHERE user_id=7 AND sport_id=1").use {
                 assertTrue(it.moveToFirst()); assertEquals(42, it.getInt(0))

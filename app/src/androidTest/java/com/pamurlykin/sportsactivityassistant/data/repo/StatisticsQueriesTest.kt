@@ -18,6 +18,46 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class StatisticsQueriesTest {
+    @Test fun climbingTablesCountRepeatsAndTimeOnlySuccessfulTimedAttemptsWithinTheSelection() = runBlocking {
+        fixture { db, repo, _ ->
+            val user = repo.localProfileId()
+            val sport = db.referenceDao().getSportBySlug("climbing")!!.id
+            val center = repo.testCenterForSport(sport).id
+            fun speed(time: Long?, completed: Boolean = true, repeats: Int = 1, course: String = "standard_15m") =
+                ClimbingRouteInput(ClimbingWorkoutType.SPEED, "", completed, repeats, speedCourse = course, speedTimeMillis = time)
+            val input = AddCompletedTrainingInput(sport, center, date("2020-01-01"), climbingRoutes = listOf(
+                speed(8000, repeats = 2), speed(10000), speed(null), speed(null, false, 2), speed(3000, course = "other"),
+                ClimbingRouteInput(ClimbingWorkoutType.DIFFICULTY, "6a", true, 3),
+                ClimbingRouteInput(ClimbingWorkoutType.DIFFICULTY, " 6A ", false),
+                ClimbingRouteInput(ClimbingWorkoutType.DIFFICULTY, "6b", false, 2),
+                ClimbingRouteInput(ClimbingWorkoutType.BOULDERING, "6A", true, 2),
+                ClimbingRouteInput(ClimbingWorkoutType.BOULDERING, "6A", false, 3)))
+            val id = repo.addCompletedTraining(user, input)
+            val other = repo.saveSportsCenter(SaveSportsCenterInput(name = "Другой зал", city = null, sportIds = setOf(sport)))
+            repo.addCompletedTraining(user, input.copy(complexId = other, climbingRoutes = listOf(speed(1000))))
+            repo.addCompletedTraining(user, input.copy(date = date("2020-02-01"), climbingRoutes = listOf(speed(2000))))
+            val filter = StatisticsFilter(date("2020-01-01"), date("2020-01-31"), center)
+            val stats = requireNotNull(repo.observeSportStatistics(sport, filter).first()!!.climbing)
+            val standard = stats.speed.single { it.course == SpeedCourse.STANDARD_15M }
+            assertEquals(ClimbingAttemptCounts(6, 4), standard.counts)
+            assertEquals("67%", standard.counts.percentage)
+            assertEquals(3L, standard.timedAttempts)
+            assertEquals(8000L, standard.bestTimeMillis)
+            assertEquals(8666.666666, standard.averageTimeMillis!!, 0.001)
+            assertEquals(3000L, stats.speed.single { it.course == SpeedCourse.OTHER }.bestTimeMillis)
+            assertEquals(listOf("6a", "6b"), stats.difficulty.grades.map { it.label })
+            assertEquals(listOf(ClimbingAttemptCounts(4, 3), ClimbingAttemptCounts(2, 0)), stats.difficulty.grades.map { it.counts })
+            assertEquals("40%", stats.bouldering.grades.single().counts.percentage)
+            val snapshot = repo.loadTrainingForEdit(id)
+            val timedRoute = snapshot.input.climbingRoutes.single { it.speedTimeMillis == 8000L }
+            assertEquals(2, timedRoute.repeatCount)
+            repo.updateCompletedTraining(snapshot, snapshot.input.copy(climbingRoutes = snapshot.input.climbingRoutes.map { route ->
+                if (route.publicId == timedRoute.publicId) route.copy(speedTimeMillis = 7000) else route
+            }))
+            assertEquals(7000L, repo.observeSportStatistics(sport, filter).first()!!.climbing!!.speed.first().bestTimeMillis)
+            assertTrue(repo.observeTrainingPage(sport, filter).first().items.single().details.any { it.contains("7,00 с") })
+        }
+    }
     @Test fun multipleCentersUseTheSameUnionForOverviewBothSportsAndHistory() = runBlocking {
         fixture { db, repo, _ ->
             val user = repo.localProfileId()

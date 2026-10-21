@@ -105,7 +105,7 @@ class LargeHistoryAcceptanceTest {
             compose.onNodeWithContentDescription("Назад к общей статистике").performClick()
             measured("climbing-screen",5000) {
                 compose.onNodeWithText("Скалолазание").performScrollTo().performClick()
-                compose.waitUntil(5000) { compose.onAllNodesWithText("Записи трасс").fetchSemanticsNodes().isNotEmpty() }
+                compose.waitUntil(5000) { compose.onAllNodesWithTag("climbing-speed").fetchSemanticsNodes().isNotEmpty() }
             }
             compose.onNodeWithContentDescription("Назад к общей статистике").performClick()
             measured("calendar-screen",5000) {

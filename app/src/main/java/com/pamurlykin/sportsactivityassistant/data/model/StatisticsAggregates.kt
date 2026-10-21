@@ -40,12 +40,16 @@ data class ClimbingBucket(
     val rowCount: Long,
     val attempts: Long,
     val completed: Long,
+    val timedAttempts: Long = 0,
+    val totalTimeMillis: Double = 0.0,
+    val bestTimeMillis: Long? = null,
 )
 
 data class SportAggregate(
     val metrics: List<MetricUiModel>,
     val highlights: List<String>,
     val football: FootballStatisticsUiModel? = null,
+    val climbing: ClimbingStatisticsUiModel? = null,
 )
 
 /** Match the same Unicode trim predicate as the offline grade catalog. */

@@ -7,6 +7,18 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class BackupCodecTest : com.pamurlykin.sportsactivityassistant.ResourceTextTest() {
+    @Test fun speedTimesRoundTripOnlyInVersion9AndOlderFilesHaveNoInventedTime() {
+        val route = ClimbingRouteBackup("speed", "", true, gradingSystem = "none", speedCourse = "standard_15m", speedTimeMillis = 8530)
+        val document = climbingDocument(9, listOf(route))
+        val raw = BackupCodec.encode(document)
+        assertEquals(document, BackupCodec.decode(raw))
+        assertTrue(runCatching { BackupCodec.encode(document.copy(schemaVersion = 8)) }.isFailure)
+        assertTrue(runCatching { BackupCodec.decode(raw.replace("\"schemaVersion\": 9", "\"schemaVersion\": 8")) }.isFailure)
+        val old = climbingDocument(8, listOf(route.copy(speedTimeMillis = null)))
+        val oldRaw = BackupCodec.encode(old)
+        assertFalse(oldRaw.contains("speedTimeMillis"))
+        assertNull(BackupCodec.decode(oldRaw).trainings.single().climbingRoutes.single().speedTimeMillis)
+    }
     private fun climbingDocument(version: Int, routes: List<ClimbingRouteBackup>) = BackupDocument(
         schemaVersion = version, exportedAt = "2026-10-07T00:00:00Z", sports = emptyList(), centers = emptyList(),
         trainings = listOf(TrainingBackup(date = "2026-10-07", sportSlug = "climbing", centerName = "Центр", climbingRoutes = routes)),

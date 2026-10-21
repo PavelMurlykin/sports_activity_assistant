@@ -131,7 +131,10 @@ interface TrainingDao {
           r.grade_code AS gradeCode, r.speed_course AS speedCourse,
           (lower(trim(r.route_difficulty, :whitespace)) = r.grade_code) IS 1 AS gradeMatches,
           COUNT(*) AS rowCount, SUM(r.repeat_count) AS attempts,
-          SUM(CASE WHEN r.is_completed THEN r.repeat_count ELSE 0 END) AS completed
+          SUM(CASE WHEN r.is_completed THEN r.repeat_count ELSE 0 END) AS completed,
+          SUM(CASE WHEN r.is_completed AND r.speed_time_millis > 0 THEN r.repeat_count ELSE 0 END) AS timedAttempts,
+          TOTAL(CASE WHEN r.is_completed AND r.speed_time_millis > 0 THEN 1.0 * r.speed_time_millis * r.repeat_count ELSE 0 END) AS totalTimeMillis,
+          MIN(CASE WHEN r.is_completed AND r.speed_time_millis > 0 THEN r.speed_time_millis END) AS bestTimeMillis
         FROM trainings t JOIN climbing_routes r ON r.climbing_training_id = t.id
         WHERE t.user_id = :userId AND t.sport_id = :sportId AND t.training_date BETWEEN :start AND :end
           AND (:allCenters OR t.sports_complex_id IN (:centerIds))

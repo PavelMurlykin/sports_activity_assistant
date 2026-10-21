@@ -25,6 +25,18 @@ object BackupCodec {
 
     fun encode(document: BackupDocument): String {
         var encoded = json.encodeToJsonElement(BackupDocument.serializer(), document).jsonObject
+        if (document.schemaVersion < 9) {
+            require(document.trainings.flatMap { it.climbingRoutes }.all { it.speedTimeMillis == null }) {
+                AppText.get(R.string.backup_requires_9)
+            }
+            encoded = JsonObject(encoded + ("trainings" to kotlinx.serialization.json.JsonArray(
+                (encoded.getValue("trainings") as kotlinx.serialization.json.JsonArray).map { training ->
+                    JsonObject(training.jsonObject + ("climbingRoutes" to kotlinx.serialization.json.JsonArray(
+                        (training.jsonObject.getValue("climbingRoutes") as kotlinx.serialization.json.JsonArray).map {
+                            JsonObject(it.jsonObject - "speedTimeMillis")
+                        })))
+                })))
+        }
         if (document.schemaVersion < 8) {
             require(document.sportSelections.isEmpty()) { AppText.get(R.string.backup_requires_8) }
             encoded = JsonObject(encoded - "sportSelections")
@@ -63,6 +75,14 @@ object BackupCodec {
 
     fun decode(raw: String): BackupDocument {
         val version = sourceVersion(raw)
+        if (version < 9) {
+            val trainings = json.parseToJsonElement(raw).jsonObject["trainings"] as? kotlinx.serialization.json.JsonArray
+            require(trainings?.all { training ->
+                (training.jsonObject["climbingRoutes"] as? kotlinx.serialization.json.JsonArray)?.all {
+                    "speedTimeMillis" !in it.jsonObject
+                } != false
+            } != false) { AppText.get(R.string.backup_requires_9) }
+        }
         if (version < 8) {
             require("sportSelections" !in json.parseToJsonElement(raw).jsonObject) { AppText.get(R.string.backup_requires_8) }
         }

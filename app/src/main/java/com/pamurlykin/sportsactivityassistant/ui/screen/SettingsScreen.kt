@@ -1,5 +1,8 @@
 package com.pamurlykin.sportsactivityassistant.ui.screen
 
+import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -7,11 +10,15 @@ import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.SaveAlt
+import androidx.compose.material.icons.rounded.Restore
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -25,6 +32,7 @@ import com.pamurlykin.sportsactivityassistant.text.AppText
 import com.pamurlykin.sportsactivityassistant.ui.components.*
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
+import java.time.LocalDate
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -32,6 +40,30 @@ fun SettingsScreen(viewModel: MainViewModel, onBack: () -> Unit) {
     val read by viewModel.sportPreferencesReadState.collectAsStateWithLifecycle()
     val centersRead by viewModel.centersReadState.collectAsStateWithLifecycle()
     val themeMode by viewModel.themeMode.collectAsStateWithLifecycle()
+    val dataState by viewModel.dataOperationState.collectAsStateWithLifecycle()
+    val fileBusy by viewModel.fileBusy.collectAsStateWithLifecycle()
+    val exportReady by viewModel.exportReady.collectAsStateWithLifecycle()
+    val preview by viewModel.importPreview.collectAsStateWithLifecycle()
+    val resolver = LocalContext.current.applicationContext.contentResolver
+    val exportLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
+        viewModel.exportSelected(resolver, uri)
+    }
+    val importLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        viewModel.importSelected(resolver, uri)
+    }
+    LaunchedEffect(exportReady) {
+        if (exportReady) {
+            viewModel.exportLaunched()
+            try { exportLauncher.launch("sports-activity-${LocalDate.now()}.json") }
+            catch (e: Exception) { viewModel.reportDataError(e) }
+        }
+    }
+    preview?.let {
+        BackHandler { if (!dataState.inProgress) viewModel.cancelFile() }
+        ImportPreviewContent(it, dataState.inProgress, dataState.message,
+            viewModel::changeImportChoices, viewModel::confirmImport, viewModel::cancelFile)
+        return
+    }
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     var busy by remember { mutableStateOf(false) }
@@ -49,7 +81,7 @@ fun SettingsScreen(viewModel: MainViewModel, onBack: () -> Unit) {
             IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, stringResource(R.string.settings_back)) }
         })
     }, snackbarHost = { SnackbarHost(snackbar) }) { padding ->
-        LazyColumn(Modifier.fillMaxSize().padding(padding), contentPadding = PaddingValues(16.dp),
+        LazyColumn(Modifier.fillMaxSize().padding(padding).testTag("settings-list"), contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)) {
             item(key = "appearance") {
                 Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
@@ -104,8 +136,40 @@ fun SettingsScreen(viewModel: MainViewModel, onBack: () -> Unit) {
                     }
                 }
             }
-            item { Text(stringResource(R.string.settings_backup_hint), style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant) }
+            dataState.message?.let { message -> item(key = "data-status") {
+                Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+                    Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        if (dataState.inProgress) CircularProgressIndicator(Modifier.size(24.dp), strokeWidth = 2.dp)
+                        Text(message, Modifier.weight(1f), color = if (dataState.isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface)
+                        if (!dataState.inProgress) IconButton(onClick = viewModel::clearDataMessage) {
+                            Icon(Icons.Rounded.Close, stringResource(R.string.close))
+                        }
+                    }
+                }
+            } }
+            item(key = "backup") {
+                Card(Modifier.fillMaxWidth().testTag("settings-backup"),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+                    Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Button(onClick = viewModel::prepareExport, enabled = !fileBusy,
+                            modifier = Modifier.fillMaxWidth().testTag("save-backup")) {
+                            Icon(Icons.Rounded.SaveAlt, null, Modifier.size(20.dp))
+                            Spacer(Modifier.width(8.dp))
+                            Text(stringResource(R.string.settings_save_backup))
+                        }
+                        OutlinedButton(onClick = {
+                            if (viewModel.beginImportSelection()) try {
+                                importLauncher.launch(arrayOf("application/json", "text/csv", "text/*", "application/octet-stream"))
+                            } catch (e: Exception) { viewModel.reportDataError(e) }
+                        }, enabled = !fileBusy, modifier = Modifier.fillMaxWidth().testTag("restore-backup")) {
+                            Icon(Icons.Rounded.Restore, null, Modifier.size(20.dp))
+                            Spacer(Modifier.width(8.dp))
+                            Text(stringResource(R.string.settings_restore_backup))
+                        }
+                    }
+                }
+            }
         }
     }
 }

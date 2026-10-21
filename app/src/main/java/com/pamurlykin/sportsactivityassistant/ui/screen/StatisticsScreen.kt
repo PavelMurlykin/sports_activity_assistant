@@ -271,6 +271,7 @@ fun StatisticsDetailScreen(
             sportStatistics?.takeIf { it.filter == filter }?.let { statistics ->
                 item {
                     if (statistics.football != null) FootballStatisticsCards(statistics.football)
+                    else if (statistics.climbing != null) com.pamurlykin.sportsactivityassistant.ui.components.ClimbingStatisticsCards(statistics.climbing)
                     else Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
                         Column(
                             modifier = Modifier.fillMaxWidth().padding(16.dp),

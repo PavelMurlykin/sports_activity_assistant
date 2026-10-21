@@ -6,7 +6,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.CalendarMonth
 import androidx.compose.material.icons.rounded.QueryStats
 import androidx.compose.material.icons.rounded.LocationOn
-import androidx.compose.material.icons.rounded.Storage
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -31,7 +30,6 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.pamurlykin.sportsactivityassistant.ui.navigation.Destination
 import com.pamurlykin.sportsactivityassistant.ui.screen.MainViewModel
-import com.pamurlykin.sportsactivityassistant.ui.screen.DataManagementScreen
 import com.pamurlykin.sportsactivityassistant.ui.screen.ScheduleScreen
 import com.pamurlykin.sportsactivityassistant.ui.screen.SportsCentersScreen
 import com.pamurlykin.sportsactivityassistant.ui.screen.StatisticsDetailScreen
@@ -45,13 +43,12 @@ fun SportsActivityApp(
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = backStackEntry?.destination
-    val showBottomBar = currentDestination?.hierarchy?.none { it.route == Destination.StatisticsDetails.route || it.route == Destination.TrainingEntry.route || it.route == Destination.Settings.route } != false
+    val showBottomBar = currentDestination?.hierarchy?.none { it.route == Destination.StatisticsDetails.route || it.route == Destination.TrainingEntry.route || it.route == Destination.Settings.route || it.route == Destination.DataManagement.route } != false
     val landscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
     val items = listOf(
         Triple(Destination.Schedule.route, stringResource(R.string.nav_schedule), Icons.Rounded.CalendarMonth),
         Triple(Destination.Statistics.route, stringResource(R.string.nav_statistics), Icons.Rounded.QueryStats),
         Triple(Destination.SportsCenters.route, stringResource(R.string.nav_centers), Icons.Rounded.LocationOn),
-        Triple(Destination.DataManagement.route, stringResource(R.string.nav_data), Icons.Rounded.Storage),
     )
     fun navigate(route: String) {
         navController.navigate(route) {
@@ -131,7 +128,8 @@ fun SportsActivityApp(
                 SportsCentersScreen(viewModel = viewModel, onOpenSettings = { navController.navigate(Destination.Settings.route) })
             }
             composable(Destination.DataManagement.route) {
-                DataManagementScreen(viewModel = viewModel, onOpenSettings = { navController.navigate(Destination.Settings.route) })
+                // Restore older navigation state directly into the new home for backups.
+                com.pamurlykin.sportsactivityassistant.ui.screen.SettingsScreen(viewModel) { navController.popBackStack() }
             }
             composable(
                 route = Destination.StatisticsDetails.route,

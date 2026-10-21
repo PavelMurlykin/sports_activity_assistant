@@ -126,7 +126,7 @@ class AppRepository(
                             selection.userId, sportId, filter.firstDate, filter.lastDate, filter.centerIds.toList()).toString()),
                         MetricUiModel(AppText.get(R.string.app_repository_statistika), AppText.get(R.string.app_repository_vid_sporta_ne_podderzhivaetsya)),
                     )
-                    SportStatisticsUiModel(sport.id, sport.slug, sport.title, metrics, filter, aggregate?.football)
+                    SportStatisticsUiModel(sport.id, sport.slug, sport.title, metrics, filter, aggregate?.football, aggregate?.climbing)
                 }
             }
         } }.flowOn(Dispatchers.IO)

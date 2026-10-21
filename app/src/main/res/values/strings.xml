@@ -1,11 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="import_invalid_json">Файл JSON повреждён или содержит неподдерживаемые поля. Выберите проверенную копию JSON 1–8. Данные на устройстве не изменены.</string>
+    <string name="import_invalid_json">Файл JSON повреждён или содержит неподдерживаемые поля. Выберите проверенную копию JSON 1–9. Данные на устройстве не изменены.</string>
     <string name="app_name">Sports Activity Assistant</string>
     <string name="nav_schedule">Расписание</string>
     <string name="nav_statistics">Статистика</string>
     <string name="nav_centers">Центры</string>
-    <string name="nav_data">Данные</string>
     <string name="loading_data">Загрузка данных…</string>
     <string name="read_failed">Не удалось загрузить данные</string>
     <string name="read_retry_help">Сохранённые записи не изменены. Повторите загрузку. Если ошибка сохраняется, закройте и снова откройте приложение.</string>
@@ -63,10 +62,32 @@
     <string name="settings_sports">Мои виды спорта</string>
     <string name="settings_sports_hint">Выберите виды спорта для расписания, статистики и новых тренировок. Скрытие не удаляет историю. Изменения сохраняются сразу.</string>
     <string name="settings_primary_center">Основной спортивный центр</string>
-    <string name="settings_backup_hint">Выбранные виды спорта и основные центры сохраняются в резервной копии вместе со всей историей, включая скрытые виды спорта.</string>
+    <string name="settings_save_backup">Сохранить резервную копию</string>
+    <string name="settings_restore_backup">Восстановить данные из файла</string>
     <string name="settings_save_error">Не удалось сохранить настройки. Попробуйте ещё раз.</string>
     <string name="settings_choose_sports">Выберите виды спорта в настройках</string>
     <string name="backup_requires_8">Выбор видов спорта требует JSON 8</string>
+    <string name="backup_requires_9">Время прохождения трасс требует JSON 9</string>
+    <string name="climbing_time_invalid">Время должно быть положительным и указывается только для успешной попытки на скорость.</string>
+    <string name="climbing_time_input">Время, с</string>
+    <string name="climbing_time_optional">Необязательно, например 8,53</string>
+    <string name="climbing_time_format_error">Укажите положительное число секунд, не более 3 знаков после запятой.</string>
+    <string name="climbing_time_repeat_hint">Повторы в этой строке имеют одинаковые трассу, результат и время. Для другого времени добавьте трассу.</string>
+    <string name="climbing_seconds">с</string>
+    <string name="climbing_statistics_attempts">Попытки</string>
+    <string name="climbing_statistics_completed">Успешные</string>
+    <string name="climbing_statistics_percent">Успех, %</string>
+    <string name="climbing_statistics_grade">Сложность</string>
+    <string name="climbing_statistics_total">Всего</string>
+    <string name="climbing_statistics_best">Лучшее время, с</string>
+    <string name="climbing_statistics_average">Среднее время, с</string>
+    <string name="climbing_statistics_time_coverage">Время указано в %1$d из %2$d успешных попыток.</string>
+    <string name="climbing_statistics_ungraded">Без подтверждённой категории</string>
+    <string name="climbing_statistics_unknown_course">Другие исторические трассы</string>
+    <string name="climbing_statistics_unknown">Другие дисциплины</string>
+    <string name="center_edit">Изменить центр: %1$s</string>
+    <string name="center_archive">В архив: %1$s</string>
+    <string name="center_restore">Вернуть центр: %1$s</string>
     <string name="import_restores_settings">Выбор отображаемых видов спорта и основные центры выбранного профиля будут восстановлены из копии.</string>
     <string name="football_statistics_general">Общие показатели</string>
     <string name="football_statistics_detailed">Детальная статистика</string>

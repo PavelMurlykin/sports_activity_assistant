@@ -63,5 +63,6 @@ object StatisticsMapper {
             SportModules.find(sport.slug)?.metrics(bundles)
                 ?: listOf(MetricUiModel(AppText.get(R.string.app_repository_istoricheskie_trenirovki), bundles.size.toString()),
                     MetricUiModel(AppText.get(R.string.app_repository_statistika), AppText.get(R.string.app_repository_vid_sporta_ne_podderzhivaetsya))),
-            football = if (sport.slug == "football") com.pamurlykin.sportsactivityassistant.data.sport.FootballModule.statistics(bundles) else null)
+            football = if (sport.slug == "football") com.pamurlykin.sportsactivityassistant.data.sport.FootballModule.statistics(bundles) else null,
+            climbing = if (sport.slug == "climbing") com.pamurlykin.sportsactivityassistant.data.sport.ClimbingModule.statistics(bundles) else null)
 }
