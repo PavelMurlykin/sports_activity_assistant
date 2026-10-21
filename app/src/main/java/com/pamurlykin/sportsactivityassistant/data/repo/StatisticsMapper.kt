@@ -34,7 +34,7 @@ object StatisticsMapper {
         val last = filter.endDate?.let(YearMonth::from) ?: byMonth.keys.maxOrNull()
         val titles = sports.associate { it.id to it.title }
         // Zero months are computed on access, not allocated for a potentially 9999-year interval.
-        val monthRows = if (first == null || last == null) emptyList() else object : AbstractList<MonthStatisticsUiModel>() {
+        val monthRows = if (first == null || last == null || first > last) emptyList() else object : AbstractList<MonthStatisticsUiModel>() {
             override val size = (ChronoUnit.MONTHS.between(first, last) + 1).toInt()
             override fun get(index: Int): MonthStatisticsUiModel {
                 if (index !in 0 until size) throw IndexOutOfBoundsException(index.toString())

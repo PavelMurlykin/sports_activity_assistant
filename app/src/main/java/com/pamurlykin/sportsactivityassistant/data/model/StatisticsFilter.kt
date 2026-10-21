@@ -10,14 +10,16 @@ import java.time.LocalDate
 data class StatisticsFilter(
     val startDate: LocalDate? = null,
     val endDate: LocalDate? = null,
-    val centerId: Long? = null,
+    val centerIds: Set<Long> = emptySet(),
 ) {
+    constructor(startDate: LocalDate? = null, endDate: LocalDate? = null, centerId: Long) :
+        this(startDate, endDate, setOf(centerId))
+
     init {
-        require((startDate == null) == (endDate == null)) { AppText.get(R.string.statistics_filter_ukazhite_obe_granitsy_perioda) }
         require(startDate == null || startDate.year in 1..9999) { AppText.get(R.string.statistics_filter_god_dolzhen_byt_ot_1) }
         require(endDate == null || endDate.year in 1..9999) { AppText.get(R.string.statistics_filter_god_dolzhen_byt_ot_1) }
-        require(startDate == null || !startDate.isAfter(endDate)) { AppText.get(R.string.statistics_filter_nachalo_perioda_pozzhe_okonchaniya) }
-        require(centerId == null || centerId > 0) { AppText.get(R.string.statistics_filter_nekorrektnyy_tsentr) }
+        require(startDate == null || endDate == null || !startDate.isAfter(endDate)) { AppText.get(R.string.statistics_filter_nachalo_perioda_pozzhe_okonchaniya) }
+        require(centerIds.all { it > 0 }) { AppText.get(R.string.statistics_filter_nekorrektnyy_tsentr) }
     }
 
     val firstDate: LocalDate get() = startDate ?: LocalDate.of(1, 1, 1)

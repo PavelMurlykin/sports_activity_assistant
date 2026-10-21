@@ -72,11 +72,12 @@ private object FootballEditor : SportEditor {
                     AppText.get(R.string.sport_editors_distantsiya_km_neobyazatelno), AppText.get(R.string.sport_editors_igrokov_v_komande_neobyazatelno),
                     AppText.get(R.string.sport_editors_vremya_igry_min_neobyazatelno))
                 fun update(index: Int, next: Int) { values = values.mapIndexed { i, value -> if (i == index) next.toString() else value } }
-                Text(AppText.get(R.string.score_title), style = MaterialTheme.typography.headlineMedium)
+                Text(AppText.get(R.string.score_title), Modifier.fillMaxWidth(), style = MaterialTheme.typography.titleMedium,
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.Normal, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
                 WorkoutCard(Modifier.testTag("football-score-card")) {
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         ScoreWheelPicker(labels[0], values[0].toIntOrNull() ?: 0, { update(0, it) }, Modifier.weight(1f), enabled, "football-0")
-                        Box(Modifier.height(138.dp).width(14.dp), contentAlignment = androidx.compose.ui.Alignment.Center) {
+                        Box(Modifier.height(102.dp).width(14.dp), contentAlignment = androidx.compose.ui.Alignment.Center) {
                             Text(":", style = MaterialTheme.typography.headlineLarge)
                         }
                         ScoreWheelPicker(labels[1], values[1].toIntOrNull() ?: 0, { update(1, it) }, Modifier.weight(1f), enabled, "football-1")
@@ -84,7 +85,8 @@ private object FootballEditor : SportEditor {
                     if (attempted) (0..1).mapNotNull { parsed.errors[it] }.forEach { Text(it, color = MaterialTheme.colorScheme.error) }
                 }
                 Spacer(Modifier.height(8.dp))
-                Text(AppText.get(R.string.personal_statistics), style = MaterialTheme.typography.headlineSmall)
+                Text(AppText.get(R.string.personal_statistics), Modifier.fillMaxWidth(), style = MaterialTheme.typography.titleMedium,
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.Normal, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     (2..3).forEach { index ->
                         WorkoutCard(Modifier.weight(1f).testTag("football-personal-$index")) {

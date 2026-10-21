@@ -125,8 +125,8 @@ object ClimbingModule : SportModule {
 
     override suspend fun aggregate(dao: TrainingDao, selection: StatisticsSelection, includeMetrics: Boolean): SportAggregate {
         val (user, sport, filter) = selection
-        val trainings = dao.trainingCount(user, sport, filter.firstDate, filter.lastDate, filter.centerId)
-        return result(trainings, dao.climbingBuckets(user, sport, filter.firstDate, filter.lastDate, filter.centerId)).let {
+        val trainings = dao.trainingCount(user, sport, filter.firstDate, filter.lastDate, filter.centerIds.toList())
+        return result(trainings, dao.climbingBuckets(user, sport, filter.firstDate, filter.lastDate, filter.centerIds.toList())).let {
             if (includeMetrics) it else it.copy(metrics = emptyList())
         }
     }

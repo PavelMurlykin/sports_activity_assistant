@@ -1,5 +1,10 @@
 package com.pamurlykin.sportsactivityassistant.ui
 
+import android.graphics.Bitmap
+import androidx.compose.ui.graphics.asAndroidBitmap
+import androidx.test.platform.app.InstrumentationRegistry
+import java.io.File
+
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.*
@@ -38,6 +43,11 @@ class VisualRefreshUiTest {
         val right = compose.onNodeWithTag("football-personal-3").fetchSemanticsNode().positionInRoot
         assertTrue(left.x < right.x); assertEquals(left.y, right.y, 1f)
         compose.onNodeWithText("Личная статистика").assertExists()
+        compose.onNodeWithText("Счёт").performScrollTo()
+        compose.mainClock.advanceTimeBy(600)
+        compose.waitForIdle()
+        File(InstrumentationRegistry.getInstrumentation().targetContext.getExternalFilesDir(null), "compact-football-form.png")
+            .outputStream().use { compose.onRoot().captureToImage().asAndroidBitmap().compress(Bitmap.CompressFormat.PNG, 100, it) }
         compose.onNodeWithText("Сохранить").performClick()
         compose.runOnIdle { assertEquals(selected, requireNotNull(saved).football!!.teamGoalsScored) }
     }

@@ -123,7 +123,6 @@
     <string name="climbing_difficulty_catalog_inaya_trassa" formatted="false">"Иная трасса"</string>
     <string name="football_form_values_vvedite_tseloe_chislo" formatted="false">"Введите целое число"</string>
     <string name="football_form_values_vvedite_distantsiyu_chislom_do_64" formatted="false">"Введите дистанцию числом (до 64 символов)"</string>
-    <string name="statistics_filter_ukazhite_obe_granitsy_perioda" formatted="false">"Укажите обе границы периода"</string>
     <string name="statistics_filter_god_dolzhen_byt_ot_1" formatted="false">"Год должен быть от 1 до 9999"</string>
     <string name="statistics_filter_nachalo_perioda_pozzhe_okonchaniya" formatted="false">"Начало периода позже окончания"</string>
     <string name="statistics_filter_nekorrektnyy_tsentr" formatted="false">"Некорректный центр"</string>
@@ -351,19 +350,7 @@
     <string name="sports_center_dialog_dlya_etogo_vida_sporta_net" formatted="false">"Для этого вида спорта нет активных центров. Добавьте центр или верните подходящий из архива."</string>
     <string name="sports_center_dialog_sozdat_tsentr" formatted="false">"Создать центр"</string>
     <string name="statistics_filters_vse_tsentry" formatted="false">"Все центры"</string>
-    <string name="statistics_filters_tsentr">"Центр #%1$s"</string>
     <string name="statistics_filters_vsyo_vremya" formatted="false">"Всё время"</string>
-    <string name="statistics_filters_filtry" formatted="false">"Фильтры"</string>
-    <string name="statistics_filters_sbrosit" formatted="false">"Сбросить"</string>
-    <string name="statistics_filters_period_i_tsentr" formatted="false">"Период и центр"</string>
-    <string name="statistics_filters_etot_mesyats" formatted="false">"Этот месяц"</string>
-    <string name="statistics_filters_etot_god" formatted="false">"Этот год"</string>
-    <string name="statistics_filters_s_daty_gggg_mm_dd" formatted="false">"С даты · ГГГГ-ММ-ДД"</string>
-    <string name="statistics_filters_po_datu_gggg_mm_dd" formatted="false">"По дату · ГГГГ-ММ-ДД"</string>
-    <string name="statistics_filters_obe_daty_vklyucheny_pustye_mesyatsy" formatted="false">"Обе даты включены. Пустые месяцы показываются с нулём."</string>
-    <string name="statistics_filters_vvedite_datu_v_formate_gggg_mm_dd" formatted="false">"Введите дату в формате ГГГГ-ММ-ДД"</string>
-    <string name="statistics_filters_nesuschestvuyuschaya_data" formatted="false">"Несуществующая дата"</string>
-    <string name="statistics_filters_primenit" formatted="false">"Применить"</string>
     <string name="training_actions_udalit_trenirovku" formatted="false">"Удалить тренировку"</string>
     <string name="training_actions_trenirovka" formatted="false">"Тренировка"</string>
     <string name="training_actions_ne_udalos_udalit_trenirovku" formatted="false">"Не удалось удалить тренировку"</string>
@@ -432,7 +419,6 @@
     <string name="statistics_screen_itogi" formatted="false">"Итоги"</string>
     <string name="statistics_screen_poka_pusto" formatted="false">"Пока пусто"</string>
     <string name="statistics_screen_v_vybrannom_periode_i_tsentre" formatted="false">"В выбранном периоде и центре нет сохранённых тренировок этого вида спорта. Можно изменить или сбросить фильтры."</string>
-    <string name="statistics_screen_pokazano_iz">"Показано %1$s–%2$s из %3$s"</string>
     <string name="statistics_screen_predyduschaya" formatted="false">"Предыдущая"</string>
     <string name="statistics_screen_sleduyuschaya" formatted="false">"Следующая"</string>
 </resources>

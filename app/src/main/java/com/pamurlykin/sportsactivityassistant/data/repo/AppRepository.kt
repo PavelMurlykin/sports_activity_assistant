@@ -86,12 +86,12 @@ class AppRepository(
                 val dao = database.trainingDao()
                 val visibleIds = visibleSportIds(user)
                 val sports = database.referenceDao().getSports().filter { it.id in visibleIds }
-                val counts = dao.sportCounts(user, filter.firstDate, filter.lastDate, filter.centerId).filter { it.sportId in visibleIds }
+                val counts = dao.sportCounts(user, filter.firstDate, filter.lastDate, filter.centerIds.toList()).filter { it.sportId in visibleIds }
                 val highlights = sports.associate { sport ->
                     sport.id to SportModules.find(sport.slug)?.aggregate(dao, StatisticsSelection(user, sport.id, filter), includeMetrics = false)?.highlights.orEmpty()
                 }
                 StatisticsMapper.aggregatedOverview(sports, counts,
-                    dao.monthCounts(user, filter.firstDate, filter.lastDate, filter.centerId).filter { it.sportId in visibleIds }, highlights, filter)
+                    dao.monthCounts(user, filter.firstDate, filter.lastDate, filter.centerIds.toList()).filter { it.sportId in visibleIds }, highlights, filter)
             }
         } }.flowOn(Dispatchers.IO)
 
@@ -105,11 +105,11 @@ class AppRepository(
             readyTransaction {
                 val dao = database.trainingDao()
                 val user = localProfileId()
-                val total = dao.trainingCount(user, sportId, filter.firstDate, filter.lastDate, filter.centerId)
+                val total = dao.trainingCount(user, sportId, filter.firstDate, filter.lastDate, filter.centerIds.toList())
                 val pageCount = ((total.toLong() + TrainingPageUiModel.SIZE - 1) / TrainingPageUiModel.SIZE).toInt().coerceAtLeast(1)
                 val actual = page.coerceAtMost(pageCount - 1)
                 TrainingPageUiModel(dao.trainingPage(user, sportId, filter.firstDate, filter.lastDate,
-                    filter.centerId, TrainingPageUiModel.SIZE, actual * TrainingPageUiModel.SIZE).map(::mapTrainingBundle), actual, total, filter)
+                    filter.centerIds.toList(), TrainingPageUiModel.SIZE, actual * TrainingPageUiModel.SIZE).map(::mapTrainingBundle), actual, total, filter)
             }
         } }.flowOn(Dispatchers.IO)
     }
@@ -123,7 +123,7 @@ class AppRepository(
                     val aggregate = module?.aggregate(database.trainingDao(), selection)
                     val metrics = aggregate?.metrics ?: listOf(
                         MetricUiModel(AppText.get(R.string.app_repository_istoricheskie_trenirovki), database.trainingDao().trainingCount(
-                            selection.userId, sportId, filter.firstDate, filter.lastDate, filter.centerId).toString()),
+                            selection.userId, sportId, filter.firstDate, filter.lastDate, filter.centerIds.toList()).toString()),
                         MetricUiModel(AppText.get(R.string.app_repository_statistika), AppText.get(R.string.app_repository_vid_sporta_ne_podderzhivaetsya)),
                     )
                     SportStatisticsUiModel(sport.id, sport.slug, sport.title, metrics, filter, aggregate?.football)

@@ -18,6 +18,37 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class StatisticsQueriesTest {
+    @Test fun multipleCentersUseTheSameUnionForOverviewBothSportsAndHistory() = runBlocking {
+        fixture { db, repo, _ ->
+            val user = repo.localProfileId()
+            val f = db.referenceDao().getSportBySlug("football")!!.id
+            val c = db.referenceDao().getSportBySlug("climbing")!!.id
+            val centers = (1..3).map { index -> repo.saveSportsCenter(SaveSportsCenterInput(
+                name = "Центр выборки $index", city = null, sportIds = setOf(f, c))) }
+            football(db, user, f, centers[0], "2020-02-01", "2", scored = 3, conceded = 1)
+            football(db, user, f, centers[1], "2020-02-02", "8", scored = 1, conceded = 2)
+            football(db, user, f, centers[2], "2020-02-03", "100", scored = 20)
+            val filter = StatisticsFilter(date("2020-02-01"), date("2020-02-29"), centers.take(2).toSet())
+            assertEquals(2, repo.observeStatisticsOverview(filter).first().totalTrainings)
+            val stats = requireNotNull(repo.observeSportStatistics(f, filter).first()!!.football)
+            assertEquals(2L, stats.games)
+            assertEquals("4", stats.metrics.first().sum)
+            assertEquals("10,00", stats.metrics.last().sum)
+            assertEquals("5,00", stats.metrics.last().average)
+            assertEquals(2, repo.observeTrainingPage(f, filter).first().total)
+            assertEquals(1, repo.observeTrainingPage(f, filter.copy(startDate = date("2020-02-02"), endDate = null)).first().total)
+            assertEquals(1, repo.observeTrainingPage(f, filter.copy(startDate = null, endDate = date("2020-02-01"))).first().total)
+            centers.forEachIndexed { index, center ->
+                repo.addCompletedTraining(user, AddCompletedTrainingInput(c, center, date("2020-02-01"),
+                    climbingRoutes = listOf(ClimbingRouteInput(ClimbingWorkoutType.DIFFICULTY, "6a", true, index + 1))))
+            }
+            val climbing = metrics(repo, c, filter)
+            assertEquals("2", climbing["Тренировки"])
+            assertEquals("3", climbing["Попытки (с повторами)"])
+            assertEquals(4, repo.observeStatisticsOverview(filter).first().totalTrainings)
+            assertEquals(6, repo.observeStatisticsOverview(filter.copy(centerIds = emptySet())).first().totalTrainings)
+        }
+    }
     private suspend fun fixture(test: suspend (AppDatabase,AppRepository,ConcurrentLinkedQueue<String>) -> Unit) {
         val queries = ConcurrentLinkedQueue<String>()
         val db = Room.inMemoryDatabaseBuilder(InstrumentationRegistry.getInstrumentation().targetContext, AppDatabase::class.java)

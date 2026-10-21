@@ -118,7 +118,11 @@ fun ScheduleScreen(
                             } }
                         }
                         items(state.selectedDayEvents, key = { it.id }) { event ->
-                            Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+                            if (event.state == ScheduleEventState.COMPLETED) {
+                                val id = event.id.removePrefix("completed-").toLong()
+                                CompletedTrainingCard(event.sportTitle, event.sportSlug, event.complexName, event.details, event.football,
+                                    { onEditResult(id) }, { deleteId = id }, linkedPlan = event.linkedPlan)
+                            } else Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
                                 Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                                         SportBadge(event.sportSlug, size = 24.dp)
@@ -128,10 +132,6 @@ fun ScheduleScreen(
                                             ScheduleEventState.CANCELED -> R.string.calendar_canceled
                                         }), Modifier.padding(horizontal = 4.dp).size(18.dp))
                                         Text(event.sportTitle, Modifier.weight(1f), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
-                                        if (event.state == ScheduleEventState.COMPLETED) {
-                                            val id = event.id.removePrefix("completed-").toLong()
-                                            TrainingActions(event.sportSlug, { onEditResult(id) }, { deleteId = id })
-                                        }
                                         event.planKey?.let { target ->
                                             IconButton(onClick = { planKey = target; planRecurring = event.isRecurring; planAction = PlanAction.EDIT }) {
                                                 Icon(Icons.Rounded.Edit, stringResource(R.string.schedule_screen_izmenit_plan))

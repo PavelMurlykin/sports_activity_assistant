@@ -59,13 +59,16 @@ fun TrainingDatePickerDialog(
     onDismiss: () -> Unit,
     onSelected: (LocalDate) -> Unit,
     earliestDate: LocalDate? = null,
+    latestDate: LocalDate? = null,
 ) {
     val picker = rememberDatePickerState(
         initialSelectedDateMillis = initialDate.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli(),
         yearRange = 1..9999,
         selectableDates = object : SelectableDates {
-            override fun isSelectableDate(utcTimeMillis: Long): Boolean = earliestDate == null ||
-                Instant.ofEpochMilli(utcTimeMillis).atZone(ZoneOffset.UTC).toLocalDate() >= earliestDate
+            override fun isSelectableDate(utcTimeMillis: Long): Boolean {
+                val date = Instant.ofEpochMilli(utcTimeMillis).atZone(ZoneOffset.UTC).toLocalDate()
+                return (earliestDate == null || date >= earliestDate) && (latestDate == null || date <= latestDate)
+            }
         },
     )
     DatePickerDialog(onDismissRequest = onDismiss,

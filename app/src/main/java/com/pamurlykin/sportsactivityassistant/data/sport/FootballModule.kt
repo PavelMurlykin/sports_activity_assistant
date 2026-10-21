@@ -77,7 +77,7 @@ object FootballModule : SportModule {
 
     override suspend fun aggregate(dao: TrainingDao, selection: StatisticsSelection, includeMetrics: Boolean): SportAggregate {
         val (user, sport, filter) = selection
-        val totals = dao.footballTotals(user, sport, filter.firstDate, filter.lastDate, filter.centerId)
+        val totals = dao.footballTotals(user, sport, filter.firstDate, filter.lastDate, filter.centerIds.toList())
         if (!includeMetrics) return SportAggregate(emptyList(), listOf(AppText.get(R.string.football_module_golov, totals.personalGoals), AppText.get(R.string.football_module_peredach, totals.assists)))
         var sum = BigDecimal.ZERO
         var minimum: BigDecimal? = null
@@ -85,7 +85,7 @@ object FootballModule : SportModule {
         var afterId = 0L
         while (totals.distanceCount > 0) {
             currentCoroutineContext().ensureActive()
-            val batch = dao.distanceSamples(user, sport, filter.firstDate, filter.lastDate, filter.centerId, afterId)
+            val batch = dao.distanceSamples(user, sport, filter.firstDate, filter.lastDate, filter.centerIds.toList(), afterId)
             if (batch.isEmpty()) break
             batch.forEach {
                 sum = sum.add(it.distanceKm)

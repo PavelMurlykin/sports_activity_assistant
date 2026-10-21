@@ -21,8 +21,6 @@
     <string name="calendar_canceled">отменена</string>
     <string name="calendar_event">%1$s: %2$s</string>
     <string name="back_to_statistics">Назад к общей статистике</string>
-    <string name="expand_training">Показать детали тренировки</string>
-    <string name="collapse_training">Скрыть детали тренировки</string>
     <string name="open_sport">Открыть статистику: %1$s</string>
     <string name="load_workout_failed">Не удалось открыть тренировку. Повторите загрузку или закройте окно.</string>
     <string name="load_plan_failed">Не удалось открыть план. Повторите загрузку или закройте окно.</string>
@@ -30,7 +28,6 @@
     <string name="paging_index">%1$d / %2$d</string>
     <string name="record_uuid">UUID %1$s</string>
     <string name="details_pair">%1$s · %2$s</string>
-    <string name="date_interval">%1$s — %2$s</string>
     <string name="selector_description">%1$s: %2$s</string>
     <string name="grading_fontainebleau" translatable="false">Fontainebleau</string>
     <string-array name="calendar_weekdays">
@@ -88,8 +85,6 @@
     <string name="football_statistics_result">Результат</string>
     <string name="football_statistics_players">Игроков в команде</string>
     <string name="football_statistics_minutes">Время игры, мин</string>
-    <string name="statistics_period">Период</string>
-    <string name="statistics_dates">Даты</string>
     <string name="statistics_date_from">С даты</string>
     <string name="statistics_date_to">По дату</string>
     <string name="statistics_period_month">Месяц</string>
@@ -99,4 +94,6 @@
     <string name="settings_theme_dark">Тёмная</string>
     <string name="settings_theme_system">Системная</string>
     <string name="settings_theme_hint">Системная тема следует настройкам устройства. Выбор сохраняется автоматически.</string>
+    <string name="statistics_centers_choose">Выбрать</string>
+    <string name="statistics_no_centers">Нет центров для этого вида спорта</string>
 </resources>

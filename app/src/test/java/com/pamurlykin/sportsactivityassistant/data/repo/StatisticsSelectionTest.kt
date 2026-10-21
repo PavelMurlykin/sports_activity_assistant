@@ -13,14 +13,17 @@ class StatisticsSelectionTest : com.pamurlykin.sportsactivityassistant.ResourceT
     private val football = SportEntity(1, "football", "Футбол")
     private fun date(s: String) = LocalDate.parse(s)
 
-    @Test fun inclusiveRangeRejectsPartialReversedOrUnsupportedBounds() {
+    @Test fun inclusiveRangeAllowsIndependentBoundsAndRejectsReversedOrUnsupportedValues() {
         assertEquals(date("0001-01-01"), StatisticsFilter().firstDate)
         assertEquals(date("9999-12-31"), StatisticsFilter().lastDate)
         val day = date("2020-02-29")
         assertEquals(day, StatisticsFilter(day, day).lastDate)
+        assertEquals(date("9999-12-31"), StatisticsFilter(startDate = day).lastDate)
+        assertEquals(date("0001-01-01"), StatisticsFilter(endDate = day).firstDate)
+        assertEquals(setOf(2L, 3L), StatisticsFilter(centerIds = setOf(2L, 3L)).centerIds)
         listOf(
-            { StatisticsFilter(day, null) }, { StatisticsFilter(null, day) },
             { StatisticsFilter(day, day.minusDays(1)) }, { StatisticsFilter(centerId = 0) },
+            { StatisticsFilter(centerIds = setOf(1L, -2L)) },
             { StatisticsFilter(LocalDate.of(0,1,1), day) },
             { StatisticsFilter(day, LocalDate.of(10000,1,1)) },
         ).forEach { assertTrue(runCatching(it).isFailure) }

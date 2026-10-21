@@ -30,7 +30,8 @@ class StatisticsViewModelTest {
             val center = db.testCenterForSport(sport).id
             val day = LocalDate.parse("2020-02-29")
             repo.addCompletedTraining(user,AddCompletedTrainingInput(sport,center,day,FootballTrainingInput(0,0,0,0,null,null,null)))
-            val filter = StatisticsFilter(day,day,center)
+            val secondCenter = repo.saveSportsCenter(SaveSportsCenterInput(name = "Другой центр фильтра", city = null, sportIds = setOf(sport)))
+            val filter = StatisticsFilter(day,day,setOf(center, secondCenter))
             instrumentation.runOnMainSync {
                 vm = MainViewModel(repo,state); store.put("statistics",vm)
                 repeat(20) { vm.setStatisticsFilter(StatisticsFilter(day.minusDays(it + 1L),day.minusDays(it + 1L))) }

@@ -85,7 +85,8 @@ class MainViewModel(
         val values = savedState.get<List<String>>("statisticsFilter") ?: emptyList()
         if (values.size != 3) StatisticsFilter() else StatisticsFilter(
             values[0].takeIf { it.isNotEmpty() }?.let(LocalDate::parse),
-            values[1].takeIf { it.isNotEmpty() }?.let(LocalDate::parse), values[2].toLongOrNull())
+            values[1].takeIf { it.isNotEmpty() }?.let(LocalDate::parse),
+            values[2].split(',').filter(String::isNotEmpty).map(String::toLong).toSet())
     }.getOrDefault(StatisticsFilter()))
     val statisticsFilter = _statisticsFilter.asStateFlow()
     val themeMode = repository.themeMode
@@ -95,7 +96,7 @@ class MainViewModel(
 
     fun setStatisticsFilter(filter: StatisticsFilter) {
         savedState["statisticsFilter"] = arrayListOf(filter.startDate?.toString().orEmpty(),
-            filter.endDate?.toString().orEmpty(), filter.centerId?.toString().orEmpty())
+            filter.endDate?.toString().orEmpty(), filter.centerIds.sorted().joinToString(","))
         _statisticsFilter.value = filter
     }
 

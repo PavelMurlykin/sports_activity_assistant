@@ -54,7 +54,8 @@ private fun Modifier.pickerSemantics(label: String, options: List<String>, index
 
 /** Three visible rows with snap-to-center and a shaded mechanical-drum finish. */
 @Composable
-private fun DrumWheel(options: List<String>, index: Int, onSelected: (Int) -> Unit, modifier: Modifier, enabled: Boolean, tag: String? = null, cyclic: Boolean = false) {
+private fun DrumWheel(options: List<String>, index: Int, onSelected: (Int) -> Unit, modifier: Modifier, enabled: Boolean, tag: String? = null, cyclic: Boolean = false, compact: Boolean = false) {
+    val rowHeight = if (compact) 32.dp else 44.dp
     val anchor = if (cyclic) options.size * 500 else 0
     val count = if (cyclic) options.size * 1001 else options.size
     val list = rememberLazyListState(initialFirstVisibleItemIndex = anchor + index)
@@ -79,23 +80,24 @@ private fun DrumWheel(options: List<String>, index: Int, onSelected: (Int) -> Un
     }
     val frame = RoundedCornerShape(15.dp)
     Box(modifier.background(Brush.verticalGradient(listOf(Color(0xFFB8C2C8), Color(0xFFF3F6F7), Color(0xFF9CA8AE))), frame).padding(3.dp)) {
-        Box(Modifier.fillMaxWidth().height(132.dp).clip(RoundedCornerShape(12.dp))
+        Box(Modifier.fillMaxWidth().height(rowHeight * 3).clip(RoundedCornerShape(12.dp))
             .background(Brush.verticalGradient(listOf(Color(0xFF070B0E), Color(0xFF343E43), Color(0xFF070B0E))))) {
             LazyColumn(state = list, flingBehavior = rememberSnapFlingBehavior(list), userScrollEnabled = enabled,
                 modifier = Modifier.fillMaxSize().then(if (tag != null) Modifier.testTag(tag) else Modifier),
-                contentPadding = PaddingValues(vertical = 44.dp)) {
+                contentPadding = PaddingValues(vertical = rowHeight)) {
                 items(count = count, key = { it }) { position ->
                     val i = position % options.size
                     val value = options[i]
-                    Box(Modifier.fillMaxWidth().height(44.dp), contentAlignment = Alignment.Center) {
+                    Box(Modifier.fillMaxWidth().height(rowHeight), contentAlignment = Alignment.Center) {
                         Text(value, color = if (i == index) Color.White else Color(0xFF859096).copy(alpha = 0.65f),
-                            fontSize = if (options.all { it.length == 1 }) 38.sp else 30.sp,
-                            lineHeight = 42.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+                            fontSize = if (compact) { if (value.length > 6) 16.sp else if (value.length > 2) 24.sp else 28.sp }
+                                else if (options.all { it.length == 1 }) 38.sp else 30.sp,
+                            lineHeight = if (compact) 30.sp else 42.sp, fontWeight = FontWeight.Bold, maxLines = 1)
                     }
                 }
             }
-            HorizontalDivider(Modifier.align(Alignment.Center).offset(y = (-22).dp), color = Color.White.copy(alpha = 0.14f))
-            HorizontalDivider(Modifier.align(Alignment.Center).offset(y = 22.dp), color = Color.Black.copy(alpha = 0.6f))
+            HorizontalDivider(Modifier.align(Alignment.Center).offset(y = -rowHeight / 2), color = Color.White.copy(alpha = 0.14f))
+            HorizontalDivider(Modifier.align(Alignment.Center).offset(y = rowHeight / 2), color = Color.Black.copy(alpha = 0.6f))
         }
     }
 }
@@ -119,13 +121,13 @@ fun ScoreWheelPicker(label: String, value: Int, onValueChange: (Int) -> Unit, mo
     val index = options.indexOf(value.toString()).coerceAtLeast(0)
     Column(modifier.testTag(tag).pickerSemantics(label, options, index, enabled) { onValueChange(options[it].toInt()) },
         horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        if (value > 99) DrumWheel(options, index, { onValueChange(options[it].toInt()) }, Modifier.fillMaxWidth(), enabled)
-        else Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+        if (value > 99) DrumWheel(options, index, { onValueChange(options[it].toInt()) }, Modifier.widthIn(max = 112.dp).fillMaxWidth(), enabled, compact = true)
+        else Row(Modifier.widthIn(max = 112.dp).fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
             val digits = (0..9).map(Int::toString)
-            DrumWheel(digits, value / 10, { onValueChange(it * 10 + value % 10) }, Modifier.weight(1f), enabled, "$tag-tens", cyclic = true)
-            DrumWheel(digits, value % 10, { onValueChange(value / 10 * 10 + it) }, Modifier.weight(1f), enabled, "$tag-units", cyclic = true)
+            DrumWheel(digits, value / 10, { onValueChange(it * 10 + value % 10) }, Modifier.weight(1f), enabled, "$tag-tens", cyclic = true, compact = true)
+            DrumWheel(digits, value % 10, { onValueChange(value / 10 * 10 + it) }, Modifier.weight(1f), enabled, "$tag-units", cyclic = true, compact = true)
         }
-        Canvas(Modifier.fillMaxWidth().height(6.dp)) {
+        Canvas(Modifier.widthIn(max = 112.dp).fillMaxWidth().height(6.dp)) {
             val inset = 2.dp.toPx()
             val path = Path().apply {
                 moveTo(inset, 0f); lineTo(inset, size.height / 2); quadraticTo(inset, size.height, inset * 3, size.height)

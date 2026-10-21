@@ -1,9 +1,9 @@
 package com.pamurlykin.sportsactivityassistant.ui.screen
 
 import com.pamurlykin.sportsactivityassistant.text.AppText
-
-import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.clickable
+import androidx.compose.ui.semantics.Role
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -17,8 +17,6 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Add
-import androidx.compose.material.icons.rounded.ExpandLess
-import androidx.compose.material.icons.rounded.ExpandMore
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -35,7 +33,10 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.ui.text.style.TextAlign
 import com.pamurlykin.sportsactivityassistant.ui.components.StatisticsFilters
 import com.pamurlykin.sportsactivityassistant.ui.components.FootballStatisticsCards
-import com.pamurlykin.sportsactivityassistant.ui.components.TrainingDetails
+import com.pamurlykin.sportsactivityassistant.ui.components.CompletedTrainingCard
+import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowLeft
+import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
+import java.time.format.DateTimeFormatter
 import com.pamurlykin.sportsactivityassistant.data.model.TrainingPageUiModel
 import androidx.compose.runtime.Composable
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -44,7 +45,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.mutableLongStateOf
-import com.pamurlykin.sportsactivityassistant.ui.components.TrainingActions
 import com.pamurlykin.sportsactivityassistant.ui.components.TrainingActionDialog
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -52,16 +52,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.testTag
 import android.content.res.Configuration
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import java.time.format.TextStyle
 import java.util.Locale
-import com.pamurlykin.sportsactivityassistant.data.model.TrainingSessionUiModel
 import com.pamurlykin.sportsactivityassistant.ui.components.SportBadge
 import com.pamurlykin.sportsactivityassistant.ui.components.ReadStateNotice
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
 import com.pamurlykin.sportsactivityassistant.R
 import com.pamurlykin.sportsactivityassistant.data.model.StatisticsOverviewUiModel
 
@@ -186,6 +183,20 @@ fun StatisticsScreen(
     }
 }
 
+@Composable
+private fun TrainingPageControls(page: TrainingPageUiModel, onPage: (Int) -> Unit) {
+    Row(Modifier.fillMaxWidth().testTag("statistics-pages"), verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center) {
+        IconButton(onClick = { onPage(page.page - 1) }, enabled = page.page > 0) {
+            Icon(Icons.AutoMirrored.Rounded.KeyboardArrowLeft, stringResource(R.string.statistics_screen_predyduschaya))
+        }
+        Text(AppText.get(R.string.paging_index, page.page + 1, page.pageCount), Modifier.padding(horizontal = 12.dp))
+        IconButton(onClick = { onPage(page.page + 1) }, enabled = page.page + 1 < page.pageCount) {
+            Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, stringResource(R.string.statistics_screen_sleduyuschaya))
+        }
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StatisticsDetailScreen(
@@ -251,7 +262,7 @@ fun StatisticsDetailScreen(
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = innerPadding.calculateTopPadding() + 12.dp, bottom = innerPadding.calculateBottomPadding() + 24.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            item { StatisticsFilters(filter, centers, viewModel::setStatisticsFilter) }
+            item { StatisticsFilters(filter, centers, viewModel::setStatisticsFilter, sportId = sportId) }
             if (statisticsRead.failed || centersRead.failed) {
                 item { ReadStateNotice(true, viewModel::retryReads) }
             } else if (statisticsRead.loading || centersRead.loading) {
@@ -294,70 +305,14 @@ fun StatisticsDetailScreen(
                     }
                 }
             } else {
-                item { TrainingPageControls(trainingPage, { scrollToTrainings = true; pageIndex = it }) }
                 items(trainings, key = { it.id }) { item ->
-                    ExpandableTrainingCard(item = item,
+                    CompletedTrainingCard(title = item.date.format(DateTimeFormatter.ofPattern("dd.MM.uuuu")),
+                        sportSlug = item.sportSlug, center = item.complexTitle, details = item.details, football = item.football,
+                        modifier = Modifier.testTag("training-card-" + item.id),
                         onEdit = { onEditTraining(item.id) },
                         onDelete = { deleting = true; actionId = item.id })
                 }
-                item { TrainingPageControls(trainingPage, { pageIndex = it }) }
-            }
-        }
-    }
-}
-
-@Composable
-private fun TrainingPageControls(page: TrainingPageUiModel, onPage: (Int) -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Text(AppText.get(R.string.statistics_screen_pokazano_iz, page.page * TrainingPageUiModel.SIZE + 1, page.page * TrainingPageUiModel.SIZE + page.items.size, page.total))
-        FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            TextButton(onClick = { onPage(page.page - 1) }, enabled = page.page > 0) { Text(AppText.get(R.string.statistics_screen_predyduschaya)) }
-            Text(AppText.get(R.string.paging_index, page.page + 1, page.pageCount))
-            TextButton(onClick = { onPage(page.page + 1) }, enabled = page.page + 1 < page.pageCount) { Text(AppText.get(R.string.statistics_screen_sleduyuschaya)) }
-        }
-    }
-}
-
-@Composable
-private fun ExpandableTrainingCard(item: TrainingSessionUiModel, onEdit: () -> Unit, onDelete: () -> Unit) {
-    var expanded by rememberSaveable(item.id) { mutableStateOf(false) }
-    val expandLabel = stringResource(if (expanded) R.string.collapse_training else R.string.expand_training)
-    Card(
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        modifier = Modifier.animateContentSize(),
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Row(Modifier.fillMaxWidth().clickable(role = Role.Button, onClickLabel = expandLabel) { expanded = !expanded },
-                verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                SportBadge(slug = item.sportSlug)
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "${item.date.dayOfMonth}.${item.date.monthValue}.${item.date.year}",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
-                    )
-                    Text(
-                        text = item.complexTitle,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                Icon(
-                    imageVector = if (expanded) Icons.Rounded.ExpandLess else Icons.Rounded.ExpandMore,
-                    contentDescription = null,
-                )
-            }
-
-            if (expanded) {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    TrainingActions(item.sportSlug, onEdit, onDelete)
-                    TrainingDetails(item.details, item.football)
-                }
+                item { TrainingPageControls(trainingPage, { scrollToTrainings = true; pageIndex = it }) }
             }
         }
     }

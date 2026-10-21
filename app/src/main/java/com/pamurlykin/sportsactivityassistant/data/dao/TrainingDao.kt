@@ -1,4 +1,4 @@
-﻿package com.pamurlykin.sportsactivityassistant.data.dao
+package com.pamurlykin.sportsactivityassistant.data.dao
 
 import androidx.room.Dao
 import androidx.room.Insert
@@ -60,35 +60,35 @@ interface TrainingDao {
     @Query("""
         SELECT sport_id AS sportId, COUNT(*) AS count FROM trainings
         WHERE user_id = :userId AND training_date BETWEEN :start AND :end
-          AND (:centerId IS NULL OR sports_complex_id = :centerId)
+          AND (:allCenters OR sports_complex_id IN (:centerIds))
         GROUP BY sport_id
     """)
-    suspend fun sportCounts(userId: Long, start: LocalDate, end: LocalDate, centerId: Long?): List<SportCount>
+    suspend fun sportCounts(userId: Long, start: LocalDate, end: LocalDate, centerIds: List<Long>, allCenters: Boolean = centerIds.isEmpty()): List<SportCount>
 
     @Query("""
         SELECT substr(training_date, 1, 7) AS month, sport_id AS sportId, COUNT(*) AS count FROM trainings
         WHERE user_id = :userId AND training_date BETWEEN :start AND :end
-          AND (:centerId IS NULL OR sports_complex_id = :centerId)
+          AND (:allCenters OR sports_complex_id IN (:centerIds))
         GROUP BY month, sport_id ORDER BY month DESC
     """)
-    suspend fun monthCounts(userId: Long, start: LocalDate, end: LocalDate, centerId: Long?): List<MonthSportCount>
+    suspend fun monthCounts(userId: Long, start: LocalDate, end: LocalDate, centerIds: List<Long>, allCenters: Boolean = centerIds.isEmpty()): List<MonthSportCount>
 
     @Query("""
         SELECT COUNT(*) FROM trainings
         WHERE user_id = :userId AND sport_id = :sportId AND training_date BETWEEN :start AND :end
-          AND (:centerId IS NULL OR sports_complex_id = :centerId)
+          AND (:allCenters OR sports_complex_id IN (:centerIds))
     """)
-    suspend fun trainingCount(userId: Long, sportId: Int, start: LocalDate, end: LocalDate, centerId: Long?): Int
+    suspend fun trainingCount(userId: Long, sportId: Int, start: LocalDate, end: LocalDate, centerIds: List<Long>, allCenters: Boolean = centerIds.isEmpty()): Int
 
     @Transaction
     @Query("""
         SELECT * FROM trainings
         WHERE user_id = :userId AND sport_id = :sportId AND training_date BETWEEN :start AND :end
-          AND (:centerId IS NULL OR sports_complex_id = :centerId)
+          AND (:allCenters OR sports_complex_id IN (:centerIds))
         ORDER BY training_date DESC, id DESC LIMIT :limit OFFSET :offset
     """)
     suspend fun trainingPage(userId: Long, sportId: Int, start: LocalDate, end: LocalDate,
-        centerId: Long?, limit: Int, offset: Int): List<TrainingBundle>
+        centerIds: List<Long>, limit: Int, offset: Int, allCenters: Boolean = centerIds.isEmpty()): List<TrainingBundle>
 
     @Query("""
         SELECT COUNT(*) AS games,
@@ -110,21 +110,21 @@ interface TrainingDao {
           MAX(f.user_assists) AS assistsMax, MIN(f.user_assists) AS assistsMin
         FROM trainings t JOIN football_trainings f ON f.training_id = t.id
         WHERE t.user_id = :userId AND t.sport_id = :sportId AND t.training_date BETWEEN :start AND :end
-          AND (:centerId IS NULL OR t.sports_complex_id = :centerId)
+          AND (:allCenters OR t.sports_complex_id IN (:centerIds))
     """)
-    suspend fun footballTotals(userId: Long, sportId: Int, start: LocalDate, end: LocalDate, centerId: Long?): FootballTotals
+    suspend fun footballTotals(userId: Long, sportId: Int, start: LocalDate, end: LocalDate, centerIds: List<Long>, allCenters: Boolean = centerIds.isEmpty()): FootballTotals
 
     // TEXT decimals must not be converted to SQLite REAL: sum exactly in bounded batches.
     @Query("""
         SELECT t.id, f.distance_km AS distanceKm
         FROM trainings t JOIN football_trainings f ON f.training_id = t.id
         WHERE t.user_id = :userId AND t.sport_id = :sportId AND t.training_date BETWEEN :start AND :end
-          AND (:centerId IS NULL OR t.sports_complex_id = :centerId)
+          AND (:allCenters OR t.sports_complex_id IN (:centerIds))
           AND f.distance_km IS NOT NULL AND t.id > :afterId
         ORDER BY t.id LIMIT 512
     """)
     suspend fun distanceSamples(userId: Long, sportId: Int, start: LocalDate, end: LocalDate,
-        centerId: Long?, afterId: Long): List<DistanceSample>
+        centerIds: List<Long>, afterId: Long, allCenters: Boolean = centerIds.isEmpty()): List<DistanceSample>
 
     @Query("""
         SELECT r.workout_type AS workoutType, r.grading_system AS gradingSystem,
@@ -134,10 +134,10 @@ interface TrainingDao {
           SUM(CASE WHEN r.is_completed THEN r.repeat_count ELSE 0 END) AS completed
         FROM trainings t JOIN climbing_routes r ON r.climbing_training_id = t.id
         WHERE t.user_id = :userId AND t.sport_id = :sportId AND t.training_date BETWEEN :start AND :end
-          AND (:centerId IS NULL OR t.sports_complex_id = :centerId)
+          AND (:allCenters OR t.sports_complex_id IN (:centerIds))
         GROUP BY r.workout_type, r.grading_system, r.grade_code, r.speed_course, gradeMatches
     """)
-    suspend fun climbingBuckets(userId: Long, sportId: Int, start: LocalDate, end: LocalDate, centerId: Long?, whitespace: String = gradeWhitespace): List<ClimbingBucket>
+    suspend fun climbingBuckets(userId: Long, sportId: Int, start: LocalDate, end: LocalDate, centerIds: List<Long>, whitespace: String = gradeWhitespace, allCenters: Boolean = centerIds.isEmpty()): List<ClimbingBucket>
 
     @Insert
     suspend fun insertTraining(item: TrainingEntity): Long
