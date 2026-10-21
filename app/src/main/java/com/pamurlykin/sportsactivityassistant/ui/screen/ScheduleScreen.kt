@@ -121,7 +121,7 @@ fun ScheduleScreen(
                             if (event.state == ScheduleEventState.COMPLETED) {
                                 val id = event.id.removePrefix("completed-").toLong()
                                 CompletedTrainingCard(event.sportTitle, event.sportSlug, event.complexName, event.details, event.football,
-                                    { onEditResult(id) }, { deleteId = id }, linkedPlan = event.linkedPlan)
+                                    { onEditResult(id) }, { deleteId = id }, linkedPlan = event.linkedPlan, climbing = event.climbing)
                             } else Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
                                 Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -142,7 +142,7 @@ fun ScheduleScreen(
                                         }
                                     }
                                     Text(event.complexName, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                    TrainingDetails(event.details, event.football)
+                                    TrainingDetails(event.details, event.football, event.climbing)
                                     if (event.linkedPlan) Text(stringResource(R.string.schedule_screen_rezultat_svyazan_s_planom), style = MaterialTheme.typography.bodyMedium)
                                     Text(stringResource(when {
                                         event.state == ScheduleEventState.COMPLETED -> R.string.schedule_screen_sostoyavshayasya_trenirovka

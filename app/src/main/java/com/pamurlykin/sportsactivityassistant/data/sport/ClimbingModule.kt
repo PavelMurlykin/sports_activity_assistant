@@ -153,6 +153,13 @@ object ClimbingModule : SportModule {
     override fun metrics(items: List<TrainingBundle>) = fromItems(items).metrics
     fun statistics(items: List<TrainingBundle>) = requireNotNull(fromItems(items).climbing)
 
+    fun training(bundle: TrainingBundle): ClimbingTrainingUiModel? = bundle.climbing?.let { climbing ->
+        ClimbingTrainingUiModel(climbing.routes.sortedBy { it.id }.map { route ->
+            ClimbingRouteInput(route.workoutType, route.routeDifficulty, route.isCompleted, route.repeatCount,
+                route.gradingSystem, route.gradeCode, route.speedCourse, route.legacyWorkoutType, route.publicId, route.speedTimeMillis)
+        }, bundle.training.durationMinutes)
+    }
+
     private fun buildStatistics(buckets: List<ClimbingBucket>): ClimbingStatisticsUiModel {
         fun List<ClimbingBucket>.counts() = ClimbingAttemptCounts(sumOf { it.attempts }, sumOf { it.completed })
         fun discipline(type: ClimbingWorkoutType): ClimbingDisciplineStatistics {

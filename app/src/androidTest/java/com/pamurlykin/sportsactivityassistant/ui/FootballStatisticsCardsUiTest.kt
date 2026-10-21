@@ -9,6 +9,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -21,6 +22,7 @@ import com.pamurlykin.sportsactivityassistant.ui.components.TrainingDetails
 import com.pamurlykin.sportsactivityassistant.ui.theme.SportsActivityTheme
 import org.junit.Rule
 import org.junit.Test
+import org.junit.Assert.assertTrue
 import java.io.File
 import java.math.BigDecimal
 
@@ -50,7 +52,7 @@ class FootballStatisticsCardsUiTest {
         screenshot("football-statistics.png")
     }
 
-    @Test fun narrowLargeFontTableCanScrollToTheAverageAndDetailsKeepOptionalValues() {
+    @Test fun narrowLargeFontStatisticsReflowWithoutHorizontalScrollAndDetailsKeepOptionalValues() {
         compose.setContent { SportsActivityTheme {
             val density = LocalDensity.current
             CompositionLocalProvider(LocalDensity provides Density(density.density, 1.8f)) {
@@ -61,10 +63,35 @@ class FootballStatisticsCardsUiTest {
                 }
             }
         } }
-        compose.onNodeWithText("Среднее").performScrollTo().assertIsDisplayed()
+        compose.onAllNodes(SemanticsMatcher.keyIsDefined(SemanticsProperties.HorizontalScrollAxisRange)).assertCountEquals(0)
+        assertMetricFits(FootballMetric.TEAM_SCORED, listOf("1034", "26", "4", "12,02"))
+        screenshot("football-statistics-narrow-large.png")
         compose.onNodeWithTag("football-training-details").performScrollTo()
         compose.onNodeWithText("7,30", substring = true).performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("90", substring = true).performScrollTo().assertIsDisplayed()
+    }
+
+    @Test fun phoneWidthKeepsEveryColumnAndLargeTotalsInsideTheCard() {
+        val large = statistics.copy(metrics = listOf(FootballMetricSummary(FootballMetric.TEAM_SCORED,
+            "9223372036854775807", "2147483647", "0", "2147483647,00")))
+        compose.setContent { SportsActivityTheme {
+            Column(Modifier.width(320.dp).fillMaxHeight().background(MaterialTheme.colorScheme.background)
+                .verticalScroll(rememberScrollState()).padding(16.dp)) { FootballStatisticsCards(large) }
+        } }
+        compose.onAllNodes(SemanticsMatcher.keyIsDefined(SemanticsProperties.HorizontalScrollAxisRange)).assertCountEquals(0)
+        assertMetricFits(FootballMetric.TEAM_SCORED, listOf("9223372036854775807", "2147483647", "0", "2147483647,00"))
+        screenshot("football-statistics-phone-large-totals.png")
+    }
+
+    private fun assertMetricFits(metric: FootballMetric, values: List<String>) {
+        val parent = hasTestTag("football-summary-${metric.name}")
+        values.forEach { value ->
+            val node = compose.onNode(hasText(value) and hasAnyAncestor(parent))
+            node.performScrollTo().assertIsDisplayed()
+            val bounds = node.fetchSemanticsNode().boundsInRoot
+            val layout = compose.onNodeWithTag("football-metrics-layout").fetchSemanticsNode().boundsInRoot
+            assertTrue("Value $value must fit horizontally", bounds.left >= layout.left && bounds.right <= layout.right)
+        }
     }
 
     private fun screenshot(name: String) {

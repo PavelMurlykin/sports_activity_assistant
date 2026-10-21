@@ -309,6 +309,7 @@ fun StatisticsDetailScreen(
                 items(trainings, key = { it.id }) { item ->
                     CompletedTrainingCard(title = item.date.format(DateTimeFormatter.ofPattern("dd.MM.uuuu")),
                         sportSlug = item.sportSlug, center = item.complexTitle, details = item.details, football = item.football,
+                        climbing = item.climbing,
                         modifier = Modifier.testTag("training-card-" + item.id),
                         onEdit = { onEditTraining(item.id) },
                         onDelete = { deleting = true; actionId = item.id })

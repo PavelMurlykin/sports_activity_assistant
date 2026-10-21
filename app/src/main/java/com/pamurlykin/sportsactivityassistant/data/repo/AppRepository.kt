@@ -338,6 +338,7 @@ class AppRepository(
                 details = mapTrainingBundle(bundle).details,
                 linkedPlan = planned.any { it.completedTrainingId == bundle.training.id },
                 football = com.pamurlykin.sportsactivityassistant.data.sport.FootballModule.match(bundle),
+                climbing = com.pamurlykin.sportsactivityassistant.data.sport.ClimbingModule.training(bundle),
             )
         }
         planned.filter { it.plannedDate in gridStart..gridEnd && it.completedTrainingId == null }.forEach { item ->
@@ -441,6 +442,7 @@ class AppRepository(
         date = bundle.training.trainingDate,
         details = trainingDetails(bundle),
         football = com.pamurlykin.sportsactivityassistant.data.sport.FootballModule.match(bundle),
+        climbing = com.pamurlykin.sportsactivityassistant.data.sport.ClimbingModule.training(bundle),
     )
 
     private fun trainingDetails(bundle: TrainingBundle): List<String> =

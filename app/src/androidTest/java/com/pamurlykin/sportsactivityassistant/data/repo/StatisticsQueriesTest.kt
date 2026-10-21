@@ -31,7 +31,7 @@ class StatisticsQueriesTest {
                 ClimbingRouteInput(ClimbingWorkoutType.DIFFICULTY, " 6A ", false),
                 ClimbingRouteInput(ClimbingWorkoutType.DIFFICULTY, "6b", false, 2),
                 ClimbingRouteInput(ClimbingWorkoutType.BOULDERING, "6A", true, 2),
-                ClimbingRouteInput(ClimbingWorkoutType.BOULDERING, "6A", false, 3)))
+                ClimbingRouteInput(ClimbingWorkoutType.BOULDERING, "6A", false, 3)), durationMinutes = 75)
             val id = repo.addCompletedTraining(user, input)
             val other = repo.saveSportsCenter(SaveSportsCenterInput(name = "Другой зал", city = null, sportIds = setOf(sport)))
             repo.addCompletedTraining(user, input.copy(complexId = other, climbingRoutes = listOf(speed(1000))))
@@ -56,6 +56,12 @@ class StatisticsQueriesTest {
             }))
             assertEquals(7000L, repo.observeSportStatistics(sport, filter).first()!!.climbing!!.speed.first().bestTimeMillis)
             assertTrue(repo.observeTrainingPage(sport, filter).first().items.single().details.any { it.contains("7,00 с") })
+            val history = requireNotNull(repo.observeTrainingPage(sport, filter).first().items.single().climbing)
+            assertEquals(75, history.durationMinutes)
+            assertTrue(history.routes.any { it.speedTimeMillis == 7000L && it.repeatCount == 2 })
+            val scheduled = repo.getScheduleMonth(user, java.time.YearMonth.of(2020, 1), date("2020-01-01"), date("2026-10-22"))
+                .selectedDayEvents.single { it.id == "completed-$id" }
+            assertEquals(history, scheduled.climbing)
         }
     }
     @Test fun multipleCentersUseTheSameUnionForOverviewBothSportsAndHistory() = runBlocking {

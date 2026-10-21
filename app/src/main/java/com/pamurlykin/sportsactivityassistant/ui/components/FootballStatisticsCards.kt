@@ -1,9 +1,7 @@
 package com.pamurlykin.sportsactivityassistant.ui.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.DirectionsRun
@@ -22,6 +20,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.pamurlykin.sportsactivityassistant.R
@@ -58,16 +57,27 @@ fun FootballStatisticsCards(statistics: FootballStatisticsUiModel) {
                 if (dark) Color(0xFF52242B) else Color(0xFFFFE2E3), if (dark) Color(0xFFFFB8BD) else Color(0xFFB71922))
         }
         StatisticsCard(stringResource(R.string.football_statistics_detailed), Modifier.testTag("football-detailed")) {
-            // Keep all four columns legible on narrow screens and with larger system fonts.
-            val fontScale = LocalDensity.current.fontScale
-            BoxWithConstraints(Modifier.fillMaxWidth()) {
-                val tableWidth = maxOf(maxWidth, 344.dp * fontScale)
-                Column(Modifier.horizontalScroll(rememberScrollState()).width(tableWidth)) {
+            val titles = listOf(R.string.football_statistics_sum, R.string.football_statistics_max,
+                R.string.football_statistics_min, R.string.football_statistics_average).map { stringResource(it) }
+            val measurer = rememberTextMeasurer()
+            val density = LocalDensity.current
+            val valueStyle = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold)
+            val titleStyle = MaterialTheme.typography.labelSmall
+            val metricStyle = MaterialTheme.typography.bodySmall
+            // Measure actual values as well as labels so large totals and font settings can reflow.
+            val valueWidth = with(density) {
+                maxOf(titles.maxOf { measurer.measure(it, titleStyle, softWrap = false).size.width },
+                    statistics.metrics.maxOfOrNull { row -> row.values().maxOf { measurer.measure(it, valueStyle, softWrap = false).size.width } } ?: 0).toDp()
+            } + 18.dp
+            val labelWidth = with(density) {
+                (statistics.metrics.maxOfOrNull { measurer.measure(metricText(it.metric), metricStyle, softWrap = false).size.width } ?: 0).toDp()
+            } + 38.dp
+            BoxWithConstraints(Modifier.fillMaxWidth().testTag("football-metrics-layout")) {
+                if (maxWidth >= labelWidth + valueWidth * 4) Column {
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                        Spacer(Modifier.weight(3.1f))
-                        listOf(R.string.football_statistics_sum, R.string.football_statistics_max,
-                            R.string.football_statistics_min, R.string.football_statistics_average).forEachIndexed { index, title ->
-                            Text(stringResource(title), Modifier.weight(if (index == 3) 1.35f else 1f),
+                        Spacer(Modifier.weight(1f))
+                        titles.forEach { title ->
+                            Text(title, Modifier.width(valueWidth),
                                 style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.Center,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
@@ -76,11 +86,36 @@ fun FootballStatisticsCards(statistics: FootballStatisticsUiModel) {
                         StatisticsDivider()
                         Row(Modifier.fillMaxWidth().heightIn(min = 42.dp).testTag("football-summary-${row.metric.name}"),
                             verticalAlignment = Alignment.CenterVertically) {
-                            MetricLabel(row.metric, Modifier.weight(3.1f))
-                            SummaryCell(row.sum, Modifier.weight(1f), bold = true)
-                            SummaryCell(row.maximum, Modifier.weight(1f), highlight = row.metric != FootballMetric.TEAM_CONCEDED)
-                            SummaryCell(row.minimum, Modifier.weight(1f), highlight = row.metric == FootballMetric.TEAM_CONCEDED)
-                            SummaryCell(row.average, Modifier.weight(1.35f))
+                            MetricLabel(row.metric, Modifier.weight(1f))
+                            row.values().forEachIndexed { index, value ->
+                                SummaryCell(value, Modifier.width(valueWidth), bold = index == 0, highlight = row.highlight(index))
+                            }
+                        }
+                    }
+                } else {
+                    val columns = when {
+                        maxWidth >= valueWidth * 4 -> 4
+                        maxWidth >= valueWidth * 2 -> 2
+                        else -> 1
+                    }
+                    Column {
+                        statistics.metrics.forEach { row ->
+                            StatisticsDivider()
+                            Column(Modifier.fillMaxWidth().padding(vertical = 8.dp).testTag("football-summary-${row.metric.name}"),
+                                verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                MetricLabel(row.metric, Modifier.fillMaxWidth())
+                                row.values().withIndex().chunked(columns).forEach { cells ->
+                                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                                        cells.forEach { (index, value) ->
+                                            Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+                                                Text(titles[index], style = MaterialTheme.typography.labelSmall,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                                SummaryCell(value, Modifier.fillMaxWidth(), bold = index == 0, highlight = row.highlight(index))
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -92,6 +127,13 @@ fun FootballStatisticsCards(statistics: FootballStatisticsUiModel) {
         }
     }
 }
+
+private fun FootballMetricSummary.values() = listOf(sum, maximum, minimum, average)
+private fun FootballMetricSummary.highlight(index: Int) =
+    index == if (metric == FootballMetric.TEAM_CONCEDED) 2 else 1
+
+@Composable
+private fun metricText(metric: FootballMetric) = stringResource(metric.label())
 
 private fun percentage(value: Long, total: Long): String = if (total == 0L) "—" else
     "${BigDecimal.valueOf(value).multiply(BigDecimal(100)).divide(BigDecimal.valueOf(total), 0, RoundingMode.HALF_UP)}%"
@@ -157,7 +199,11 @@ internal fun StatisticsDivider() = HorizontalDivider(color = MaterialTheme.color
 
 /** Shared by the expanded statistics history and the selected day in the schedule. */
 @Composable
-fun TrainingDetails(details: List<String>, football: FootballTrainingInput?) {
+fun TrainingDetails(details: List<String>, football: FootballTrainingInput?, climbing: ClimbingTrainingUiModel? = null) {
+    if (climbing != null) {
+        ClimbingTrainingDetails(climbing)
+        return
+    }
     if (football == null) {
         details.forEach { detail ->
             StatisticsDivider()

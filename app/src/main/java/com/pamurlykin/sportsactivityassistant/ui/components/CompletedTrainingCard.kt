@@ -13,6 +13,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.pamurlykin.sportsactivityassistant.R
 import com.pamurlykin.sportsactivityassistant.data.model.FootballTrainingInput
+import com.pamurlykin.sportsactivityassistant.data.model.ClimbingTrainingUiModel
 
 @Composable
 fun CompletedTrainingCard(
@@ -25,6 +26,7 @@ fun CompletedTrainingCard(
     onDelete: () -> Unit,
     modifier: Modifier = Modifier,
     linkedPlan: Boolean = false,
+    climbing: ClimbingTrainingUiModel? = null,
 ) {
     Card(modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
         Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -35,7 +37,7 @@ fun CompletedTrainingCard(
                 TrainingActions(sportSlug, onEdit, onDelete)
             }
             Text(center, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            TrainingDetails(details, football)
+            TrainingDetails(details, football, climbing)
             if (linkedPlan) Text(stringResource(R.string.schedule_screen_rezultat_svyazan_s_planom), style = MaterialTheme.typography.bodyMedium)
             Text(stringResource(R.string.schedule_screen_sostoyavshayasya_trenirovka), style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)

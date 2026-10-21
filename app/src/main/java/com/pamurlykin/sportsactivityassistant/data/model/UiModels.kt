@@ -123,6 +123,7 @@ data class ScheduleEventUiModel(
     val planKey: String? = null,
     val linkedPlan: Boolean = false,
     val football: FootballTrainingInput? = null,
+    val climbing: ClimbingTrainingUiModel? = null,
 )
 
 data class ScheduleDayUiModel(
@@ -147,6 +148,12 @@ data class TrainingSessionUiModel(
     val date: LocalDate,
     val details: List<String>,
     val football: FootballTrainingInput? = null,
+    val climbing: ClimbingTrainingUiModel? = null,
+)
+
+data class ClimbingTrainingUiModel(
+    val routes: List<ClimbingRouteInput>,
+    val durationMinutes: Int? = null,
 )
 
 data class AddPlannedTrainingInput(
