@@ -100,7 +100,7 @@ class ThemeSettingsUiTest {
         compose.waitUntil(5000) { compose.onAllNodesWithText("Мой первый центр").fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithText("Мой первый центр").performScrollTo().assertExists()
         compose.onNodeWithText("Сохранить").performClick()
-        compose.waitUntil(5000) { compose.onAllNodesWithText("Всего завершённых тренировок").fetchSemanticsNodes().isNotEmpty() }
+        compose.waitUntil(5000) { compose.onAllNodesWithTag("statistics-overview").fetchSemanticsNodes().isNotEmpty() }
         runBlocking {
             assertEquals(listOf("Мой первый центр"), db.referenceDao().getAllComplexes().map { it.name })
             assertEquals(1, db.trainingDao().getAllTrainingBundles().size)

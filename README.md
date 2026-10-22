@@ -1,6 +1,6 @@
 # Sports Activity Assistant
 
-Самостоятельный локальный Android-журнал личных тренировок. **Без Telegram, внешних аккаунтов, сервера, телеметрии и доступа приложения в интернет.** Базовая версия 1.10.1 / код 15; Android 8.0 (API 26) и выше, Room 10, резервные копии JSON 9.
+Самостоятельный локальный Android-журнал личных тренировок. **Без Telegram, внешних аккаунтов, сервера, телеметрии и доступа приложения в интернет.** Базовая версия 1.11.1 / код 17; Android 8.0 (API 26) и выше, Room 10, резервные копии JSON 9.
 
 ## Возможности
 
@@ -56,7 +56,7 @@ $env:JAVA_HOME='C:\Program Files\Android\Android Studio\jbr'
 Runner устанавливает и удаляет приложение. **Никогда не запускайте его на устройстве с личной историей**: используйте отдельный пустой тестовый AVD. Отключите Wi-Fi/мобильные данные и проверьте системные настройки; одного флага авиарежима недостаточно. Безопасная обёртка отказывается использовать физическое устройство/установленный пакет и проверяет свежий XML:
 
 ```powershell
-.\scripts\run-local-checks.ps1 -Serial emulator-5556 -SdkPath 'C:\Users\PAVEL\AppData\Local\Android\Sdk' -ExpectedAndroidTests 155
+.\scripts\run-local-checks.ps1 -Serial emulator-5556 -SdkPath 'C:\Users\PAVEL\AppData\Local\Android\Sdk' -ExpectedAndroidTests 160
 ```
 
 Выполняются офлайн-политика, JVM-тесты, Lint, обе сборки и `connectedDebugAndroidTest`. `BUILD SUCCESSFUL` сам по себе не доказывает запуск тестов. Отчёты — `app/build/test-results/testDebugUnitTest`, `app/build/outputs/androidTest-results/connected/debug`, `app/build/reports/lint-results-debug.txt`.

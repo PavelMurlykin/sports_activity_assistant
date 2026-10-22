@@ -36,7 +36,7 @@ class LandscapeNavigationUiTest {
                 }
             }
             compose.onNodeWithContentDescription("Статистика").assertHasClickAction().performClick()
-            compose.waitUntil(5000) { compose.onAllNodesWithText("Всего завершённых тренировок").fetchSemanticsNodes().isNotEmpty() }
+            compose.waitUntil(5000) { compose.onAllNodesWithTag("statistics-overview").fetchSemanticsNodes().isNotEmpty() }
             compose.onNodeWithContentDescription("Центры").performClick()
             compose.onNodeWithText("Спортивные центры").assertExists()
             compose.onNodeWithContentDescription("Данные").assertDoesNotExist()

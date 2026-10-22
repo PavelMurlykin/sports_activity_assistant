@@ -1,6 +1,10 @@
 package com.pamurlykin.sportsactivityassistant.data.model
 
 import java.math.BigDecimal
+import java.time.LocalDate
+
+data class SportDate(val sportId: Int, val date: LocalDate)
+data class OverriddenOccurrence(val ruleId: Long, val date: LocalDate)
 
 data class SportCount(val sportId: Int, val count: Int)
 data class MonthSportCount(val month: String, val sportId: Int, val count: Int)

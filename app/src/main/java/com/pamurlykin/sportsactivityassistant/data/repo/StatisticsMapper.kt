@@ -23,11 +23,13 @@ object StatisticsMapper {
         months: List<MonthSportCount>,
         highlights: Map<Int, List<String>>,
         filter: StatisticsFilter,
+        lastTrainingDates: Map<Int, java.time.LocalDate> = emptyMap(),
+        nextPlannedDates: Map<Int, java.time.LocalDate> = emptyMap(),
     ): StatisticsOverviewUiModel {
         val countsById = counts.associate { it.sportId to it.count }
         val summaries = sports.map { sport ->
             SportSummaryUiModel(sport.id, sport.slug, sport.title, countsById[sport.id] ?: 0,
-                highlights[sport.id].orEmpty())
+                highlights[sport.id].orEmpty(), lastTrainingDates[sport.id], nextPlannedDates[sport.id])
         }
         val byMonth = months.groupBy { YearMonth.parse(it.month) }
         val first = filter.startDate?.let(YearMonth::from) ?: byMonth.keys.minOrNull()
@@ -55,7 +57,7 @@ object StatisticsMapper {
             bundles.groupBy { YearMonth.from(it.training.trainingDate) to it.sport.id }
                 .map { (key, items) -> MonthSportCount(key.first.toString(), key.second, items.size) },
             sports.associate { it.id to SportModules.find(it.slug)?.highlights(bySport[it.id].orEmpty()).orEmpty() },
-            StatisticsFilter())
+            StatisticsFilter(), bySport.mapValues { (_, items) -> items.maxOf { it.training.trainingDate } })
     }
 
     fun sport(sport: SportEntity, bundles: List<TrainingBundle>): SportStatisticsUiModel =

@@ -401,8 +401,7 @@
     <string name="sports_centers_screen_arhiv_pust" formatted="false">"Архив пуст"</string>
     <string name="sports_centers_screen_dobavte_sportivnyy_tsentr" formatted="false">"Добавьте спортивный центр"</string>
     <string name="sports_centers_screen_vidy_sporta_ne_ukazany" formatted="false">"Виды спорта не указаны"</string>
-    <string name="statistics_screen_vsego_zavershyonnyh_trenirovok" formatted="false">"Всего завершённых тренировок"</string>
-    <string name="statistics_screen_trenirovok">"%1$s тренировок"</string>
+    <string name="statistics_screen_trenirovok">"Тренировок: %1$s"</string>
     <string name="statistics_screen_po_mesyatsam" formatted="false">"По месяцам"</string>
     <string name="statistics_screen_vsego">"Всего: %1$s"</string>
     <string name="statistics_screen_net_trenirovok" formatted="false">"Нет тренировок"</string>

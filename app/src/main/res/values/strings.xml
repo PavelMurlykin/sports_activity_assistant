@@ -90,6 +90,8 @@
     <string name="center_restore">Вернуть центр: %1$s</string>
     <string name="import_restores_settings">Выбор отображаемых видов спорта и основные центры выбранного профиля будут восстановлены из копии.</string>
     <string name="football_statistics_general">Общие показатели</string>
+    <string name="statistics_last_training">Последняя тренировка</string>
+    <string name="statistics_next_planned">Ближайшая по плану</string>
     <string name="football_statistics_detailed">Детальная статистика</string>
     <string name="football_statistics_matches">Сыграно матчей</string>
     <string name="football_statistics_win">Победа</string>

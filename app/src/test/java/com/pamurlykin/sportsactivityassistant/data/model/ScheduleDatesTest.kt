@@ -6,6 +6,19 @@ import java.time.LocalDate
 import java.time.YearMonth
 
 class ScheduleDatesTest : com.pamurlykin.sportsactivityassistant.ResourceTextTest() {
+    @Test fun nextAvailableSkipsOverridesKeepsTheAnchorAndHandlesUnboundedSeries() {
+        val start = LocalDate.of(2026, 10, 1)
+        val from = LocalDate.of(2026, 10, 22)
+        val last = LocalDate.of(9999, 12, 31)
+        assertEquals(from, ScheduleDates.nextAvailable(start, null, 1, from, last))
+        assertEquals(from.plusWeeks(3), ScheduleDates.nextAvailable(start, null, 1, from, last,
+            setOf(from, from.plusWeeks(1), from.plusWeeks(2))))
+        assertEquals(from.plusWeeks(1), ScheduleDates.nextAvailable(start, null, 2, from, last))
+        assertNull(ScheduleDates.nextAvailable(start, from, 1, from.plusDays(1), last))
+        assertNull(ScheduleDates.nextAvailable(LocalDate.of(1, 1, 1), null, Int.MAX_VALUE, last, last))
+        assertEquals(last, ScheduleDates.nextAvailable(last, null, Int.MAX_VALUE, last, last))
+        assertNull(ScheduleDates.nextAvailable(last, null, Int.MAX_VALUE, last, last, setOf(last)))
+    }
     @Test fun leapFebruaryHasCompleteMondaySundayGridAndYearBoundary() {
         val days = ScheduleDates.grid(YearMonth.of(2020,2))
         assertEquals(LocalDate.parse("2020-01-27"),days.first())

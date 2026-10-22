@@ -67,8 +67,8 @@ android {
         applicationId = "com.pamurlykin.sportsactivityassistant"
         minSdk = 26
         targetSdk = 37
-        versionCode = 15
-        versionName = "1.10.1"
+        versionCode = 17
+        versionName = "1.11.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true

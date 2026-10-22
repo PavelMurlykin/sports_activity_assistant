@@ -26,6 +26,25 @@ data class PlanSnapshot(
 enum class PlanScope { EVENT, SERIES }
 
 object ScheduleDates {
+    /** Finds one date without expanding an unbounded weekly series into a list. */
+    fun nextAvailable(start: LocalDate, end: LocalDate?, interval: Int, from: LocalDate, to: LocalDate,
+        excluded: Set<LocalDate> = emptySet()): LocalDate? {
+        require(interval > 0)
+        val first = maxOf(start, from)
+        val last = minOf(to, end ?: to)
+        if (first > last) return null
+        val step = 7L * interval
+        val gap = ChronoUnit.DAYS.between(start, first)
+        var offset = ((gap + step - 1) / step) * step
+        val limit = ChronoUnit.DAYS.between(start, last)
+        while (offset <= limit) {
+            val date = start.plusDays(offset)
+            if (date !in excluded) return date
+            offset += step
+        }
+        return null
+    }
+
     fun occurs(start: LocalDate, end: LocalDate?, interval: Int, date: LocalDate): Boolean =
         interval > 0 && date >= start && (end == null || date <= end) &&
             ChronoUnit.DAYS.between(start, date) % (7L * interval) == 0L

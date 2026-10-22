@@ -11,12 +11,20 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items as gridItems
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.CalendarMonth
+import androidx.compose.material.icons.rounded.EventAvailable
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -84,84 +92,63 @@ fun StatisticsScreen(
             )
         },
     ) { innerPadding ->
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(2),
+            modifier = Modifier.fillMaxSize().testTag("statistics-overview"),
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = innerPadding.calculateTopPadding() + 12.dp, bottom = innerPadding.calculateBottomPadding() + 24.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            item { StatisticsFilters(filter, centers, viewModel::setStatisticsFilter) }
+            item(span = { GridItemSpan(maxLineSpan) }) { StatisticsFilters(filter, centers, viewModel::setStatisticsFilter) }
             if (readState.failed || centersRead.failed) {
-                item { ReadStateNotice(true, viewModel::retryReads) }
+                item(span = { GridItemSpan(maxLineSpan) }) { ReadStateNotice(true, viewModel::retryReads) }
             } else if (readState.loading || centersRead.loading || statisticsState.filter != filter) {
-                item { ReadStateNotice(false, viewModel::retryReads) }
+                item(span = { GridItemSpan(maxLineSpan) }) { ReadStateNotice(false, viewModel::retryReads) }
             } else {
-                item {
-                    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(20.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            Text(
-                                text = AppText.get(R.string.statistics_screen_vsego_zavershyonnyh_trenirovok),
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.SemiBold,
-                            )
-                            Text(
-                                text = statisticsState.totalTrainings.toString(),
-                                style = MaterialTheme.typography.displaySmall,
-                                color = MaterialTheme.colorScheme.primary,
-                            )
-                        }
-                    }
-                }
-
-                if (statisticsState.sports.isEmpty()) item {
+                if (statisticsState.sports.isEmpty()) item(span = { GridItemSpan(maxLineSpan) }) {
                     TextButton(onClick = onOpenSettings) { Text(stringResource(R.string.settings_choose_sports)) }
                 }
-                items(statisticsState.sports, key = { it.id }) { sport ->
+                gridItems(statisticsState.sports, key = { "sport-${it.id}" }, span = { GridItemSpan(maxLineSpan) }) { sport ->
                     val openLabel = stringResource(R.string.open_sport, sport.title)
                     Card(
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                        modifier = Modifier.clickable(role = Role.Button, onClickLabel = openLabel) { onOpenSport(sport.id) },
+                        modifier = Modifier.fillMaxWidth().testTag("statistics-sport-${sport.slug}")
+                            .clickable(role = Role.Button, onClickLabel = openLabel) { onOpenSport(sport.id) },
                     ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(18.dp),
-                            horizontalArrangement = Arrangement.spacedBy(16.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            SportBadge(slug = sport.slug)
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(text = sport.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                                Text(
-                                    text = AppText.get(R.string.statistics_screen_trenirovok, sport.completedTrainings),
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                                sport.highlights.forEach { highlight ->
+                        Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                SportBadge(slug = sport.slug)
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(text = sport.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
                                     Text(
-                                        text = highlight,
-                                        style = MaterialTheme.typography.bodySmall,
+                                        text = AppText.get(R.string.statistics_screen_trenirovok, sport.completedTrainings),
+                                        style = MaterialTheme.typography.bodyMedium,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
                                 }
+                                IconButton(onClick = { onAddTraining(sport.id) }) {
+                                    Icon(Icons.Rounded.Add, stringResource(R.string.add_sport_training, sport.title))
+                                }
                             }
-                            IconButton(onClick = { onAddTraining(sport.id) }) {
-                                Icon(Icons.Rounded.Add, stringResource(R.string.add_sport_training, sport.title))
-                            }
+                            StatisticsDateRow(Icons.Rounded.EventAvailable, stringResource(R.string.statistics_last_training), sport.lastTrainingDate,
+                                Modifier.testTag("sport-last-${sport.id}"))
+                            StatisticsDateRow(Icons.Rounded.CalendarMonth, stringResource(R.string.statistics_next_planned), sport.nextPlannedDate,
+                                Modifier.testTag("sport-next-${sport.id}"))
                         }
                     }
                 }
 
                 if (statisticsState.months.isNotEmpty()) {
-                    item {
+                    item(span = { GridItemSpan(maxLineSpan) }) {
                         Text(AppText.get(R.string.statistics_screen_po_mesyatsam), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
                     }
-                    items(statisticsState.months, key = { it.month.toString() }) { month ->
-                        Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+                    gridItems(statisticsState.months, key = { "month-${it.month}" }) { month ->
+                        Card(Modifier.fillMaxWidth().testTag("statistics-month-${month.month}"),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
                             Column(
                                 modifier = Modifier.fillMaxWidth().padding(16.dp),
                                 verticalArrangement = Arrangement.spacedBy(6.dp),
@@ -173,13 +160,26 @@ fun StatisticsScreen(
                                     fontWeight = FontWeight.SemiBold,
                                 )
                                 Text(AppText.get(R.string.statistics_screen_vsego, month.totalTrainings))
-                                Text(month.countsBySport.joinToString(" Р’В· ").ifEmpty { AppText.get(R.string.statistics_screen_net_trenirovok) }, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                if (month.countsBySport.isEmpty()) Text(AppText.get(R.string.statistics_screen_net_trenirovok),
+                                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                else month.countsBySport.forEach { count -> Text(count, style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant) }
                             }
                         }
                     }
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun StatisticsDateRow(icon: ImageVector, label: String, date: java.time.LocalDate?, modifier: Modifier = Modifier) {
+    Row(modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Icon(icon, null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(label, Modifier.weight(1f), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(date?.format(DateTimeFormatter.ofPattern("dd.MM.uuuu")) ?: "—", style = MaterialTheme.typography.bodySmall,
+            fontWeight = FontWeight.SemiBold)
     }
 }
 

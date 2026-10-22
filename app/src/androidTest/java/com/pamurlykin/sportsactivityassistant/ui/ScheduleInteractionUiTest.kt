@@ -89,15 +89,15 @@ class ScheduleInteractionUiTest {
         compose.onNodeWithContentDescription("Записать тренировку: Футбол").performScrollTo().performClick()
         compose.onNodeWithTag("football-0").assertExists()
         compose.onNodeWithText("Отмена").performClick()
-        compose.onNodeWithText("Всего завершённых тренировок").assertExists()
+        compose.onNodeWithTag("statistics-overview").assertExists()
         compose.onNodeWithContentDescription("Записать тренировку: Футбол").performScrollTo().performClick()
         compose.onNodeWithTag("football-0").performScrollTo().performSemanticsAction(SemanticsActions.SetProgress) { it(2f) }
         compose.onNodeWithText("Сохранить").performClick()
-        compose.waitUntil(5_000) { compose.onAllNodesWithText("Всего завершённых тренировок").fetchSemanticsNodes().isNotEmpty() }
+        compose.waitUntil(5_000) { compose.onAllNodesWithTag("statistics-overview").fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithContentDescription("Записать тренировку: Скалолазание").performScrollTo().performClick()
         compose.waitUntil(5_000) { compose.onAllNodesWithTag("route-0-type").fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithTag("route-0-type").performScrollTo().assertExists()
         compose.onNodeWithText("Отмена").performClick()
-        compose.onNodeWithText("Всего завершённых тренировок").assertExists()
+        compose.onNodeWithTag("statistics-overview").assertExists()
     }
 }

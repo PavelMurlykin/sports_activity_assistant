@@ -17,6 +17,15 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface TrainingDao {
+    @Query("""
+        SELECT sport_id AS sportId, MAX(training_date) AS date FROM trainings
+        WHERE user_id = :userId AND training_date BETWEEN :start AND :end
+          AND (:allCenters OR sports_complex_id IN (:centerIds))
+        GROUP BY sport_id
+    """)
+    suspend fun lastTrainingDates(userId: Long, start: LocalDate, end: LocalDate,
+        centerIds: List<Long>, allCenters: Boolean = centerIds.isEmpty()): List<com.pamurlykin.sportsactivityassistant.data.model.SportDate>
+
     @Transaction
     @Query(
         """

@@ -75,12 +75,12 @@ class AppRepository(
         return database.withTransaction(block)
     }
 
-    private fun observeStatisticsChanges() = database.invalidationTracker.createFlow(
-        "trainings", "football_trainings", "climbing_routes", "sports", "sports_complexes", "sport_visibility",
-    )
+    private fun observeStatisticsChanges(includePlanning: Boolean = false) = database.invalidationTracker.createFlow(
+        *(listOf("trainings", "football_trainings", "climbing_routes", "sports", "sports_complexes", "sport_visibility") +
+            if (includePlanning) listOf("planned_trainings", "recurrence_rules") else emptyList()).toTypedArray())
 
-    fun observeStatisticsOverview(filter: StatisticsFilter = StatisticsFilter()): Flow<StatisticsOverviewUiModel> =
-        readyFlow { observeStatisticsChanges().map {
+    fun observeStatisticsOverview(filter: StatisticsFilter = StatisticsFilter(), today: LocalDate = LocalDate.now()): Flow<StatisticsOverviewUiModel> =
+        readyFlow { observeStatisticsChanges(includePlanning = true).map {
             readyTransaction {
                 val user = localProfileId()
                 val dao = database.trainingDao()
@@ -91,9 +91,30 @@ class AppRepository(
                     sport.id to SportModules.find(sport.slug)?.aggregate(dao, StatisticsSelection(user, sport.id, filter), includeMetrics = false)?.highlights.orEmpty()
                 }
                 StatisticsMapper.aggregatedOverview(sports, counts,
-                    dao.monthCounts(user, filter.firstDate, filter.lastDate, filter.centerIds.toList()).filter { it.sportId in visibleIds }, highlights, filter)
+                    dao.monthCounts(user, filter.firstDate, filter.lastDate, filter.centerIds.toList()).filter { it.sportId in visibleIds }, highlights, filter,
+                    dao.lastTrainingDates(user, filter.firstDate, filter.lastDate, filter.centerIds.toList()).associate { it.sportId to it.date },
+                    nextPlannedDates(user, filter, today, visibleIds))
             }
         } }.flowOn(Dispatchers.IO)
+
+    private suspend fun nextPlannedDates(user: Long, filter: StatisticsFilter, today: LocalDate, visibleIds: Set<Int>): Map<Int, LocalDate> {
+        val from = maxOf(today, filter.firstDate)
+        val to = filter.lastDate
+        if (from > to) return emptyMap()
+        val dao = database.planningDao()
+        val dates = dao.nextPlannedDates(user, from, to, filter.centerIds.toList()).associate { it.sportId to it.date }.toMutableMap()
+        val rules = dao.activeRulesForStatistics(user, from, to, filter.centerIds.toList()).filter { it.sportId in visibleIds }
+        if (rules.isNotEmpty()) {
+            // Overrides suppress the original occurrence even when moved to a different sport or center.
+            val excluded = dao.overriddenOccurrences(user, from, to).groupBy { it.ruleId }.mapValues { (_, rows) -> rows.map { it.date }.toSet() }
+            rules.forEach { rule ->
+                ScheduleDates.nextAvailable(rule.startDate, rule.endDate, rule.intervalWeeks, from, to, excluded[rule.id].orEmpty())?.let { date ->
+                    dates[rule.sportId] = minOf(dates[rule.sportId] ?: date, date)
+                }
+            }
+        }
+        return dates
+    }
 
     /** Compatibility API: the first bounded page, not the entire training history. */
     fun observeTrainingsForSport(sportId: Int): Flow<List<TrainingSessionUiModel>> =

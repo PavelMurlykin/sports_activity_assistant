@@ -59,6 +59,8 @@ data class SportSummaryUiModel(
     val title: String,
     val completedTrainings: Int,
     val highlights: List<String> = emptyList(),
+    val lastTrainingDate: LocalDate? = null,
+    val nextPlannedDate: LocalDate? = null,
 )
 
 data class SportPreferenceUiModel(val sport: SportSummaryUiModel, val isVisible: Boolean)

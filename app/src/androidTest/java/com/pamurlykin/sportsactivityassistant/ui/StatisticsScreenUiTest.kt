@@ -50,7 +50,7 @@ class StatisticsScreenUiTest {
                 if (opened == 0) StatisticsScreen(vm,{ opened = it })
                 else StatisticsDetailScreen(opened,vm,{ opened = 0 }, onEditTraining = { editedId = it })
             } }
-            compose.waitUntil(5000) { compose.onAllNodesWithText("21 тренировок").fetchSemanticsNodes().isNotEmpty() }
+            compose.waitUntil(5000) { compose.onAllNodesWithText("Тренировок: 21").fetchSemanticsNodes().isNotEmpty() }
             compose.onNodeWithText("Футбол").performScrollTo().performClick()
             compose.onNodeWithTag("statistics-start").assertTextContains("29.02.2020", substring = true)
             compose.waitUntil(5000) { compose.onAllNodesWithText("Общие показатели").fetchSemanticsNodes().isNotEmpty() }
@@ -77,7 +77,7 @@ class StatisticsScreenUiTest {
             compose.onNodeWithContentDescription("Назад к общей статистике").performClick()
             compose.onNodeWithTag("statistics-start").assertTextContains("29.02.2020", substring = true)
             compose.onNodeWithText("Всё время").performClick()
-            compose.waitUntil(5000) { compose.onAllNodesWithText("22 тренировок").fetchSemanticsNodes().isNotEmpty() }
+            compose.waitUntil(5000) { compose.onAllNodesWithText("Тренировок: 22").fetchSemanticsNodes().isNotEmpty() }
         } finally {
             compose.runOnIdle { visible.value = false }
             compose.waitForIdle()

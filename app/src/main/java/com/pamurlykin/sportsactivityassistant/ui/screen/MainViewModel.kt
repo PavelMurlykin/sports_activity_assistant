@@ -89,6 +89,7 @@ class MainViewModel(
             values[2].split(',').filter(String::isNotEmpty).map(String::toLong).toSet())
     }.getOrDefault(StatisticsFilter()))
     val statisticsFilter = _statisticsFilter.asStateFlow()
+    private val statisticsDay = MutableStateFlow(today)
     val themeMode = repository.themeMode
 
     suspend fun setThemeMode(mode: com.pamurlykin.sportsactivityassistant.data.model.ThemeMode) =
@@ -101,7 +102,8 @@ class MainViewModel(
     }
 
     val statisticsReadState = readRevision.flatMapLatest {
-        statisticsFilter.flatMapLatest { filter -> repository.observeStatisticsOverview(filter).readStates() }
+        kotlinx.coroutines.flow.combine(statisticsFilter, statisticsDay) { filter, day -> filter to day }
+            .flatMapLatest { (filter, day) -> repository.observeStatisticsOverview(filter, day).readStates() }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ReadState())
     // Keep reference options while a form is open; screen content uses explicit read states.
     val statisticsState: StateFlow<StatisticsOverviewUiModel> = statisticsReadState.mapNotNull {
@@ -154,6 +156,7 @@ class MainViewModel(
             savedState["scheduleDate"] = next.toString()
         }
         today = next
+        statisticsDay.value = next
         refreshSchedule()
     }
 

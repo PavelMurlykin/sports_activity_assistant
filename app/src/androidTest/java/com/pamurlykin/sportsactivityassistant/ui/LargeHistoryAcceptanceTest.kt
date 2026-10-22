@@ -96,7 +96,7 @@ class LargeHistoryAcceptanceTest {
             compose.waitUntil(5000) { compose.onAllNodesWithText("Статистика").fetchSemanticsNodes().isNotEmpty() }
             measured("overview-screen",5000) {
                 compose.onNodeWithText("Статистика").performClick()
-                compose.waitUntil(5000) { compose.onAllNodesWithText("2000").fetchSemanticsNodes().isNotEmpty() }
+                compose.waitUntil(5000) { compose.onAllNodesWithText("Тренировок: 1000").fetchSemanticsNodes().isNotEmpty() }
             }
             measured("football-screen",5000) {
                 compose.onNodeWithText("Футбол").performScrollTo().performClick()
