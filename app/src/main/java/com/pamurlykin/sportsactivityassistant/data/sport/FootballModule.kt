@@ -149,7 +149,8 @@ object FootballModule : SportModule {
             summary(FootballMetric.PERSONAL_GOALS, t.personalGoals, t.personalGoalsMax, t.personalGoalsMin),
             summary(FootballMetric.ASSISTS, t.assists, t.assistsMax, t.assistsMin),
             FootballMetricSummary(FootballMetric.DISTANCE,
-                if (t.distanceCount == 0L) "—" else fixed(distance),
+                if (t.distanceCount == 0L) "—" else if (distance > BigDecimal(100))
+                    distance.setScale(0, RoundingMode.FLOOR).toPlainString() else fixed(distance),
                 distanceMax?.let(::fixed) ?: "—", distanceMin?.let(::fixed) ?: "—",
                 if (t.distanceCount == 0L) "—" else fixed(distance.divide(BigDecimal.valueOf(t.distanceCount), 2, RoundingMode.HALF_UP))),
         ), t.distanceCount)

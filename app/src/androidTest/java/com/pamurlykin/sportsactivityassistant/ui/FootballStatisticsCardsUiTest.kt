@@ -37,8 +37,15 @@ class FootballStatisticsCardsUiTest {
         FootballMetricSummary(FootballMetric.TEAM_CONCEDED, "980", "23", "5", "11,40"),
         FootballMetricSummary(FootballMetric.PERSONAL_GOALS, "150", "6", "0", "1,74"),
         FootballMetricSummary(FootballMetric.ASSISTS, "157", "5", "0", "1,83"),
-        FootballMetricSummary(FootballMetric.DISTANCE, "212,66", "5,20", "1,92", "3,87"),
+        FootballMetricSummary(FootballMetric.DISTANCE, "212", "5,20", "1,92", "3,87"),
     ), 55)
+    private val labels = mapOf(
+        FootballMetric.TEAM_SCORED to "Всего\nзабито",
+        FootballMetric.TEAM_CONCEDED to "Всего\nпропущено",
+        FootballMetric.PERSONAL_GOALS to "Личные\nголы",
+        FootballMetric.ASSISTS to "Голевые\nпередачи",
+        FootballMetric.DISTANCE to "Преодолено\nза игру, км",
+    )
 
     @Test fun mockupShowsTheFiveRequestedMetricsAndOutcomePercentages() {
         compose.setContent { SportsActivityTheme {
@@ -86,7 +93,26 @@ class FootballStatisticsCardsUiTest {
         screenshot("football-statistics-phone-large-totals.png")
     }
 
+    @Test fun phoneTableUsesLargerUniformNumbersAndExactTwoLineLabels() {
+        compose.setContent { SportsActivityTheme {
+            Column(Modifier.width(320.dp).fillMaxHeight().background(MaterialTheme.colorScheme.background)
+                .verticalScroll(rememberScrollState()).padding(16.dp)) { FootballStatisticsCards(statistics) }
+        } }
+        assertTableFits(statistics)
+        val sizes = statistics.metrics.flatMap { metric ->
+            val parent = hasTestTag("football-summary-${metric.metric.name}")
+            listOf(metric.sum, metric.maximum, metric.minimum, metric.average).map { value ->
+                textLayout(compose.onNode(hasText(value) and hasAnyAncestor(parent))).layoutInput.style.fontSize.value
+            }
+        }
+        assertTrue("Phone numbers must be larger than the former 12sp", sizes.all { it > 12f })
+        assertEquals("All values must share one font size", sizes.min(), sizes.max(), 0.05f)
+        compose.onNodeWithText("Общие показатели").performScrollTo()
+        screenshot("football-statistics-phone.png")
+    }
+
     private fun assertTableFits(data: FootballStatisticsUiModel) {
+        assertGeneralCountAlignment(data)
         compose.onAllNodes(SemanticsMatcher.keyIsDefined(SemanticsProperties.HorizontalScrollAxisRange)).assertCountEquals(0)
         (0..3).forEach { compose.onAllNodesWithTag("football-header-$it").assertCountEquals(1) }
         data.metrics.forEach { metric ->
@@ -94,7 +120,12 @@ class FootballStatisticsCardsUiTest {
             compose.onNode(parent).performScrollTo().assertIsDisplayed()
             val row = compose.onNode(parent).fetchSemanticsNode().boundsInRoot
             val layout = compose.onNodeWithTag("football-metrics-layout").fetchSemanticsNode().boundsInRoot
-            val label = compose.onNodeWithTag("football-label-${metric.metric.name}").fetchSemanticsNode().boundsInRoot
+            val labelNode = compose.onNodeWithTag("football-label-${metric.metric.name}")
+            labelNode.assertTextEquals(requireNotNull(labels[metric.metric]))
+            val labelLayout = textLayout(labelNode)
+            assertEquals("Every label must have exactly the requested two lines", 2, labelLayout.lineCount)
+            assertTrue("Labels must be complete", !labelLayout.didOverflowWidth && !labelLayout.didOverflowHeight)
+            val label = labelNode.fetchSemanticsNode().boundsInRoot
             var previousRight = label.right
             listOf(metric.sum, metric.maximum, metric.minimum, metric.average).forEachIndexed { index, value ->
                 val node = compose.onNode(hasText(value) and hasAnyAncestor(parent))
@@ -113,6 +144,18 @@ class FootballStatisticsCardsUiTest {
                 previousRight = bounds.right
             }
         }
+    }
+
+    private fun assertGeneralCountAlignment(data: FootballStatisticsUiModel) {
+        compose.onNodeWithTag("football-general").performScrollTo()
+        val parent = hasAnyAncestor(hasTestTag("football-general"))
+        val rightEdges = listOf(data.games, data.wins, data.draws, data.losses).map { count ->
+            compose.onNode(hasText(count.toString()) and parent, useUnmergedTree = true)
+                .fetchSemanticsNode().boundsInRoot.right
+        }
+        rightEdges.forEach { assertEquals("Match and outcome counts must align", rightEdges.first(), it, 1f) }
+        compose.onAllNodes(hasText("%", substring = true) and parent, useUnmergedTree = true).fetchSemanticsNodes()
+            .forEach { percent -> assertTrue("Percentages must follow the count column", percent.boundsInRoot.left > rightEdges.first()) }
     }
 
     private fun textLayout(node: SemanticsNodeInteraction): TextLayoutResult {

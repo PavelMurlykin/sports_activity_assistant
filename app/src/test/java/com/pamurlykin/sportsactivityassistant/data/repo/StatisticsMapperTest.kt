@@ -72,6 +72,30 @@ class StatisticsMapperTest : com.pamurlykin.sportsactivityassistant.ResourceText
         assertEquals(listOf("19,10", "10,00", "9,10", "9,55"), listOf(distance.sum, distance.maximum, distance.minimum, distance.average))
     }
 
+    @Test fun footballDistanceSumFloorsOnlyAboveOneHundredBeforeDisplayRounding() {
+        val sport = SportEntity(1, "football", "Футбол")
+        listOf("0" to "0,00", "99.999" to "100,00", "100" to "100,00",
+            "100.0001" to "100", "100.99" to "100", "101.999" to "101",
+            "212.66" to "212", "1000000000000000000000.9" to "1000000000000000000000").forEach { (raw, expected) ->
+            val stats = requireNotNull(StatisticsMapper.sport(sport,
+                listOf(footballBundle(1, sport, "2026-01-01", 0, 0, 0, 0, raw))).football)
+            assertEquals("Distance $raw", expected, stats.metrics.last().sum)
+        }
+    }
+
+    @Test fun footballDistanceSumIsFlooredAfterAddingAndAverageKeepsTheExactTotal() {
+        val sport = SportEntity(1, "football", "Футбол")
+        val stats = requireNotNull(StatisticsMapper.sport(sport, listOf(
+            footballBundle(1, sport, "2026-01-01", 0, 0, 0, 0, "61.999"),
+            footballBundle(2, sport, "2026-01-02", 0, 0, 0, 0, "40.998"),
+            footballBundle(3, sport, "2026-01-03", 0, 0, 0, 0, null),
+        )).football)
+        val distance = stats.metrics.last()
+        assertEquals(2L, stats.distanceCount)
+        assertEquals(listOf("102", "62,00", "41,00", "51,50"),
+            listOf(distance.sum, distance.maximum, distance.minimum, distance.average))
+    }
+
     @Test
     fun climbingUsesRepeatCountAndOnlySuccessfulRoutesForHardestGrade() {
         val sport = SportEntity(2, "climbing", "Скалолазание")

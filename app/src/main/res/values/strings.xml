@@ -101,9 +101,12 @@
     <string name="football_statistics_max">Макс</string>
     <string name="football_statistics_min">Мин</string>
     <string name="football_statistics_average">Среднее</string>
-    <string name="football_statistics_scored">Всего забито</string>
-    <string name="football_statistics_conceded">Всего пропущено</string>
     <string name="football_statistics_distance">Преодолено за игру, км</string>
+    <string name="football_statistics_scored_label">Всего\nзабито</string>
+    <string name="football_statistics_conceded_label">Всего\nпропущено</string>
+    <string name="football_statistics_personal_goals_label">Личные\nголы</string>
+    <string name="football_statistics_assists_label">Голевые\nпередачи</string>
+    <string name="football_statistics_distance_label">Преодолено\nза игру, км</string>
     <string name="football_statistics_distance_coverage">Дистанция указана в %1$d из %2$d матчей. Среднее — по этим матчам.</string>
     <string name="football_statistics_result">Результат</string>
     <string name="football_statistics_players">Игроков в команде</string>

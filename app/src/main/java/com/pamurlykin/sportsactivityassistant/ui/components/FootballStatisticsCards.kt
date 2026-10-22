@@ -23,6 +23,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.pamurlykin.sportsactivityassistant.R
 import com.pamurlykin.sportsactivityassistant.data.model.*
@@ -44,41 +45,68 @@ fun StatisticsCard(title: String, modifier: Modifier = Modifier, content: @Compo
 @Composable
 fun FootballStatisticsCards(statistics: FootballStatisticsUiModel) {
     val dark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+    val measurer = rememberTextMeasurer()
+    val density = LocalDensity.current
+    val percentages = listOf(statistics.wins, statistics.draws, statistics.losses).map { percentage(it, statistics.games) }
+    val percentStyle = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold)
+    val percentColumnWidth = (with(density) {
+        percentages.maxOf { measurer.measure(it, percentStyle, softWrap = false).size.width }.toDp()
+    } + 20.dp).coerceAtLeast(52.dp)
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         StatisticsCard(stringResource(R.string.football_statistics_general), Modifier.testTag("football-general")) {
-            ResultRow(Icons.Rounded.SportsSoccer, stringResource(R.string.football_statistics_matches), statistics.games)
+            ResultRow(Icons.Rounded.SportsSoccer, stringResource(R.string.football_statistics_matches), statistics.games,
+                percentColumnWidth = percentColumnWidth)
             ResultRow(Icons.Rounded.EmojiEvents, stringResource(R.string.football_statistics_win), statistics.wins,
-                percentage(statistics.wins, statistics.games),
-                if (dark) Color(0xFF163F32) else Color(0xFFDDF5EC), if (dark) Color(0xFF7DE1B8) else Color(0xFF008767))
+                percentages[0],
+                if (dark) Color(0xFF163F32) else Color(0xFFDDF5EC), if (dark) Color(0xFF7DE1B8) else Color(0xFF008767),
+                percentColumnWidth = percentColumnWidth)
             ResultRow(Icons.Rounded.Handshake, stringResource(R.string.football_statistics_draw), statistics.draws,
-                percentage(statistics.draws, statistics.games),
-                if (dark) Color(0xFF303B50) else Color(0xFFE9EDF5), if (dark) Color(0xFFCFDAF4) else Color(0xFF46516D))
+                percentages[1],
+                if (dark) Color(0xFF303B50) else Color(0xFFE9EDF5), if (dark) Color(0xFFCFDAF4) else Color(0xFF46516D),
+                percentColumnWidth = percentColumnWidth)
             ResultRow(Icons.Rounded.Close, stringResource(R.string.football_statistics_loss), statistics.losses,
-                percentage(statistics.losses, statistics.games),
-                if (dark) Color(0xFF52242B) else Color(0xFFFFE2E3), if (dark) Color(0xFFFFB8BD) else Color(0xFFB71922))
+                percentages[2],
+                if (dark) Color(0xFF52242B) else Color(0xFFFFE2E3), if (dark) Color(0xFFFFB8BD) else Color(0xFFB71922),
+                percentColumnWidth = percentColumnWidth)
         }
         StatisticsCard(stringResource(R.string.football_statistics_detailed), Modifier.testTag("football-detailed")) {
             val titles = listOf(R.string.football_statistics_sum, R.string.football_statistics_max,
                 R.string.football_statistics_min, R.string.football_statistics_average).map { stringResource(it) }
-            val measurer = rememberTextMeasurer()
-            val density = LocalDensity.current
-            val valueStyle = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold)
+            val valueStyle = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold)
             val titleStyle = MaterialTheme.typography.labelSmall
+            val labelStyle = MaterialTheme.typography.bodySmall
+            val labels = statistics.metrics.map { stringResource(it.metric.label()) }
+            val labelWidth = with(density) {
+                (labels.maxOfOrNull { label -> label.lines().maxOf { line ->
+                    measurer.measure(line, labelStyle, softWrap = false).size.width
+                } } ?: 0).toDp()
+            } + 27.dp
+            val valueWidths = titles.indices.map { index ->
+                with(density) {
+                    (statistics.metrics.maxOfOrNull { row ->
+                        measurer.measure(row.values()[index], valueStyle, softWrap = false).size.width
+                    } ?: 0).toDp()
+                }
+            }
             // Use one set of column widths for the header and every row, including large totals.
             val columnWidths = titles.mapIndexed { index, title ->
-                with(density) {
-                    maxOf(measurer.measure(title, titleStyle, softWrap = false).size.width,
-                        statistics.metrics.maxOfOrNull { row ->
-                            measurer.measure(row.values()[index], valueStyle, softWrap = false).size.width
-                        } ?: 0).toDp()
-                } + 8.dp
+                maxOf(with(density) { measurer.measure(title, titleStyle, softWrap = false).size.width.toDp() },
+                    valueWidths[index]) + 6.dp
             }
             BoxWithConstraints(Modifier.fillMaxWidth().testTag("football-metrics-layout")) {
-                val labelWidth = (maxWidth - columnWidths.reduce { total, width -> total + width })
-                    .coerceIn(maxWidth * 0.38f, maxWidth * 0.52f)
+                val actualLabelWidth = labelWidth.coerceAtMost(maxWidth * 0.4f)
+                val numericWidth = maxWidth - actualLabelWidth
+                val totalColumnWidth = columnWidths.sumOf { it.value.toDouble() }.toFloat()
+                // All numeric rows share a font size, fitted to the widest value in each column.
+                val valueScale = titles.indices.minOf { index ->
+                    val available = numericWidth * (columnWidths[index].value / totalColumnWidth) - 7.dp
+                    (available.value / valueWidths[index].value.coerceAtLeast(1f)).coerceIn(0.01f, 1f)
+                }
+                val fittedValueStyle = valueStyle.copy(fontSize = valueStyle.fontSize * valueScale,
+                    lineHeight = valueStyle.lineHeight * valueScale)
                 Column {
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                        Spacer(Modifier.width(labelWidth))
+                        Spacer(Modifier.width(actualLabelWidth))
                         titles.forEachIndexed { index, title ->
                             FootballTableCell(title, Modifier.weight(columnWidths[index].value)
                                 .testTag("football-header-$index"), titleStyle,
@@ -89,11 +117,11 @@ fun FootballStatisticsCards(statistics: FootballStatisticsUiModel) {
                         StatisticsDivider()
                         Row(Modifier.fillMaxWidth().heightIn(min = 42.dp).testTag("football-summary-${row.metric.name}"),
                             verticalAlignment = Alignment.CenterVertically) {
-                            MetricLabel(row.metric, Modifier.width(labelWidth))
+                            MetricLabel(row.metric, Modifier.width(actualLabelWidth))
                             row.values().forEachIndexed { index, value ->
                                 val highlight = row.highlight(index) && value != "—"
                                 FootballTableCell(value, Modifier.weight(columnWidths[index].value),
-                                    MaterialTheme.typography.bodySmall.copy(
+                                    fittedValueStyle.copy(
                                         fontWeight = if (index == 0 || highlight) FontWeight.Bold else FontWeight.Normal),
                                     highlight = highlight)
                             }
@@ -120,7 +148,7 @@ private fun FootballTableCell(value: String, modifier: Modifier, style: TextStyl
     val dark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     val measurer = rememberTextMeasurer()
     val density = LocalDensity.current
-    BoxWithConstraints(modifier.padding(horizontal = 2.dp, vertical = 4.dp), contentAlignment = Alignment.Center) {
+    BoxWithConstraints(modifier.padding(horizontal = 1.dp, vertical = 4.dp), contentAlignment = Alignment.Center) {
         val textWidth = measurer.measure(value, style, softWrap = false, maxLines = 1).size.width.coerceAtLeast(1)
         val availableWidth = (constraints.maxWidth - with(density) { 4.dp.toPx() } - 1).coerceAtLeast(1f)
         val scale = (availableWidth / textWidth).coerceAtMost(1f)
@@ -139,16 +167,20 @@ private fun percentage(value: Long, total: Long): String = if (total == 0L) "—
 
 @Composable
 internal fun ResultRow(icon: ImageVector, label: String, value: Long, percent: String? = null,
-    badgeColor: Color = Color.Transparent, badgeText: Color = MaterialTheme.colorScheme.onSurface) {
+    badgeColor: Color = Color.Transparent, badgeText: Color = MaterialTheme.colorScheme.onSurface,
+    percentColumnWidth: Dp? = null) {
     StatisticsDivider()
     Row(Modifier.fillMaxWidth().heightIn(min = 43.dp).semantics(mergeDescendants = true) {},
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         Icon(icon, null, Modifier.size(24.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
         Text(label, Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Text(value.toString(), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
-        if (percent != null) Box(Modifier.widthIn(min = 52.dp).background(badgeColor, RoundedCornerShape(10.dp))
+        if (percent != null || percentColumnWidth != null) Box(
+            (if (percentColumnWidth == null) Modifier.widthIn(min = 52.dp) else Modifier.width(percentColumnWidth))
+            .background(badgeColor, RoundedCornerShape(10.dp))
             .padding(horizontal = 10.dp, vertical = 6.dp), contentAlignment = Alignment.Center) {
-            Text(percent, color = badgeText, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold)
+            if (percent != null) Text(percent, color = badgeText, style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.SemiBold, maxLines = 1, softWrap = false)
         }
     }
 }
@@ -170,12 +202,19 @@ internal fun SummaryCell(value: String, modifier: Modifier, bold: Boolean = fals
 
 @Composable
 private fun MetricLabel(metric: FootballMetric, modifier: Modifier = Modifier) {
+    val label = stringResource(metric.label())
+    val style = MaterialTheme.typography.bodySmall
+    val measurer = rememberTextMeasurer()
     Row(modifier.padding(end = 4.dp, top = 6.dp, bottom = 6.dp), verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-        Icon(metric.icon(), null, Modifier.size(20.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
-        Text(stringResource(metric.label()), Modifier.weight(1f).testTag("football-label-${metric.name}"),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant)
+        horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+        Icon(metric.icon(), null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        BoxWithConstraints(Modifier.weight(1f)) {
+            val textWidth = label.lines().maxOf { measurer.measure(it, style, softWrap = false).size.width }.coerceAtLeast(1)
+            val scale = ((constraints.maxWidth - 1).coerceAtLeast(1).toFloat() / textWidth).coerceAtMost(1f)
+            Text(label, Modifier.fillMaxWidth().testTag("football-label-${metric.name}"), maxLines = 2, softWrap = false,
+                style = style.copy(fontSize = style.fontSize * scale, lineHeight = style.lineHeight * scale),
+                color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
     }
 }
 
@@ -188,11 +227,11 @@ private fun FootballMetric.icon(): ImageVector = when (this) {
 }
 
 private fun FootballMetric.label(): Int = when (this) {
-    FootballMetric.TEAM_SCORED -> R.string.football_statistics_scored
-    FootballMetric.TEAM_CONCEDED -> R.string.football_statistics_conceded
-    FootballMetric.PERSONAL_GOALS -> R.string.football_module_lichnye_goly
-    FootballMetric.ASSISTS -> R.string.football_module_golevye_peredachi
-    FootballMetric.DISTANCE -> R.string.football_statistics_distance
+    FootballMetric.TEAM_SCORED -> R.string.football_statistics_scored_label
+    FootballMetric.TEAM_CONCEDED -> R.string.football_statistics_conceded_label
+    FootballMetric.PERSONAL_GOALS -> R.string.football_statistics_personal_goals_label
+    FootballMetric.ASSISTS -> R.string.football_statistics_assists_label
+    FootballMetric.DISTANCE -> R.string.football_statistics_distance_label
 }
 
 @Composable
