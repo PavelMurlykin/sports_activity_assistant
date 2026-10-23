@@ -36,3 +36,5 @@ app/release/
 .idea/
 captures/
 .local-testing/
+
+output/

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="import_invalid_json">Файл JSON повреждён или содержит неподдерживаемые поля. Выберите проверенную копию JSON 1–9. Данные на устройстве не изменены.</string>
-    <string name="app_name">Sports Activity Assistant</string>
+    <string name="app_name">Спортивный ассистент</string>
     <string name="nav_schedule">Расписание</string>
     <string name="nav_statistics">Статистика</string>
     <string name="nav_centers">Центры</string>

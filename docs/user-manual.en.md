@@ -2,7 +2,7 @@
 
 ## Purpose and installation
 
-Sports Activity Assistant is a standalone local football and climbing log for Android 8.0 (API 26) and later. No account, server or internet connection is needed. The app does not send data elsewhere. Operations run on the device; automatic system backup is disabled and backups are created manually as files.
+«Спортивный ассистент» is a standalone local football and climbing log for Android 8.0 (API 26) and later. No account, server or internet connection is needed. The app does not send data elsewhere. Operations run on the device; automatic system backup is disabled and backups are created manually as files.
 
 Install the debug APK from `app/build/outputs/apk/debug/app-debug.apk`, built as described in README. Android may ask you to allow installation from the selected source. The debug build is intended for local testing, not publication. A fresh installation creates a local profile and sports; the center directory and workout history start empty. Add centers manually or through import. Updating the app retains previously created and preinstalled centers together with their history.
 
