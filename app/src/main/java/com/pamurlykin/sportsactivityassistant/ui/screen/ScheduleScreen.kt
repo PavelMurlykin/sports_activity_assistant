@@ -125,7 +125,7 @@ fun ScheduleScreen(
                             } else Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
                                 Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                                        SportBadge(event.sportSlug, size = 24.dp)
+                                        SportBadge(event.sportSlug, size = 24.dp, artworkScale = 4f / 3f)
                                         Icon(event.state.icon(), stringResource(when (event.state) {
                                             ScheduleEventState.COMPLETED -> R.string.calendar_completed
                                             ScheduleEventState.PLANNED -> R.string.calendar_planned

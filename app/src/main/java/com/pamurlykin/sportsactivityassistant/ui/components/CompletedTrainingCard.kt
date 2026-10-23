@@ -31,7 +31,7 @@ fun CompletedTrainingCard(
     Card(modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
         Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(Modifier.fillMaxWidth().testTag("completed-training-header"), verticalAlignment = Alignment.CenterVertically) {
-                SportBadge(sportSlug, size = 24.dp)
+                SportBadge(sportSlug, size = 24.dp, artworkScale = 4f / 3f)
                 Icon(Icons.Rounded.Check, stringResource(R.string.calendar_completed), Modifier.padding(horizontal = 4.dp).size(18.dp))
                 Text(title, Modifier.weight(1f), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
                 TrainingActions(sportSlug, onEdit, onDelete)

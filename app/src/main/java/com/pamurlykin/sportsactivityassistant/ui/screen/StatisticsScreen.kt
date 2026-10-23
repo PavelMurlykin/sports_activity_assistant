@@ -121,7 +121,7 @@ fun StatisticsScreen(
                                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
-                                SportBadge(slug = sport.slug)
+                                SportBadge(slug = sport.slug, artworkScale = 1.4f)
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(text = sport.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
                                     Text(

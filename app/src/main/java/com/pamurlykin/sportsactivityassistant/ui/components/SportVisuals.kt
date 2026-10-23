@@ -6,6 +6,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.FitnessCenter
 import androidx.compose.material3.Icon
@@ -13,6 +14,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
@@ -35,6 +37,7 @@ fun SportBadge(
     slug: String,
     modifier: Modifier = Modifier,
     size: Dp = 40.dp,
+    artworkScale: Float = 1f,
 ) {
     val visual = sportVisual(slug)
     val artwork = visual.artwork
@@ -42,7 +45,13 @@ fun SportBadge(
         Image(
             painter = painterResource(artwork),
             contentDescription = null,
-            modifier = modifier.size(size),
+            // Enlarge into the surrounding padding without reflowing the card or its labels.
+            modifier = modifier.size(size).graphicsLayer {
+                scaleX = artworkScale
+                scaleY = artworkScale
+                shape = RoundedCornerShape(22)
+                clip = true
+            },
         )
         return
     }

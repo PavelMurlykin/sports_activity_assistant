@@ -128,7 +128,7 @@ fun SettingsScreen(viewModel: MainViewModel, onBack: () -> Unit) {
                     Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            SportBadge(sport.slug, size = 32.dp)
+                            SportBadge(sport.slug, size = 32.dp, artworkScale = 1.375f)
                             Text(sport.title, Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
                             Switch(preference.isVisible, { visible -> save { viewModel.setSportVisible(sport.id, visible) } },
                                 enabled = !busy, modifier = Modifier.testTag("sport-visible-${sport.slug}")

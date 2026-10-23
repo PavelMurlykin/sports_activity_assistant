@@ -51,7 +51,8 @@ public static class SportsIconResources
             }
             if (right < left) throw new InvalidOperationException("Empty icon: " + source);
             Rectangle bounds = Rectangle.FromLTRB(left, top, right + 1, bottom + 1);
-            float scale = 236f / Math.Max(bounds.Width, bounds.Height);
+            // Use the full resource canvas; the supplied artwork already has its own margins.
+            float scale = 256f / Math.Max(bounds.Width, bounds.Height);
             int width = (int)Math.Round(bounds.Width * scale);
             int height = (int)Math.Round(bounds.Height * scale);
             using (Graphics graphics = Painter(result))
@@ -85,8 +86,8 @@ public static class SportsIconResources
                     int alpha = color.A * Math.Min(edge, 8) / 8;
                     result.SetPixel(x+offset, y+offset, Color.FromArgb(alpha, color.R, color.G, color.B));
                     // A contrast mask lets Android tint the artwork for themed launcher icons.
-                    int contrast = Math.Max(Math.Abs(color.R-37),
-                        Math.Max(Math.Abs(color.G-48), Math.Abs(color.B-52)));
+                    int contrast = Math.Max(Math.Abs(color.R-2),
+                        Math.Max(Math.Abs(color.G-17), Math.Abs(color.B-17)));
                     int mask = Math.Min(255, Math.Max(0, contrast-18) * 4);
                     mono.SetPixel(x+offset, y+offset, Color.FromArgb(mask*alpha/255, 255, 255, 255));
                 }
@@ -100,6 +101,6 @@ public static class SportsIconResources
 
 [SportsIconResources]::Sport((Join-Path $sourceRoot 'football.png'), (Join-Path $resourceRoot 'sport_football.png'))
 [SportsIconResources]::Sport((Join-Path $sourceRoot 'climbing.png'), (Join-Path $resourceRoot 'sport_climbing.png'))
-[SportsIconResources]::Launcher((Join-Path $sourceRoot 'sports-vortex.png'),
+[SportsIconResources]::Launcher((Join-Path $sourceRoot 'icon.png'),
     (Join-Path $resourceRoot 'ic_launcher_foreground.png'), (Join-Path $resourceRoot 'ic_launcher_monochrome.png'))
 Get-ChildItem -LiteralPath $resourceRoot -Filter '*.png' | Select-Object Name, Length

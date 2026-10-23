@@ -5,6 +5,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.material.icons.Icons
@@ -101,27 +102,37 @@ private fun CalendarDayCell(day: ScheduleDayUiModel, isSelected: Boolean, onClic
                     color = if (day.inCurrentMonth) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primary.copy(alpha = 0.35f),
                     fontWeight = if (day.isToday || isSelected) FontWeight.Bold else FontWeight.Medium)
                 day.events.firstOrNull()?.let { event ->
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        SportBadge(event.sportSlug, size = 9.dp)
-                        Icon(event.state.icon(), null, Modifier.size(9.dp), tint = MaterialTheme.colorScheme.primary)
-                    }
+                    CalendarEventBadge(event.sportSlug, event.state, 18.dp)
                 }
             }
         } else {
-            Text(day.date.dayOfMonth.toString(), Modifier.align(Alignment.TopCenter),
-                style = MaterialTheme.typography.titleSmall,
-                color = if (day.inCurrentMonth) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primary.copy(alpha = 0.35f),
-                fontWeight = if (day.isToday || isSelected) FontWeight.Bold else FontWeight.Medium)
-            Row(Modifier.align(Alignment.BottomCenter), horizontalArrangement = Arrangement.spacedBy(1.dp)) {
-                day.events.take(2).forEach { event ->
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        SportBadge(event.sportSlug, size = 10.dp)
-                        Icon(event.state.icon(), null, Modifier.size(10.dp), tint = MaterialTheme.colorScheme.primary)
+            Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(day.date.dayOfMonth.toString(),
+                    style = MaterialTheme.typography.titleSmall,
+                    color = if (day.inCurrentMonth) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primary.copy(alpha = 0.35f),
+                    fontWeight = if (day.isToday || isSelected) FontWeight.Bold else FontWeight.Medium)
+                Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.BottomCenter) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(1.dp), verticalAlignment = Alignment.CenterVertically) {
+                        day.events.take(2).forEach { event ->
+                            CalendarEventBadge(event.sportSlug, event.state, 20.dp)
+                        }
+                        if (day.events.size > 2) Text("+", style = MaterialTheme.typography.labelSmall)
                     }
                 }
-                if (day.events.size > 2) Text("+", style = MaterialTheme.typography.labelSmall)
             }
         }
+    }
+}
+
+@Composable
+private fun CalendarEventBadge(slug: String, state: ScheduleEventState, size: Dp) {
+    // Keep the former sport + status width; let the artwork occupy most of that space.
+    Box(Modifier.size(size), contentAlignment = Alignment.Center) {
+        SportBadge(slug, size = size - 2.dp)
+        Icon(state.icon(), null,
+            Modifier.align(Alignment.BottomEnd).size(size / 2)
+                .background(MaterialTheme.colorScheme.surface, CircleShape),
+            tint = MaterialTheme.colorScheme.primary)
     }
 }
 
