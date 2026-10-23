@@ -34,7 +34,7 @@ interface SportEditor {
 
 interface SportDraft {
     @Composable fun Content(enabled: Boolean = true)
-    fun input(sportId: Int, complexId: Long, date: LocalDate): AddCompletedTrainingInput
+    fun input(sportId: Int, complexId: Long, date: LocalDate, durationMinutes: Int? = null): AddCompletedTrainingInput
 }
 
 /** UI extension point: the common form knows nothing about sport-specific fields. */
@@ -62,17 +62,15 @@ private object FootballEditor : SportEditor {
                 (original?.teamGoalsScored ?: 0).toString(), (original?.teamGoalsConceded ?: 0).toString(),
                 (original?.userGoalsScored ?: 0).toString(), (original?.userAssists ?: 0).toString(),
                 original?.distanceKm?.toPlainString().orEmpty(), original?.playersPerTeam?.toString().orEmpty(),
-                original?.durationMinutes?.toString().orEmpty(),
             ))
         }
         var attempted by rememberSaveable { mutableStateOf(false) }
-        val parsed = FootballFormValues.parse(values)
+        val parsed = FootballFormValues.parse(values.take(6) + "")
         return object : SportDraft {
             @Composable override fun Content(enabled: Boolean) {
                 val labels = listOf(AppText.get(R.string.score_scored), AppText.get(R.string.score_conceded),
                     AppText.get(R.string.personal_goals_short), AppText.get(R.string.football_module_golevye_peredachi),
-                    AppText.get(R.string.sport_editors_distantsiya_km_neobyazatelno), AppText.get(R.string.sport_editors_igrokov_v_komande_neobyazatelno),
-                    AppText.get(R.string.sport_editors_vremya_igry_min_neobyazatelno))
+                    AppText.get(R.string.sport_editors_distantsiya_km_neobyazatelno), AppText.get(R.string.sport_editors_igrokov_v_komande_neobyazatelno))
                 fun update(index: Int, next: Int) { values = values.mapIndexed { i, value -> if (i == index) next.toString() else value } }
                 Text(AppText.get(R.string.score_title), Modifier.fillMaxWidth(), style = MaterialTheme.typography.titleMedium,
                     fontWeight = androidx.compose.ui.text.font.FontWeight.Normal, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
@@ -86,7 +84,6 @@ private object FootballEditor : SportEditor {
                     }
                     if (attempted) (0..1).mapNotNull { parsed.errors[it] }.forEach { Text(it, color = MaterialTheme.colorScheme.error) }
                 }
-                Spacer(Modifier.height(8.dp))
                 Text(AppText.get(R.string.personal_statistics), Modifier.fillMaxWidth(), style = MaterialTheme.typography.titleMedium,
                     fontWeight = androidx.compose.ui.text.font.FontWeight.Normal, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -98,18 +95,18 @@ private object FootballEditor : SportEditor {
                         }
                     }
                 }
-                Spacer(Modifier.height(8.dp))
                 labels.drop(4).forEachIndexed { offset, label ->
                     val index = offset + 4
                     StepNumberField(values[index], { text ->
                         values = values.mapIndexed { i, value -> if (i == index) text else value }
-                    }, label, "football-$index", if (attempted) parsed.errors[index] else null, enabled, index == 4, increment = if (index == 6) 5 else 1)
+                    }, label, "football-$index", if (attempted) parsed.errors[index] else null, enabled, index == 4)
                 }
             }
-            override fun input(sportId: Int, complexId: Long, date: LocalDate): AddCompletedTrainingInput {
+            override fun input(sportId: Int, complexId: Long, date: LocalDate, durationMinutes: Int?): AddCompletedTrainingInput {
                 attempted = true
-                require(parsed.errors.isEmpty()) { AppText.get(R.string.sport_editors_ispravte_otmechennye_polya_futbolnoy_statistiki) }
-                return AddCompletedTrainingInput(sportId, complexId, date, football = requireNotNull(parsed.input))
+                val result = FootballFormValues.parse(values.take(6) + durationMinutes?.toString().orEmpty())
+                require(result.errors.isEmpty()) { AppText.get(R.string.sport_editors_ispravte_otmechennye_polya_futbolnoy_statistiki) }
+                return AddCompletedTrainingInput(sportId, complexId, date, football = requireNotNull(result.input))
                     .also { SportModules.require("football").validate(it) }
             }
         }
@@ -147,7 +144,7 @@ private object ClimbingEditor : SportEditor {
             @Composable override fun Content(enabled: Boolean) =
                 ClimbingFields(routes, { routes = it }, attempted, enabled)
 
-            override fun input(sportId: Int, complexId: Long, date: LocalDate): AddCompletedTrainingInput {
+            override fun input(sportId: Int, complexId: Long, date: LocalDate, durationMinutes: Int?): AddCompletedTrainingInput {
                 attempted = true
                 val result = AddCompletedTrainingInput(sportId, complexId, date, climbingRoutes = routes.map { draft ->
                     val route = draft.route
@@ -157,7 +154,7 @@ private object ClimbingEditor : SportEditor {
                     ClimbingRouteInput(ClimbingWorkoutType.fromStorage(route.workoutType), route.routeDifficulty,
                         route.completed, count, requireNotNull(route.gradingSystem), route.gradeCode,
                         route.speedCourse, route.legacyWorkoutType, route.publicId, time.getOrNull())
-                })
+                }, durationMinutes = durationMinutes)
                 val module = SportModules.require("climbing")
                 if (initial == null) module.validate(result) else module.validateEdit(result, initial)
                 return result

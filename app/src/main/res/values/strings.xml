@@ -43,6 +43,11 @@
     <string name="duration_minutes">Длительность, мин</string>
     <string name="duration_value">Длительность: %1$d мин</string>
     <string name="duration_invalid">Длительность должна быть положительным целым числом</string>
+    <string name="training_timer">Таймер тренировки</string>
+    <string name="training_timer_start">Запустить таймер</string>
+    <string name="training_timer_stop">Остановить таймер</string>
+    <string name="training_timer_reset">Сбросить таймер</string>
+    <string name="training_timer_hint">Таймер округляет длительность до ближайшей минуты. Ручное изменение длительности ставит его на паузу.</string>
     <string name="primary_centers">Основной центр для каждого вида спорта</string>
     <string name="primary_center_none">Не выбран</string>
     <string name="primary_center_invalid">Основной центр должен быть активен и поддерживать выбранный спорт</string>

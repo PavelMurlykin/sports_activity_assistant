@@ -1,6 +1,7 @@
 package com.pamurlykin.sportsactivityassistant.ui.components
 
 import kotlinx.coroutines.isActive
+import android.os.SystemClock
 
 import com.pamurlykin.sportsactivityassistant.R
 
@@ -37,10 +38,10 @@ fun AddCompletedTrainingDialog(
     fromPlan: Boolean = false,
     initialSportId: Int? = null,
     plannedDurationMinutes: Int? = null,
+    timerClock: () -> Long = SystemClock::elapsedRealtime,
 ) {
     var selectedSportId by rememberSaveable { mutableIntStateOf(initial?.sportId ?: initialSportId ?: sports.firstOrNull()?.id ?: 0) }
     var selectedComplexId by rememberSaveable { mutableLongStateOf(initial?.complexId ?: 0L) }
-    var durationText by rememberSaveable { mutableStateOf(initial?.durationMinutes?.toString().orEmpty()) }
     var dateText by rememberSaveable { mutableStateOf((initial?.date ?: initialDate).toString()) }
     var errorText by rememberSaveable { mutableStateOf<String?>(null) }
     var attempted by rememberSaveable { mutableStateOf(false) }
@@ -61,6 +62,11 @@ fun AddCompletedTrainingDialog(
         else dateResult.exceptionOrNull()?.message
     }
     holders.SaveableStateProvider(selectedSportId) {
+        var durationText by rememberSaveable {
+            mutableStateOf((initial?.football?.durationMinutes ?: initial?.durationMinutes)?.toString().orEmpty())
+        }
+        var timer by rememberSaveable(stateSaver = TrainingTimerSaver) { mutableStateOf(TrainingTimer.fromDuration(durationText)) }
+        var timerOwnsDuration by rememberSaveable { mutableStateOf(false) }
         val draft = SportEditors.find(selectedSport?.slug)?.rememberDraft(initial)
         fun input(): AddCompletedTrainingInput {
             val date = dateResult.getOrElse { throw IllegalArgumentException(dateError ?: AppText.get(R.string.add_completed_training_dialog_proverte_datu)) }
@@ -68,11 +74,12 @@ fun AddCompletedTrainingDialog(
                 center.id == selectedComplexId && (!fromPlan && center.id == initial?.complexId ||
                     !center.isArchived && center.sports.any { it.id == selectedSportId })
             }) { AppText.get(R.string.add_completed_training_dialog_vyberite_vid_sporta_i_sportivnyy) }
-            val duration = if (selectedSport.slug != "football" && durationText.isNotBlank()) {
-                requireNotNull(durationText.trim().toIntOrNull()?.takeIf { it > 0 }) { AppText.get(R.string.duration_invalid) }
+            val effectiveDuration = if (timerOwnsDuration) TrainingTimer.durationText(timer.elapsedMillis(timerClock())) else durationText
+            val duration = if (effectiveDuration.isNotBlank()) {
+                requireNotNull(effectiveDuration.trim().toIntOrNull()?.takeIf { it > 0 }) { AppText.get(R.string.duration_invalid) }
             } else null
             return requireNotNull(draft) { AppText.get(R.string.add_completed_training_dialog_dlya_etogo_vida_sporta_forma) }
-                .input(selectedSportId, selectedComplexId, date).copy(durationMinutes = duration)
+                .input(selectedSportId, selectedComplexId, date, duration)
         }
         LaunchedEffect(saving, selectedSport?.id, centers.isNotEmpty()) {
             if (saving && selectedSport != null && centers.isNotEmpty()) {
@@ -92,7 +99,11 @@ fun AddCompletedTrainingDialog(
                 Button(enabled = !saving, modifier = Modifier.heightIn(min = 48.dp), onClick = {
                     if (!saving) {
                         attempted = true
-                        runCatching { input() }.onSuccess { errorText = null; saving = true }
+                        runCatching { input() }.onSuccess {
+                            timer = timer.stop(timerClock())
+                            if (timerOwnsDuration) durationText = TrainingTimer.durationText(timer.accumulatedMillis)
+                            errorText = null; saving = true
+                        }
                             .onFailure { errorText = it.message ?: AppText.get(R.string.add_completed_training_dialog_proverte_dannye_trenirovki) }
                     }
                 }) { Text(if (saving) AppText.get(R.string.add_completed_training_dialog_sohranenie) else AppText.get(R.string.add_completed_training_dialog_sohranit)) }
@@ -110,9 +121,28 @@ fun AddCompletedTrainingDialog(
                     TrainingDateField(runCatching { TrainingValidation.parseDate(dateText) }.getOrNull(), AppText.get(R.string.add_completed_training_dialog_data),
                         { datePickerOpen = true }, Modifier.testTag("training-date"), enabled = !saving, calendarTag = "training-date-picker")
                     dateError?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
+                    TrainingTimerRow(timer, timerClock,
+                        onTick = { elapsed -> if (timerOwnsDuration) durationText = TrainingTimer.durationText(elapsed) },
+                        onStart = { timer = timer.start(timerClock()); timerOwnsDuration = true },
+                        onStop = {
+                            timer = timer.stop(timerClock())
+                            durationText = TrainingTimer.durationText(timer.accumulatedMillis)
+                        },
+                        onReset = { timer = TrainingTimer(); durationText = ""; timerOwnsDuration = true },
+                        canStart = durationText.isBlank() || durationText.trim().toIntOrNull()?.let { it > 0 } == true,
+                        canReset = timer.isRunning || timer.accumulatedMillis > 0L || durationText.isNotEmpty(), enabled = !saving)
                     plannedDurationMinutes?.let { Text(AppText.get(R.string.planned_duration, it), style = MaterialTheme.typography.bodyMedium) }
-                    if (selectedSport?.slug != "football") StepNumberField(durationText, { durationText = it },
-                        AppText.get(R.string.duration_minutes), "training-duration", enabled = !saving, increment = 5)
+                    val football = selectedSport?.slug == "football"
+                    StepNumberField(durationText, {
+                        durationText = it
+                        timer = TrainingTimer.fromDuration(it)
+                        timerOwnsDuration = false
+                    }, AppText.get(if (football) R.string.sport_editors_vremya_igry_min_neobyazatelno else R.string.duration_minutes),
+                        if (football) "football-6" else "training-duration",
+                        error = if (attempted && durationText.isNotBlank() && durationText.trim().toIntOrNull()?.let { it > 0 } != true)
+                            AppText.get(R.string.duration_invalid) else null, enabled = !saving, increment = 5)
+                    Text(AppText.get(R.string.training_timer_hint), style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
                     HorizontalDivider()
                     draft?.Content(enabled = !saving) ?: Text(AppText.get(R.string.add_completed_training_dialog_zapis_dlya_etogo_vida_sporta))
                     errorText?.let { Text(it, Modifier.testTag("training-error"),

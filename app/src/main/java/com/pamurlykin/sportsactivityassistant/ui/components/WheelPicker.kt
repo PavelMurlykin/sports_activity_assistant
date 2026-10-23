@@ -137,7 +137,7 @@ fun ScoreWheelPicker(label: String, value: Int, onValueChange: (Int) -> Unit, mo
             drawPath(path, Color(0xFF8A949C), style = androidx.compose.ui.graphics.drawscope.Stroke(1.dp.toPx()))
         }
         Text(label, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center, minLines = 2)
+            textAlign = TextAlign.Center)
     }
 }
 

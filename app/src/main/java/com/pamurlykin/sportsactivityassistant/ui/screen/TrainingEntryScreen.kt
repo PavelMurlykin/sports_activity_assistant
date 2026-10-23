@@ -7,6 +7,7 @@ import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -37,6 +38,9 @@ fun TrainingEntryScreen(
     var planJson by rememberSaveable { mutableStateOf<String?>(null) }
     var failed by rememberSaveable { mutableStateOf(false) }
     var attempt by rememberSaveable { mutableIntStateOf(0) }
+    // Reference collectors restart after a background interval. Keep the complete
+    // form draft while their loading/error screens temporarily replace the form.
+    val formState = rememberSaveableStateHolder()
     LaunchedEffect(trainingId, planKey, attempt) {
         try {
             if (trainingId != 0L && revision == null) {
@@ -71,12 +75,14 @@ fun TrainingEntryScreen(
             football = if (football) FootballTrainingInput(0, 0, 0, 0, null, null, duration) else null,
             durationMinutes = if (football) null else duration)
     }
-    AddCompletedTrainingDialog(sports, initialDate, centers, onBack,
-        onSave = { input, request ->
-            if (plan != null) viewModel.completePlan(plan, input, request)
-            else viewModel.saveCompletedTraining(input, request, snapshot)
-        }, onSaveCenter = viewModel::saveSportsCenter, initial = initial, onSaved = onBack,
-        fromPlan = plan != null, initialSportId = initialSportId.takeIf { id -> sports.any { it.id == id } }, plannedDurationMinutes = duration)
+    formState.SaveableStateProvider("workout-form") {
+        AddCompletedTrainingDialog(sports, initialDate, centers, onBack,
+            onSave = { input, request ->
+                if (plan != null) viewModel.completePlan(plan, input, request)
+                else viewModel.saveCompletedTraining(input, request, snapshot)
+            }, onSaveCenter = viewModel::saveSportsCenter, initial = initial, onSaved = onBack,
+            fromPlan = plan != null, initialSportId = initialSportId.takeIf { id -> sports.any { it.id == id } }, plannedDurationMinutes = duration)
+    }
 }
 
 /** A regular navigation destination, with its actions available above the keyboard. */
