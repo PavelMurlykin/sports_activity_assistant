@@ -6,6 +6,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.material.icons.Icons
@@ -15,12 +16,14 @@ import androidx.compose.material.icons.rounded.SaveAlt
 import androidx.compose.material.icons.rounded.Restore
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
@@ -37,6 +40,8 @@ import java.time.LocalDate
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(viewModel: MainViewModel, onBack: () -> Unit) {
+    var showPrivacyPolicy by rememberSaveable { mutableStateOf(false) }
+    val settingsListState = rememberLazyListState()
     val read by viewModel.sportPreferencesReadState.collectAsStateWithLifecycle()
     val centersRead by viewModel.centersReadState.collectAsStateWithLifecycle()
     val themeMode by viewModel.themeMode.collectAsStateWithLifecycle()
@@ -76,13 +81,17 @@ fun SettingsScreen(viewModel: MainViewModel, onBack: () -> Unit) {
             finally { busy = false }
         }
     }
+    if (showPrivacyPolicy) {
+        PrivacyPolicyScreen(onBack = { showPrivacyPolicy = false })
+        return
+    }
     Scaffold(topBar = {
         TopAppBar(title = { Text(stringResource(R.string.settings_title)) }, navigationIcon = {
             IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, stringResource(R.string.settings_back)) }
         })
     }, snackbarHost = { SnackbarHost(snackbar) }) { padding ->
         LazyColumn(Modifier.fillMaxSize().padding(padding).testTag("settings-list"), contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            state = settingsListState, verticalArrangement = Arrangement.spacedBy(12.dp)) {
             item(key = "appearance") {
                 Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
                     Column(Modifier.fillMaxWidth().padding(16.dp).selectableGroup()) {
@@ -152,6 +161,10 @@ fun SettingsScreen(viewModel: MainViewModel, onBack: () -> Unit) {
                 Card(Modifier.fillMaxWidth().testTag("settings-backup"),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
                     Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Text(stringResource(R.string.settings_backup_title), style = MaterialTheme.typography.titleLarge,
+                            modifier = Modifier.semantics { heading() })
+                        Text(stringResource(R.string.settings_backup_local), style = MaterialTheme.typography.bodyMedium)
+                        Text(stringResource(R.string.settings_backup_private), style = MaterialTheme.typography.bodyMedium)
                         Button(onClick = viewModel::prepareExport, enabled = !fileBusy,
                             modifier = Modifier.fillMaxWidth().testTag("save-backup")) {
                             Icon(Icons.Rounded.SaveAlt, null, Modifier.size(20.dp))
@@ -167,8 +180,13 @@ fun SettingsScreen(viewModel: MainViewModel, onBack: () -> Unit) {
                             Spacer(Modifier.width(8.dp))
                             Text(stringResource(R.string.settings_restore_backup))
                         }
+                        Text(stringResource(R.string.settings_backup_verified), style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
+            }
+            item(key = "about") {
+                AboutAppCard(onPrivacyPolicy = { showPrivacyPolicy = true })
             }
         }
     }

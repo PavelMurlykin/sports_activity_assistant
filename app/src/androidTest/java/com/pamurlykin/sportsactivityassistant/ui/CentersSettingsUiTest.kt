@@ -68,7 +68,7 @@ class CentersSettingsUiTest {
         }
     }
 
-    @Test fun settingsEndWithTwoBackupActionsAndRestoreOpensTheExistingPreview() {
+    @Test fun settingsBackupActionsAndRestoreOpenTheExistingPreview() {
         fixture(true) { repo, vm, _ ->
             compose.onNodeWithTag("settings-list").performScrollToNode(hasTestTag("restore-backup"))
             compose.onNodeWithText("Сохранить резервную копию").assertIsDisplayed()
