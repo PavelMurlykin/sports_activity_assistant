@@ -8,6 +8,7 @@ import androidx.compose.material.icons.automirrored.rounded.DirectionsRun
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -95,15 +96,22 @@ fun FootballStatisticsCards(statistics: FootballStatisticsUiModel) {
             }
             BoxWithConstraints(Modifier.fillMaxWidth().testTag("football-metrics-layout")) {
                 val actualLabelWidth = labelWidth.coerceAtMost(maxWidth * 0.4f)
-                val numericWidth = maxWidth - actualLabelWidth
                 val totalColumnWidth = columnWidths.sumOf { it.value.toDouble() }.toFloat()
-                // All numeric rows share a font size, fitted to the widest value in each column.
-                val valueScale = titles.indices.minOf { index ->
-                    val available = numericWidth * (columnWidths[index].value / totalColumnWidth) - 7.dp
-                    (available.value / valueWidths[index].value.coerceAtLeast(1f)).coerceIn(0.01f, 1f)
+                val numericWidthPx = constraints.maxWidth - with(density) { actualLabelWidth.roundToPx() }
+                val cellPaddingPx = with(density) { 2 * 1.dp.roundToPx() + 2 * 2.dp.roundToPx() }
+                val availableWidths = columnWidths.map { width ->
+                    (numericWidthPx * width.value / totalColumnWidth).toInt() - cellPaddingPx - 1
                 }
-                val fittedValueStyle = valueStyle.copy(fontSize = valueStyle.fontSize * valueScale,
-                    lineHeight = valueStyle.lineHeight * valueScale)
+                // Measure the final styles: font scaling, spacing and pixel rounding are not proportional.
+                val fittedValueStyle = remember(statistics.metrics, valueStyle, availableWidths, measurer) {
+                    fitTableTextStyle(valueStyle) { candidate ->
+                        statistics.metrics.all { row -> row.values().withIndex().all { (index, value) ->
+                            val weight = if (index == 0 || row.highlight(index)) FontWeight.Bold else FontWeight.Normal
+                            measurer.measure(value, candidate.copy(fontWeight = weight), softWrap = false,
+                                maxLines = 1).size.width <= availableWidths[index].coerceAtLeast(1)
+                        } }
+                    }
+                }
                 Column {
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                         Spacer(Modifier.width(actualLabelWidth))
@@ -123,7 +131,7 @@ fun FootballStatisticsCards(statistics: FootballStatisticsUiModel) {
                                 FootballTableCell(value, Modifier.weight(columnWidths[index].value),
                                     fittedValueStyle.copy(
                                         fontWeight = if (index == 0 || highlight) FontWeight.Bold else FontWeight.Normal),
-                                    highlight = highlight)
+                                    highlight = highlight, fitToWidth = false)
                             }
                         }
                     }
@@ -141,22 +149,37 @@ private fun FootballMetricSummary.values() = listOf(sum, maximum, minimum, avera
 private fun FootballMetricSummary.highlight(index: Int) =
     index == if (metric == FootballMetric.TEAM_CONCEDED) 2 else 1
 
+private fun fitTableTextStyle(style: TextStyle, fits: (TextStyle) -> Boolean): TextStyle {
+    if (fits(style)) return style
+    var lower = 0.01f
+    var upper = 1f
+    repeat(12) {
+        val scale = (lower + upper) / 2
+        val candidate = style.copy(fontSize = style.fontSize * scale, lineHeight = style.lineHeight * scale)
+        if (fits(candidate)) lower = scale else upper = scale
+    }
+    return style.copy(fontSize = style.fontSize * lower, lineHeight = style.lineHeight * lower)
+}
+
 /** Keep complete numbers on one line without clipping or widening the table. */
 @Composable
 private fun FootballTableCell(value: String, modifier: Modifier, style: TextStyle,
-    highlight: Boolean = false, color: Color = MaterialTheme.colorScheme.onSurface) {
+    highlight: Boolean = false, color: Color = MaterialTheme.colorScheme.onSurface, fitToWidth: Boolean = true) {
     val dark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     val measurer = rememberTextMeasurer()
     val density = LocalDensity.current
     BoxWithConstraints(modifier.padding(horizontal = 1.dp, vertical = 4.dp), contentAlignment = Alignment.Center) {
-        val textWidth = measurer.measure(value, style, softWrap = false, maxLines = 1).size.width.coerceAtLeast(1)
-        val availableWidth = (constraints.maxWidth - with(density) { 4.dp.toPx() } - 1).coerceAtLeast(1f)
-        val scale = (availableWidth / textWidth).coerceAtMost(1f)
+        val availableWidth = (constraints.maxWidth - with(density) { 2 * 2.dp.roundToPx() } - 1).coerceAtLeast(1)
+        val fittedStyle = if (fitToWidth) remember(value, style, availableWidth, measurer) {
+            fitTableTextStyle(style) { candidate ->
+                measurer.measure(value, candidate, softWrap = false, maxLines = 1).size.width <= availableWidth
+            }
+        } else style
         val pill = if (highlight) Modifier.background(
             Brush.horizontalGradient(if (dark) listOf(Color(0xFF5D3726), Color(0xFF704127))
                 else listOf(Color(0xFFFFDABD), Color(0xFFFFC18B))), RoundedCornerShape(9.dp)) else Modifier
         Text(value, Modifier.fillMaxWidth().then(pill).padding(horizontal = 2.dp, vertical = 4.dp),
-            style = style.copy(fontSize = style.fontSize * scale, lineHeight = style.lineHeight * scale),
+            style = fittedStyle,
             maxLines = 1, softWrap = false, textAlign = TextAlign.Center,
             color = if (highlight) { if (dark) Color(0xFFFFD5AA) else Color(0xFFAB3619) } else color)
     }
@@ -209,10 +232,14 @@ private fun MetricLabel(metric: FootballMetric, modifier: Modifier = Modifier) {
         horizontalArrangement = Arrangement.spacedBy(5.dp)) {
         Icon(metric.icon(), null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
         BoxWithConstraints(Modifier.weight(1f)) {
-            val textWidth = label.lines().maxOf { measurer.measure(it, style, softWrap = false).size.width }.coerceAtLeast(1)
-            val scale = ((constraints.maxWidth - 1).coerceAtLeast(1).toFloat() / textWidth).coerceAtMost(1f)
+            val availableWidth = (constraints.maxWidth - 1).coerceAtLeast(1)
+            val fittedStyle = remember(label, style, availableWidth, measurer) {
+                fitTableTextStyle(style) { candidate ->
+                    measurer.measure(label, candidate, softWrap = false, maxLines = 2).size.width <= availableWidth
+                }
+            }
             Text(label, Modifier.fillMaxWidth().testTag("football-label-${metric.name}"), maxLines = 2, softWrap = false,
-                style = style.copy(fontSize = style.fontSize * scale, lineHeight = style.lineHeight * scale),
+                style = fittedStyle,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }

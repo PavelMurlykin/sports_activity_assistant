@@ -48,10 +48,13 @@ fun ScheduleScreen(
     var planKey by rememberSaveable { mutableStateOf<String?>(null) }
     var planRecurring by rememberSaveable { mutableStateOf(false) }
     var planAction by rememberSaveable { mutableStateOf(PlanAction.EDIT) }
+    var planScope by rememberSaveable { mutableStateOf<PlanScope?>(null) }
     val state = readState.data
     androidx.lifecycle.compose.LifecycleEventEffect(androidx.lifecycle.Lifecycle.Event.ON_RESUME) { viewModel.refreshToday() }
     if (deleteId != 0L) TrainingActionDialog(deleteId, true, viewModel) { deleteId = 0 }
-    planKey?.let { key -> key(key, planAction) { PlanActionDialog(key, planRecurring, planAction, viewModel) { planKey = null } } }
+    planKey?.let { key -> key(key, planAction, planScope) {
+        PlanActionDialog(key, planRecurring, planAction, viewModel, initialScope = planScope) { planKey = null }
+    } }
     if (choice) AdaptiveAlertDialog(onDismissRequest = { choice = false },
         title = { Text(stringResource(R.string.schedule_screen_dobavit_trenirovku)) },
         text = { Text(stringResource(R.string.schedule_screen_zapishite_rezultat_sostoyavsheysya_trenirovki_ili)) },
@@ -133,11 +136,13 @@ fun ScheduleScreen(
                                         }), Modifier.padding(horizontal = 4.dp).size(18.dp))
                                         Text(event.sportTitle, Modifier.weight(1f), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
                                         event.planKey?.let { target ->
-                                            IconButton(onClick = { planKey = target; planRecurring = event.isRecurring; planAction = PlanAction.EDIT }) {
+                                            IconButton(onClick = {
+                                                planKey = target; planRecurring = event.isRecurring; planAction = PlanAction.EDIT; planScope = null
+                                            }) {
                                                 Icon(Icons.Rounded.Edit, stringResource(R.string.schedule_screen_izmenit_plan))
                                             }
                                             if (event.state == ScheduleEventState.PLANNED) IconButton(onClick = {
-                                                planKey = target; planRecurring = event.isRecurring; planAction = PlanAction.CANCEL
+                                                planKey = target; planRecurring = event.isRecurring; planAction = PlanAction.CANCEL; planScope = null
                                             }) { Icon(Icons.Rounded.Delete, stringResource(R.string.schedule_screen_otmenit_trenirovku)) }
                                         }
                                     }
@@ -152,6 +157,9 @@ fun ScheduleScreen(
                                     }), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                     if (event.state == ScheduleEventState.PLANNED) event.planKey?.let { target ->
                                         TextButton(onClick = { onCompletePlan(target) }) { Text(stringResource(R.string.schedule_screen_zapisat_rezultat_po_planu)) }
+                                        TextButton(onClick = {
+                                            planKey = target; planRecurring = event.isRecurring; planAction = PlanAction.CANCEL; planScope = PlanScope.EVENT
+                                        }) { Text(stringResource(R.string.schedule_screen_otmenit_trenirovku)) }
                                     }
                                 }
                             }

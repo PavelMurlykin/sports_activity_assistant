@@ -44,7 +44,7 @@ class FootballStatisticsCardsUiTest {
         FootballMetric.TEAM_CONCEDED to "Всего\nпропущено",
         FootballMetric.PERSONAL_GOALS to "Личные\nголы",
         FootballMetric.ASSISTS to "Голевые\nпередачи",
-        FootballMetric.DISTANCE to "Преодолено\nза игру, км",
+        FootballMetric.DISTANCE to "Дистанция\nза игру, км",
     )
 
     @Test fun mockupShowsTheFiveRequestedMetricsAndOutcomePercentages() {

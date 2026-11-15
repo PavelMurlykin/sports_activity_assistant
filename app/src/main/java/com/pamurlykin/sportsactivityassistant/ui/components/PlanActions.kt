@@ -23,8 +23,9 @@ import java.util.UUID
 enum class PlanAction { EDIT, CANCEL, COMPLETE }
 
 @Composable
-fun PlanActionDialog(key: String, recurring: Boolean, action: PlanAction, viewModel: MainViewModel, onDismiss: () -> Unit) {
-    var scope by rememberSaveable { mutableStateOf<PlanScope?>(if (recurring && action != PlanAction.COMPLETE) null else PlanScope.EVENT) }
+fun PlanActionDialog(key: String, recurring: Boolean, action: PlanAction, viewModel: MainViewModel,
+    initialScope: PlanScope? = null, onDismiss: () -> Unit) {
+    var scope by rememberSaveable { mutableStateOf(initialScope ?: if (recurring && action != PlanAction.COMPLETE) null else PlanScope.EVENT) }
     var encoded by rememberSaveable { mutableStateOf<String?>(null) }
     var error by rememberSaveable { mutableStateOf<String?>(null) }
     var saving by rememberSaveable { mutableStateOf(false) }

@@ -83,6 +83,64 @@ class ScheduleInteractionUiTest {
         assertTrue(vm.scheduleState.value!!.selectedDayEvents.single().details.any { it.contains("95") })
     }
 
+    @Test fun cancelButtonRequiresConfirmationAndLeavesOtherRecurringOccurrencesPlanned() = fixture { vm ->
+        val today = LocalDate.now()
+        val sport = vm.statisticsState.value.sports.first { it.slug == "football" }
+        val center = vm.sportsCenters.value.first { c -> !c.isArchived && c.sports.any { it.id == sport.id } }
+        runBlocking { vm.addPlannedTraining(AddPlannedTrainingInput(sport.id, center.id, today, true, 1, today.plusWeeks(2)),
+            java.util.UUID.randomUUID().toString()) }
+        compose.waitUntil(5_000) { vm.scheduleState.value?.selectedDayEvents?.singleOrNull()?.state == ScheduleEventState.PLANNED }
+        compose.onNodeWithTag("month-calendar").performTouchInput { swipeUp(durationMillis = 800) }
+        val cancel = compose.onNodeWithText("Отменить тренировку")
+        cancel.performScrollTo()
+        assertTrue(cancel.fetchSemanticsNode().boundsInRoot.top >=
+            compose.onNodeWithText("Записать результат по плану").fetchSemanticsNode().boundsInRoot.bottom)
+        cancel.performClick()
+        compose.onNodeWithText("Подтвердить отмену").assertIsDisplayed()
+        compose.onNodeWithText("Вся серия").assertDoesNotExist()
+        assertEquals(ScheduleEventState.PLANNED, vm.scheduleState.value!!.selectedDayEvents.single().state)
+        compose.onNodeWithText("Оставить план").performClick()
+
+        // The original delete action must still offer both cancellation scopes.
+        compose.onNodeWithContentDescription("Отменить тренировку").performScrollTo().performClick()
+        compose.onNodeWithText("Только это событие").assertIsDisplayed()
+        compose.onNodeWithText("Вся серия").assertIsDisplayed()
+        compose.onNodeWithText("Закрыть").performClick()
+
+        cancel.performScrollTo().performClick()
+        compose.onNodeWithText("Подтвердить отмену").performClick()
+        compose.waitUntil(5_000) { vm.scheduleState.value?.selectedDayEvents?.singleOrNull()?.state == ScheduleEventState.CANCELED }
+        compose.onNodeWithText("Записать результат по плану").assertDoesNotExist()
+        compose.onNodeWithText("Отменить тренировку").assertDoesNotExist()
+        compose.runOnIdle { vm.selectDate(today.plusWeeks(1)) }
+        compose.waitUntil(5_000) {
+            vm.scheduleState.value?.let { it.selectedDate == today.plusWeeks(1) &&
+                it.selectedDayEvents.singleOrNull()?.state == ScheduleEventState.PLANNED } == true
+        }
+    }
+
+    @Test fun cancelButtonCancelsOnlyChosenOneOffPlanOnTheSameDay() = fixture { vm ->
+        val sport = vm.statisticsState.value.sports.first { it.slug == "football" }
+        val center = vm.sportsCenters.value.first { c -> !c.isArchived && c.sports.any { it.id == sport.id } }
+        runBlocking {
+            repeat(2) { vm.addPlannedTraining(AddPlannedTrainingInput(sport.id, center.id, LocalDate.now(), false, 1, null),
+                java.util.UUID.randomUUID().toString()) }
+        }
+        compose.waitUntil(5_000) { vm.scheduleState.value?.selectedDayEvents?.size == 2 }
+        val selectedKey = vm.scheduleState.value!!.selectedDayEvents.first().planKey
+        compose.onNodeWithTag("month-calendar").performTouchInput { swipeUp(durationMillis = 800) }
+        compose.onAllNodesWithText("Отменить тренировку").onFirst().performScrollTo().performClick()
+        compose.onNodeWithText("Подтвердить отмену").performClick()
+        compose.waitUntil(5_000) {
+            vm.scheduleState.value?.selectedDayEvents?.singleOrNull { it.planKey == selectedKey }?.state == ScheduleEventState.CANCELED
+        }
+        val events = vm.scheduleState.value!!.selectedDayEvents
+        assertEquals(2, events.size)
+        assertEquals(ScheduleEventState.PLANNED, events.single { it.planKey != selectedKey }.state)
+        compose.onAllNodesWithText("Записать результат по плану").assertCountEquals(1)
+        compose.onAllNodesWithText("Отменить тренировку").assertCountEquals(1)
+    }
+
     @Test fun statisticsOpensSportFormAndSaveAndCancelReturnToStatistics() = fixture { _ ->
         compose.onNodeWithText("Статистика").performClick()
         compose.waitUntil(5_000) { compose.onAllNodesWithContentDescription("Записать тренировку: Футбол").fetchSemanticsNodes().isNotEmpty() }
